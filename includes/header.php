@@ -1,3 +1,13 @@
+
+<?php
+
+if(session_status() == PHP_SESSION_NONE)
+{
+    session_start();
+}
+
+?>
+
 <!DOCTYPE html>
 <html lang="es">
 
@@ -50,13 +60,32 @@
             <ul class="navbar-nav ms-auto">
 
                 <li class="nav-item">
-                    <a
-                        class="nav-link"
-                        href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/index.php">
+                   <?php
 
-                        Inicio
+if(isset($_SESSION['tipo']))
+{
+    if($_SESSION['tipo'] == 'ADMIN')
+    {
+        $inicio = "/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/admin/dashboard.php";
+    }
+    elseif($_SESSION['tipo'] == 'CEO')
+    {
+        $inicio = "/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/ceo/dashboard.php";
+    }
+    else
+    {
+        $inicio = "/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/cliente/dashboard.php";
+    }
+}
+else
+{
+    $inicio = "/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/index.php";
+}
 
-                    </a>
+?>
+<a class="nav-link" href="<?php echo $inicio; ?>">
+    Inicio
+</a>
                 </li>
 
                 <li class="nav-item">
@@ -79,25 +108,62 @@
 
             </ul>
 
-            <div class="ms-lg-3 mt-3 mt-lg-0">
+         <div class="ms-lg-3 mt-3 mt-lg-0">
 
-                <a
-                    href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/auth/login.php"
-                    class="btn btn-outline-light me-2">
+<?php
 
-                    Ingresar
+if(isset($_SESSION['id']))
+{
 
-                </a>
+?>
 
-                <a
-                    href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/auth/registro.php"
-                    class="btn btn-warning fw-semibold">
+    <span class="text-white me-3">
 
-                    Registrarse
+        Hola,
 
-                </a>
+        <?php echo $_SESSION['nombre']; ?>
 
-            </div>
+    </span>
+
+    <a
+    href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/auth/logout.php"
+    class="btn btn-danger">
+
+        Salir
+
+    </a>
+
+<?php
+
+}
+else
+{
+
+?>
+
+    <a
+    href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/auth/login.php"
+    class="btn btn-outline-light me-2">
+
+        Ingresar
+
+    </a>
+
+    <a
+    href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/auth/registro.php"
+    class="btn btn-warning">
+
+        Registrarse
+
+    </a>
+
+<?php
+
+}
+
+?>
+
+</div>
 
         </div>
 

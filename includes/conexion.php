@@ -12,11 +12,9 @@ $link = mysqli_connect(
     $baseDatos
 );
 
-var_dump($link);
 
 if(!$link)
 {
     die("Error de conexión: " . mysqli_connect_error());
 }
-echo "conexion cargada";
 ?>

@@ -33,6 +33,23 @@ if(mysqli_num_rows($vResultado) == 0)
 
 $usuario = mysqli_fetch_assoc($vResultado);
 
+if($usuario['estadoCuenta'] != 'ACTIVA')
+{
+    echo "
+    <h2>Su cuenta aún no está activa.</h2>
+
+    <p>
+        Revise su correo electrónico y valide la cuenta.
+    </p>
+
+    <a href='login.php'>
+        Volver al login
+    </a>
+    ";
+
+    exit();
+}
+
 $_SESSION['id'] = $usuario['codUsuario'];
 
 $_SESSION['nombre'] = $usuario['nombreUsuario'];

@@ -2,7 +2,7 @@
 
     <div class="container text-center">
 
-        <h5>SkyBook</h5>
+        <h5>AirTickets</h5>
 
         <p>
             Sistema de Reservas Aéreas
