@@ -1,0 +1,66 @@
+<?php
+include("../includes/header.php");
+?>
+
+<div class="container">
+
+    <div class="row justify-content-center mt-5">
+
+        <div class="col-md-5">
+
+            <div class="card card-custom">
+
+                <div class="card-body p-5">
+
+                    <h2 class="text-center mb-4">
+
+                        Iniciar Sesión
+
+                    </h2>
+
+                    <form action="procesarLogin.php" method="post">
+
+                        <div class="mb-3">
+
+                            <label>Email</label>
+
+                            <input
+                                type="email"
+                                name="email"
+                                class="form-control">
+
+                        </div>
+
+                        <div class="mb-3">
+
+                            <label>Contraseña</label>
+
+                            <input
+                                type="password"
+                                name="clave"
+                                class="form-control">
+
+                        </div>
+
+                        <button
+                            class="btn btn-primary w-100">
+
+                            Ingresar
+
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<?php
+include("../includes/footer.php");
+?>
