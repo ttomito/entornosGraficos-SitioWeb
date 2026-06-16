@@ -34,11 +34,27 @@ if(mysqli_num_rows($vResultado) == 0)
 
 $usuario = mysqli_fetch_assoc($vResultado);
 
-if($usuario['estadoCuenta'] != 'ACTIVA')
+if(
+    $usuario['tipoUsuario'] == 'CEO'
+    &&
+    $usuario['aprobadoAdmin'] == 'NO'
+)
+{
+    header("Location: login.php?esperando=1");
+    exit();
+}
+
+if(
+    $usuario['tipoUsuario'] == 'CLIENTE'
+    &&
+    $usuario['estadoCuenta'] != 'ACTIVA'
+)
 {
     header("Location: login.php?pendiente=1");
     exit();
 }
+
+
 
 $_SESSION['id'] = $usuario['codUsuario'];
 

@@ -46,6 +46,22 @@ if(isset($_GET['pendiente']))
 }
 ?>
 
+<?php
+
+if(isset($_GET['esperando']))
+{
+?>
+
+<div class="alert alert-info text-center">
+
+    Tu cuenta está pendiente de aprobación por un administrador.
+
+</div>
+
+<?php
+}
+?>
+
                     <form action="procesarLogin.php" method="post">
 
                         <div class="mb-3">

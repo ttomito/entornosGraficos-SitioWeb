@@ -4,6 +4,40 @@ include("../includes/verificarSession.php");
 
 include("../includes/header.php");
 
+include("../includes/conexion.php");
+
+$sqlAerolineas = "
+SELECT COUNT(*) AS total
+FROM aerolineas
+";
+
+$resultadoAerolineas =
+mysqli_query(
+    $link,
+    $sqlAerolineas
+);
+
+$totalAerolineas =
+mysqli_fetch_assoc(
+    $resultadoAerolineas
+);
+
+
+$sqlUsuarios = "
+SELECT COUNT(*) AS total
+FROM usuarios
+";
+
+$resultadoUsuarios =
+mysqli_query(
+    $link,
+    $sqlUsuarios
+);
+
+$totalUsuarios =
+mysqli_fetch_assoc(
+    $resultadoUsuarios
+);
 ?>
 
 <div class="container-fluid">
@@ -84,9 +118,11 @@ include("../includes/header.php");
 
                             <h2>
 
-                                0
+    <?php
+    echo $totalAerolineas['total'];
+    ?>
 
-                            </h2>
+</h2>
 
                         </div>
 
@@ -130,11 +166,13 @@ include("../includes/header.php");
 
                             </h5>
 
-                            <h2>
+                           <h2>
 
-                                0
+    <?php
+    echo $totalUsuarios['total'];
+    ?>
 
-                            </h2>
+</h2>
 
                         </div>
 
@@ -164,14 +202,13 @@ include("../includes/header.php");
 
                     </a>
 
-                    <a
-                    href="#"
-                    class="btn btn-warning">
+                   <a
+href="../admin/ceos/listar.php"
+class="btn btn-warning">
 
-                        Aprobar CEOs
+    Aprobar CEOs
 
-                    </a>
-
+</a>
                     <a
                     href="#"
                     class="btn btn-success">

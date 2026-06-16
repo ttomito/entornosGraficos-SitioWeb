@@ -35,6 +35,23 @@ if(isset($_GET['exito']))
 <?php
 }
 
+if(isset($_GET['ceo']))
+{
+?>
+
+<div class="alert alert-info text-center">
+
+    Registro exitoso.
+
+    Revisá tu correo electrónico para validar la cuenta.
+
+    Luego un administrador deberá aprobar tu solicitud.
+
+</div>
+
+<?php
+}
+
 if(isset($_GET['existe']))
 {
 ?>

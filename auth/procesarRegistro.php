@@ -22,12 +22,14 @@ $token = bin2hex(random_bytes(32));
 if($tipoUsuario == "CEO")
 {
     $estado = "PENDIENTE";
+
+    $aprobadoAdmin = "NO";
 }
 else
 {
-    // $estado = "ACTIVA";
-        $estado = "PENDIENTE";
+    $estado = "PENDIENTE";
 
+    $aprobadoAdmin = "SI";
 }
 
 $consulta = "
@@ -54,7 +56,8 @@ INSERT INTO usuarios
     telefonoUsuario,
     tipoUsuario,
     estadoCuenta,
-    tokenValidacion
+    tokenValidacion,
+    aprobadoAdmin
 )
 VALUES
 (
@@ -64,7 +67,8 @@ VALUES
     '$telefono',
     '$tipoUsuario',
     '$estado',
-    '$token'
+    '$token',
+    '$aprobadoAdmin'
 )
 
 ";
@@ -124,7 +128,15 @@ if($vResultado)
 
 $mail->send();
 
-header("Location: registro.php?exito=1");
+if($tipoUsuario == "CEO")
+{
+    header("Location: registro.php?ceo=1");
+}
+else
+{
+    header("Location: registro.php?exito=1");
+}
+
 exit();
 }
 catch(Exception $e)
