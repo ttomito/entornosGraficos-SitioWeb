@@ -91,16 +91,16 @@ if($vResultado)
 
     $mail->SMTPAuth = true;
 
-    $mail->Username = 'crear un nuevo mail para q lo tengamos los tres';
+    $mail->Username = 'sistemavuelos@gmail.com';
 
-    $mail->Password = 'contraseña de 16 digitos dada por gooogle';
+    $mail->Password = 'wgfw hmjr hpge bjtm';
 
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
 
     $mail->Port = 587;
 
     $mail->setFrom(
-        'crear un nuevo mail para q lo tengamos los tres',
+        'sistemavuelos@gmail.com',
         'Sistema de Vuelos'
     );
 

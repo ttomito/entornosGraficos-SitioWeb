@@ -1,126 +1,182 @@
 <?php
 
-include("../includes/verificarSession.php");
+include("../includes/verificarSesion.php");
 
 include("../includes/header.php");
 
 ?>
 
-<div class="container my-5">
+<div class="container-fluid">
 
-    <div class="text-center mb-5">
+    <div class="row">
 
-        <h1 class="fw-bold">
+        <!-- SIDEBAR -->
 
-            Panel Administrador
+        <div class="col-md-3 col-lg-2 sidebar-admin">
 
-        </h1>
+            <h4 class="text-center mb-4">
 
-        <p class="text-muted">
+                Administrador
 
-            Bienvenido <?php echo $_SESSION['nombre']; ?>
+            </h4>
 
-        </p>
+            <a href="../admin/dashboard.php">
 
-    </div>
+                Dashboard
 
-    <div class="row g-4">
+            </a>
 
-        <div class="col-md-6">
+            <a href="../admin/aerolineas/listar.php">
 
-            <div class="card dashboard-card">
+                Aerolíneas
 
-                <div class="card-body">
+            </a>
 
-                    <h3>✈ Aerolíneas</h3>
+            <a href="#">
 
-                    <p>
-                        Gestionar aerolíneas del sistema.
-                    </p>
+                Promociones
 
-                    <a
-                    href="#"
-                    class="btn btn-primary">
+            </a>
 
-                        Administrar
+            <a href="#">
 
-                    </a>
+                Novedades
+
+            </a>
+
+            <a href="#">
+
+                Reportes
+
+            </a>
+
+        </div>
+
+        <!-- CONTENIDO -->
+
+        <div class="col-md-9 col-lg-10 p-4">
+
+            <h2>
+
+                Bienvenido
+                <?php echo $_SESSION['nombre']; ?>
+            </h2>
+
+            <p class="text-muted">
+
+                Panel de administración del sistema.
+
+            </p>
+
+            <div class="row mt-4">
+
+                <div class="col-md-4 mb-4">
+
+                    <div class="card dashboard-card">
+
+                        <div class="card-body">
+
+                            <h5>
+
+                                Aerolíneas
+
+                            </h5>
+
+                            <h2>
+
+                                0
+
+                            </h2>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="col-md-4 mb-4">
+
+                    <div class="card dashboard-card">
+
+                        <div class="card-body">
+
+                            <h5>
+
+                                Promociones
+
+                            </h5>
+
+                            <h2>
+
+                                0
+
+                            </h2>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="col-md-4 mb-4">
+
+                    <div class="card dashboard-card">
+
+                        <div class="card-body">
+
+                            <h5>
+
+                                Usuarios
+
+                            </h5>
+
+                            <h2>
+
+                                0
+
+                            </h2>
+
+                        </div>
+
+                    </div>
 
                 </div>
 
             </div>
 
-        </div>
-
-        <div class="col-md-6">
-
-            <div class="card dashboard-card">
+            <div class="card card-custom mt-3">
 
                 <div class="card-body">
 
-                    <h3>🎯 Promociones</h3>
+                    <h4>
 
-                    <p>
-                        Aprobar o denegar promociones.
-                    </p>
+                        Accesos rápidos
+
+                    </h4>
+
+                    <hr>
 
                     <a
-                    href="#"
+                    href="../admin/aerolineas/listar.php"
                     class="btn btn-primary">
 
-                        Ver promociones
+                        Gestionar Aerolíneas
 
                     </a>
 
-                </div>
-
-            </div>
-
-        </div>
-
-        <div class="col-md-6">
-
-            <div class="card dashboard-card">
-
-                <div class="card-body">
-
-                    <h3>📢 Novedades</h3>
-
-                    <p>
-                        Crear y administrar novedades.
-                    </p>
-
                     <a
                     href="#"
-                    class="btn btn-primary">
+                    class="btn btn-warning">
 
-                        Gestionar
+                        Aprobar CEOs
 
                     </a>
 
-                </div>
-
-            </div>
-
-        </div>
-
-        <div class="col-md-6">
-
-            <div class="card dashboard-card">
-
-                <div class="card-body">
-
-                    <h3>📊 Reportes</h3>
-
-                    <p>
-                        Consultar estadísticas del sistema.
-                    </p>
-
                     <a
                     href="#"
-                    class="btn btn-primary">
+                    class="btn btn-success">
 
-                        Ver reportes
+                        Novedades
 
                     </a>
 
