@@ -17,6 +17,34 @@ include("../includes/header.php");
                         Iniciar Sesión
 
                     </h2>
+                    <?php
+
+if(isset($_GET['error']))
+{
+?>
+
+<div class="alert alert-danger text-center">
+
+    Usuario o contraseña incorrectos.
+
+</div>
+
+<?php
+}
+
+if(isset($_GET['pendiente']))
+{
+?>
+
+<div class="alert alert-warning text-center">
+
+    Debés validar tu correo electrónico antes de iniciar sesión.
+
+</div>
+
+<?php
+}
+?>
 
                     <form action="procesarLogin.php" method="post">
 

@@ -19,6 +19,35 @@ include("../includes/header.php");
                         Crear Cuenta
 
                     </h2>
+                    <?php
+
+if(isset($_GET['exito']))
+{
+?>
+
+<div class="alert alert-success text-center">
+
+    Registro exitoso.
+    Revisá tu correo electrónico para activar la cuenta.
+
+</div>
+
+<?php
+}
+
+if(isset($_GET['existe']))
+{
+?>
+
+<div class="alert alert-danger text-center">
+
+    Ya existe una cuenta asociada a ese correo.
+
+</div>
+
+<?php
+}
+?>
 
                     <p class="text-center text-muted mb-4">
 

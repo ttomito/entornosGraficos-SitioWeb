@@ -4,6 +4,7 @@ session_start();
 
 include("../includes/conexion.php");
 
+
 $email = $_POST['email'];
 
 $clave = $_POST['clave'];
@@ -27,7 +28,7 @@ $vResultado = mysqli_query(
 
 if(mysqli_num_rows($vResultado) == 0)
 {
-    echo "Usuario o contraseña incorrectos";
+    header("Location: login.php?error=1");
     exit();
 }
 
@@ -35,18 +36,7 @@ $usuario = mysqli_fetch_assoc($vResultado);
 
 if($usuario['estadoCuenta'] != 'ACTIVA')
 {
-    echo "
-    <h2>Su cuenta aún no está activa.</h2>
-
-    <p>
-        Revise su correo electrónico y valide la cuenta.
-    </p>
-
-    <a href='login.php'>
-        Volver al login
-    </a>
-    ";
-
+    header("Location: login.php?pendiente=1");
     exit();
 }
 
@@ -70,3 +60,4 @@ else
 }
 
 exit();
+

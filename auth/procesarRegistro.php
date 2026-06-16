@@ -7,6 +7,7 @@ require '../vendor/autoload.php';
 
 include("../includes/conexion.php");
 
+
 $nombre = $_POST['nombre'];
 
 $email = $_POST['email'];
@@ -39,12 +40,8 @@ $resultado = mysqli_query($link,$consulta);
 
 if(mysqli_num_rows($resultado) > 0)
 {
-    echo "
-    <h2>Ya existe una cuenta con ese correo.</h2>
-    <a href='registro.php'>Volver al registro</a>
-    ";
-
-    exit();
+   header("Location: registro.php?existe=1");
+exit();
 }
 
 $vSql = "
@@ -125,15 +122,10 @@ if($vResultado)
     </a>
     ";
 
-    $mail->send();
+$mail->send();
 
-    echo "
-    <h2>Registro exitoso</h2>
-
-    <p>
-        Revisá tu correo para activar la cuenta.
-    </p>
-    ";
+header("Location: registro.php?exito=1");
+exit();
 }
 catch(Exception $e)
 {
@@ -144,3 +136,4 @@ else
 {
     echo mysqli_error($link);
 }
+

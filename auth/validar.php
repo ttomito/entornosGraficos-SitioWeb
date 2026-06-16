@@ -6,7 +6,7 @@ $token = $_GET['token'];
 
 $sql = "
 UPDATE usuarios
-SET estadoCuenta = 'ACTIVA'
+SET estadoCuenta = 'ACTIVA',
 tokenValidacion = NULL
 WHERE tokenValidacion = '$token'
 ";

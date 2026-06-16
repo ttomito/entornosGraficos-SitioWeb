@@ -1,6 +1,6 @@
 <?php
 
-include("../includes/verificarSesion.php");
+include("../includes/verificarSession.php");
 
 include("../includes/header.php");
 
