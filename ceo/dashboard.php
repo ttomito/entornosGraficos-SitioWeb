@@ -1,30 +1,301 @@
 <?php
 
 include("../includes/verificarSession.php");
-
 include("../includes/header.php");
+include("../includes/conexion.php");
+
+$idCEO = $_SESSION['id'];
+
+/*
+    Obtener aerolínea asignada
+*/
+
+$sqlAerolinea = "
+
+SELECT
+a.nombreAerolinea
+
+FROM usuarios u
+
+LEFT JOIN aerolineas a
+ON u.codAerolinea = a.codAerolinea
+
+WHERE u.codUsuario = $idCEO
+
+";
+
+$resultadoAerolinea = mysqli_query(
+    $link,
+    $sqlAerolinea
+);
+
+$datosAerolinea = mysqli_fetch_assoc(
+    $resultadoAerolinea
+);
+
+$nombreAerolinea =
+$datosAerolinea['nombreAerolinea'];
+
+/*
+    Total vuelos de la aerolínea
+*/
+
+$sqlVuelos = "
+
+SELECT COUNT(*) AS total
+
+FROM vuelos
+
+WHERE codAerolinea =
+(
+    SELECT codAerolinea
+    FROM usuarios
+    WHERE codUsuario = $idCEO
+)
+
+";
+
+$resultadoVuelos = mysqli_query(
+    $link,
+    $sqlVuelos
+);
+
+$totalVuelos = mysqli_fetch_assoc(
+    $resultadoVuelos
+);
+
+/*
+    Total promociones
+*/
+
+$sqlPromociones = "
+
+SELECT COUNT(*) AS total
+
+FROM promociones
+
+WHERE codAerolinea =
+(
+    SELECT codAerolinea
+    FROM usuarios
+    WHERE codUsuario = $idCEO
+)
+
+";
+
+$resultadoPromociones = mysqli_query(
+    $link,
+    $sqlPromociones
+);
+
+$totalPromociones = mysqli_fetch_assoc(
+    $resultadoPromociones
+);
 
 ?>
 
-<div class="container mt-5">
+<div class="container-fluid">
 
-    <h1>
+    <div class="row">
 
-        Panel CEO
+        <!-- SIDEBAR -->
 
-    </h1>
+        <div class="col-md-3 col-lg-2 sidebar-admin">
 
-    <h4>
+            <h4 class="text-center mb-4">
 
-        Bienvenido
-        <?php echo $_SESSION['nombre']; ?>
+                CEO
 
-    </h4>
+            </h4>
+
+            <a href="../ceo/dashboard.php">
+
+                Dashboard
+
+            </a>
+
+            <a href="../ceo/vuelos/listar.php">
+
+                Vuelos
+
+            </a>
+
+            <a href="../ceo/promociones/listar.php">
+
+                Promociones
+
+            </a>
+
+            <a href="#">
+
+                Reportes
+
+            </a>
+
+        </div>
+
+        <!-- CONTENIDO -->
+
+        <div class="col-md-9 col-lg-10 p-4">
+
+            <h2>
+
+                Bienvenido
+                <?= $_SESSION['nombre'] ?>
+
+            </h2>
+
+            <p class="text-muted">
+
+                Panel de gestión de la aerolínea.
+
+            </p>
+
+            <!-- AEROLÍNEA -->
+
+            <div class="card card-custom mb-4">
+
+                <div class="card-body">
+
+                    <h5>
+
+                        Aerolínea asignada
+
+                    </h5>
+
+                    <hr>
+
+                    <?php
+                    if($nombreAerolinea)
+                    {
+                    ?>
+
+                        <h3 class="text-success">
+
+                            <?= $nombreAerolinea ?>
+
+                        </h3>
+
+                    <?php
+                    }
+                    else
+                    {
+                    ?>
+
+                        <h3 class="text-danger">
+
+                            Sin aerolínea asignada
+
+                        </h3>
+
+                        <p>
+
+                            Contacte al administrador para que le asigne una aerolínea.
+
+                        </p>
+
+                    <?php
+                    }
+                    ?>
+
+                </div>
+
+            </div>
+
+            <!-- TARJETAS -->
+
+            <div class="row">
+
+                <div class="col-md-6 mb-4">
+
+                    <div class="card dashboard-card">
+
+                        <div class="card-body">
+
+                            <h5>
+
+                                Vuelos
+
+                            </h5>
+
+                            <h2>
+
+                                <?= $totalVuelos['total'] ?>
+
+                            </h2>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="col-md-6 mb-4">
+
+                    <div class="card dashboard-card">
+
+                        <div class="card-body">
+
+                            <h5>
+
+                                Promociones
+
+                            </h5>
+
+                            <h2>
+
+                                <?= $totalPromociones['total'] ?>
+
+                            </h2>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- ACCESOS -->
+
+            <div class="card card-custom">
+
+                <div class="card-body">
+
+                    <h4>
+
+                        Accesos rápidos
+
+                    </h4>
+
+                    <hr>
+
+                    <a
+                    href="../ceo/vuelos/listar.php"
+                    class="btn btn-primary">
+
+                        Gestionar Vuelos
+
+                    </a>
+
+                    <a
+                    href="../ceo/promociones/listar.php"
+                    class="btn btn-success">
+
+                        Gestionar Promociones
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
 
 </div>
 
 <?php
-
 include("../includes/footer.php");
-
 ?>

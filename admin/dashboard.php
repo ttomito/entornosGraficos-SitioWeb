@@ -6,6 +6,8 @@ include("../includes/header.php");
 
 include("../includes/conexion.php");
 
+
+
 $sqlAerolineas = "
 SELECT COUNT(*) AS total
 FROM aerolineas
@@ -209,13 +211,20 @@ class="btn btn-warning">
     Aprobar CEOs
 
 </a>
-                    <a
-                    href="#"
-                    class="btn btn-success">
+                   
 
-                        Novedades
+                       <a href="../admin/novedades/listar.php" class="btn btn-success
 
-                    </a>
+                        ">
+
+                             
+    Novedades
+</a>
+
+<a href="../admin/asignaciones/listar.php"class="btn btn-gray">
+    Asignar Aerolíneas
+
+</a>
 
                 </div>
 
