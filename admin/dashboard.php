@@ -24,6 +24,48 @@ mysqli_fetch_assoc(
     $resultadoAerolineas
 );
 
+$sqlPendientes = "
+
+SELECT COUNT(*) AS total
+
+FROM promociones
+
+WHERE estadoPromocion = 'PENDIENTE'
+
+";
+
+$resultadoPendientes =
+mysqli_query(
+    $link,
+    $sqlPendientes
+);
+
+$totalPendientes =
+mysqli_fetch_assoc(
+    $resultadoPendientes
+);
+
+$sqlAprobadas = "
+
+SELECT COUNT(*) AS total
+
+FROM promociones
+
+WHERE estadoPromocion = 'APROBADA'
+
+";
+
+$resultadoAprobadas =
+mysqli_query(
+    $link,
+    $sqlAprobadas
+);
+
+$totalAprobadas =
+mysqli_fetch_assoc(
+    $resultadoAprobadas
+);
+
 
 $sqlUsuarios = "
 SELECT COUNT(*) AS total
@@ -68,7 +110,7 @@ mysqli_fetch_assoc(
 
             </a>
 
-            <a href="#">
+            <a href="../admin/promociones/listar.php">
 
                 Promociones
 
@@ -132,29 +174,49 @@ mysqli_fetch_assoc(
 
                 </div>
 
-                <div class="col-md-4 mb-4">
+              <div class="col-md-4 mb-4">
 
-                    <div class="card dashboard-card">
+    <div class="card dashboard-card">
 
-                        <div class="card-body">
+        <div class="card-body">
 
-                            <h5>
+            <h5>
 
-                                Promociones
+                Promociones
 
-                            </h5>
+            </h5>
 
-                            <h2>
+            <h3>
 
-                                0
+                <?= $totalPendientes['total'] ?>
 
-                            </h2>
+            </h3>
 
-                        </div>
+            <small class="text-warning">
 
-                    </div>
+                Pendientes
 
-                </div>
+            </small>
+
+            <hr>
+
+            <h4>
+
+                <?= $totalAprobadas['total'] ?>
+
+            </h4>
+
+            <small class="text-success">
+
+                Aprobadas
+
+            </small>
+
+        </div>
+
+    </div>
+
+</div>
 
                 <div class="col-md-4 mb-4">
 
@@ -223,6 +285,10 @@ class="btn btn-warning">
 
 <a href="../admin/asignaciones/listar.php"class="btn btn-gray">
     Asignar Aerolíneas
+
+</a>
+<a href="../admin/promociones/listar.php"class="btn btn-success">
+    Promociones 
 
 </a>
 
