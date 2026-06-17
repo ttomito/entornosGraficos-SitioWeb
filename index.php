@@ -82,7 +82,7 @@ include("includes/header.php");
 
     <h2 class="text-center mb-4">
 
-        Destinos destacados
+        Destinfffffos destacados
 
     </h2>
 
