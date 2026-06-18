@@ -21,50 +21,47 @@ include("../includes/header.php");
                     </h2>
                     <?php
 
-if(isset($_GET['exito']))
-{
-?>
+                    if (isset($_GET['exito'])) {
+                    ?>
 
-<div class="alert alert-success text-center">
+                        <div class="alert alert-success text-center">
 
-    Registro exitoso.
-    Revisá tu correo electrónico para activar la cuenta.
+                            Registro exitoso.
+                            Revisá tu correo electrónico para activar la cuenta.
 
-</div>
+                        </div>
 
-<?php
-}
+                    <?php
+                    }
 
-if(isset($_GET['ceo']))
-{
-?>
+                    if (isset($_GET['ceo'])) {
+                    ?>
 
-<div class="alert alert-info text-center">
+                        <div class="alert alert-info text-center">
 
-    Registro exitoso.
+                            Registro exitoso.
 
-    Revisá tu correo electrónico para validar la cuenta.
+                            Revisá tu correo electrónico para validar la cuenta.
 
-    Luego un administrador deberá aprobar tu solicitud.
+                            Luego un administrador deberá aprobar tu solicitud.
 
-</div>
+                        </div>
 
-<?php
-}
+                    <?php
+                    }
 
-if(isset($_GET['existe']))
-{
-?>
+                    if (isset($_GET['existe'])) {
+                    ?>
 
-<div class="alert alert-danger text-center">
+                        <div class="alert alert-danger text-center">
 
-    Ya existe una cuenta asociada a ese correo.
+                            Ya existe una cuenta asociada a ese correo.
 
-</div>
+                        </div>
 
-<?php
-}
-?>
+                    <?php
+                    }
+                    ?>
 
                     <p class="text-center text-muted mb-4">
 
@@ -73,8 +70,8 @@ if(isset($_GET['existe']))
                     </p>
 
                     <form
-                    action="procesarRegistro.php"
-                    method="post">
+                        action="procesarRegistro.php"
+                        method="post">
 
                         <div class="row">
 
@@ -87,10 +84,10 @@ if(isset($_GET['existe']))
                                 </label>
 
                                 <input
-                                type="text"
-                                name="nombre"
-                                class="form-control"
-                                required>
+                                    type="text"
+                                    name="nombre"
+                                    class="form-control"
+                                    required>
 
                             </div>
 
@@ -103,9 +100,9 @@ if(isset($_GET['existe']))
                                 </label>
 
                                 <input
-                                type="text"
-                                name="telefono"
-                                class="form-control">
+                                    type="text"
+                                    name="telefono"
+                                    class="form-control">
 
                             </div>
 
@@ -120,10 +117,10 @@ if(isset($_GET['existe']))
                             </label>
 
                             <input
-                            type="email"
-                            name="email"
-                            class="form-control"
-                            required>
+                                type="email"
+                                name="email"
+                                class="form-control"
+                                required>
 
                         </div>
 
@@ -136,10 +133,10 @@ if(isset($_GET['existe']))
                             </label>
 
                             <input
-                            type="password"
-                            name="clave"
-                            class="form-control"
-                            required>
+                                type="password"
+                                name="clave"
+                                class="form-control"
+                                required>
 
                         </div>
 
@@ -152,8 +149,8 @@ if(isset($_GET['existe']))
                             </label>
 
                             <select
-                            name="tipoUsuario"
-                            class="form-select">
+                                name="tipoUsuario"
+                                class="form-select">
 
                                 <option value="CLIENTE">
 
@@ -172,8 +169,8 @@ if(isset($_GET['existe']))
                         </div>
 
                         <button
-                        type="submit"
-                        class="btn btn-primary w-100">
+                            type="submit"
+                            class="btn btn-primary w-100">
 
                             Registrarme
 

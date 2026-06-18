@@ -1,10 +1,10 @@
 <?php
+include("../includes/conexion.php");
 
 include("../includes/verificarSession.php");
 
 include("../includes/header.php");
 
-include("../includes/conexion.php");
 
 
 
@@ -14,15 +14,15 @@ FROM aerolineas
 ";
 
 $resultadoAerolineas =
-mysqli_query(
-    $link,
-    $sqlAerolineas
-);
+    mysqli_query(
+        $link,
+        $sqlAerolineas
+    );
 
 $totalAerolineas =
-mysqli_fetch_assoc(
-    $resultadoAerolineas
-);
+    mysqli_fetch_assoc(
+        $resultadoAerolineas
+    );
 
 $sqlPendientes = "
 
@@ -35,15 +35,15 @@ WHERE estadoPromocion = 'PENDIENTE'
 ";
 
 $resultadoPendientes =
-mysqli_query(
-    $link,
-    $sqlPendientes
-);
+    mysqli_query(
+        $link,
+        $sqlPendientes
+    );
 
 $totalPendientes =
-mysqli_fetch_assoc(
-    $resultadoPendientes
-);
+    mysqli_fetch_assoc(
+        $resultadoPendientes
+    );
 
 $sqlAprobadas = "
 
@@ -56,15 +56,15 @@ WHERE estadoPromocion = 'APROBADA'
 ";
 
 $resultadoAprobadas =
-mysqli_query(
-    $link,
-    $sqlAprobadas
-);
+    mysqli_query(
+        $link,
+        $sqlAprobadas
+    );
 
 $totalAprobadas =
-mysqli_fetch_assoc(
-    $resultadoAprobadas
-);
+    mysqli_fetch_assoc(
+        $resultadoAprobadas
+    );
 
 
 $sqlUsuarios = "
@@ -73,154 +73,154 @@ FROM usuarios
 ";
 
 $resultadoUsuarios =
-mysqli_query(
-    $link,
-    $sqlUsuarios
-);
+    mysqli_query(
+        $link,
+        $sqlUsuarios
+    );
 
 $totalUsuarios =
-mysqli_fetch_assoc(
-    $resultadoUsuarios
-);
+    mysqli_fetch_assoc(
+        $resultadoUsuarios
+    );
 ?>
 
 <div class="container mt-5">
 
-            <h2>
+    <h2>
 
-                Bienvenido
-                <?php echo $_SESSION['nombre']; ?>
-            </h2>
+        Bienvenido
+        <?php echo $_SESSION['nombre']; ?>
+    </h2>
 
-            <p class="text-muted">
+    <p class="text-muted">
 
-                Panel de administración del sistema.
+        Panel de administración del sistema.
 
-            </p>
+    </p>
 
-            <div class="row mt-4">
+    <div class="row mt-4">
 
-                <div class="col-md-4 mb-4">
+        <div class="col-md-4 mb-4">
 
-                    <div class="card dashboard-card">
+            <div class="card dashboard-card">
 
-                        <div class="card-body">
+                <div class="card-body">
 
-                            <h5>
+                    <h5>
 
-                                Aerolíneas
+                        Aerolíneas
 
-                            </h5>
+                    </h5>
 
-                            <h2>
+                    <h2>
 
-    <?php
-    echo $totalAerolineas['total'];
-    ?>
+                        <?php
+                        echo $totalAerolineas['total'];
+                        ?>
 
-</h2>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-              <div class="col-md-4 mb-4">
-
-    <div class="card dashboard-card">
-
-        <div class="card-body">
-
-            <h5>
-
-                Promociones
-
-            </h5>
-
-            <h3>
-
-                <?= $totalPendientes['total'] ?>
-
-            </h3>
-
-            <small class="text-warning">
-
-                Pendientes
-
-            </small>
-
-            <hr>
-
-            <h4>
-
-                <?= $totalAprobadas['total'] ?>
-
-            </h4>
-
-            <small class="text-success">
-
-                Aprobadas
-
-            </small>
-
-        </div>
-
-    </div>
-
-</div>
-
-                <div class="col-md-4 mb-4">
-
-                    <div class="card dashboard-card">
-
-                        <div class="card-body">
-
-                            <h5>
-
-                                Usuarios
-
-                            </h5>
-
-                           <h2>
-
-    <?php
-    echo $totalUsuarios['total'];
-    ?>
-
-</h2>
-
-                        </div>
-
-                    </div>
+                    </h2>
 
                 </div>
 
             </div>
-<a
-href="../admin/reportes/usuarios.php"
-class="btn btn-dark">
 
-    Reporte Usuarios
-
-</a>
-
-<a
-href="../admin/reportes/vuelos.php"
-class="btn btn-secondary">
-
-    Reporte Vuelos
-
-</a>
-<a
-href="../admin/reportes/ventas.php"
-class="btn btn-primary">
-
-    Reporte ventas
-
-</a>
         </div>
- 
+
+        <div class="col-md-4 mb-4">
+
+            <div class="card dashboard-card">
+
+                <div class="card-body">
+
+                    <h5>
+
+                        Promociones
+
+                    </h5>
+
+                    <h3>
+
+                        <?= $totalPendientes['total'] ?>
+
+                    </h3>
+
+                    <small class="text-warning">
+
+                        Pendientes
+
+                    </small>
+
+                    <hr>
+
+                    <h4>
+
+                        <?= $totalAprobadas['total'] ?>
+
+                    </h4>
+
+                    <small class="text-success">
+
+                        Aprobadas
+
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-4 mb-4">
+
+            <div class="card dashboard-card">
+
+                <div class="card-body">
+
+                    <h5>
+
+                        Usuarios
+
+                    </h5>
+
+                    <h2>
+
+                        <?php
+                        echo $totalUsuarios['total'];
+                        ?>
+
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+    <a
+        href="../admin/reportes/usuarios.php"
+        class="btn btn-dark">
+
+        Reporte Usuarios
+
+    </a>
+
+    <a
+        href="../admin/reportes/vuelos.php"
+        class="btn btn-secondary">
+
+        Reporte Vuelos
+
+    </a>
+    <a
+        href="../admin/reportes/ventas.php"
+        class="btn btn-primary">
+
+        Reporte ventas
+
+    </a>
+</div>
+
 
 
 

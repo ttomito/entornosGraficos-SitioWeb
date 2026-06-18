@@ -1,7 +1,7 @@
 <?php
 
-include("../../includes/verificarSession.php");
 include("../../includes/conexion.php");
+include("../../includes/verificarSession.php");
 include("../../includes/header.php");
 
 $sql = "
