@@ -1,9 +1,7 @@
 <?php
 
-include("includes/header.php");
-include("includes/conexion.php");
-
-
+include("../../includes/header.php");
+include("../../includes/conexion.php");
 
 $sql = "
 
@@ -110,4 +108,4 @@ $resultado = mysqli_query(
     </div>
 
 </div>
-<?php include("includes/footer.php"); ?>
+<?php include("../../includes/footer.php"); ?>

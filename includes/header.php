@@ -82,7 +82,7 @@ if(!isset($_SESSION['tipo']))
 
     <li class="nav-item">
 
-        <a class="nav-link" href="#">
+        <a class="nav-link" href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/cliente/vuelos/listar.php">
 
             Vuelos
 
@@ -130,7 +130,7 @@ elseif($_SESSION['tipo'] == 'CLIENTE')
     <li class="nav-item">
 
         <a class="nav-link"
-        href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/cliente/vuelos/listar.php">
+        href="../cliente/vuelos/listar.php">
 
             Vuelos
 

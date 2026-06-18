@@ -212,7 +212,21 @@ $totalPromociones = mysqli_fetch_assoc(
 
                 </div>
 
-            </div>
+            </div><a
+href="../ceo/reportes/ventas.php"
+class="btn btn-primary">
+
+    Reporte Ventas
+
+</a>
+
+<a
+href="../ceo/reportes/ocupacion.php"
+class="btn btn-success">
+
+    Ocupación Vuelos
+
+</a>
 
             
 

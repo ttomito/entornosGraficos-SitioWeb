@@ -92,6 +92,12 @@ if(isset($_GET['esperando']))
                             Ingresar
 
                         </button>
+                        <a
+href="recuperar.php">
+
+    ¿Olvidaste tu contraseña?
+
+</a>
 
                     </form>
 
