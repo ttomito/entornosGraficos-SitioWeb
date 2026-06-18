@@ -19,14 +19,11 @@ $clave = $_POST['clave'];
 $tipoUsuario = $_POST['tipoUsuario'];
 $token = bin2hex(random_bytes(32));
 
-if($tipoUsuario == "CEO")
-{
+if ($tipoUsuario == "CEO") {
     $estado = "PENDIENTE";
 
     $aprobadoAdmin = "NO";
-}
-else
-{
+} else {
     $estado = "PENDIENTE";
 
     $aprobadoAdmin = "SI";
@@ -38,12 +35,11 @@ FROM usuarios
 WHERE emailUsuario = '$email'
 ";
 
-$resultado = mysqli_query($link,$consulta);
+$resultado = mysqli_query($link, $consulta);
 
-if(mysqli_num_rows($resultado) > 0)
-{
-   header("Location: registro.php?existe=1");
-exit();
+if (mysqli_num_rows($resultado) > 0) {
+    header("Location: registro.php?existe=1");
+    exit();
 }
 
 $vSql = "
@@ -79,42 +75,40 @@ $vResultado = mysqli_query(
 );
 
 
-if($vResultado)
-{
+if ($vResultado) {
     // header("Location: login.php");
     // exit();
     $mail = new PHPMailer(true);
-    try
-{
-    $mail->isSMTP();
+    try {
+        $mail->isSMTP();
 
-    $mail->Host = 'smtp.gmail.com';
+        $mail->Host = 'smtp.gmail.com';
 
-    $mail->SMTPAuth = true;
+        $mail->SMTPAuth = true;
 
-    $mail->Username = 'sistemavuelos@gmail.com';
+        $mail->Username = 'sistemavuelos@gmail.com';
 
-    $mail->Password = 'wgfw hmjr hpge bjtm';
+        $mail->Password = 'wgfw hmjr hpge bjtm';
 
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
 
-    $mail->Port = 587;
+        $mail->Port = 587;
 
-    $mail->setFrom(
-        'sistemavuelos@gmail.com',
-        'Sistema de Vuelos'
-    );
+        $mail->setFrom(
+            'sistemavuelos@gmail.com',
+            'Sistema de Vuelos'
+        );
 
-    $mail->addAddress($email);
+        $mail->addAddress($email);
 
-    $mail->isHTML(true);
+        $mail->isHTML(true);
 
-    $mail->Subject = 'Validacion de cuenta';
+        $mail->Subject = 'Validacion de cuenta';
 
-    $linkValidacion =
-    "http://localhost/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/auth/validar.php?token=$token";
+        $linkValidacion =
+            "http://localhost/entornosGraficos-SitioWeb/auth/validar.php?token=$token";
 
-    $mail->Body = "
+        $mail->Body = "
     <h2>Bienvenido</h2>
 
     <p>
@@ -126,26 +120,18 @@ if($vResultado)
     </a>
     ";
 
-$mail->send();
+        $mail->send();
 
-if($tipoUsuario == "CEO")
-{
-    header("Location: registro.php?ceo=1");
-}
-else
-{
-    header("Location: registro.php?exito=1");
-}
+        if ($tipoUsuario == "CEO") {
+            header("Location: registro.php?ceo=1");
+        } else {
+            header("Location: registro.php?exito=1");
+        }
 
-exit();
-}
-catch(Exception $e)
-{
-    echo $mail->ErrorInfo;
-}
-}
-else
-{
+        exit();
+    } catch (Exception $e) {
+        echo $mail->ErrorInfo;
+    }
+} else {
     echo mysqli_error($link);
 }
-

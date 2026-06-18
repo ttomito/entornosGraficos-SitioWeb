@@ -91,8 +91,7 @@ try
     $mail->Subject =
     'Solicitud aprobada';
 
-   $linkLogin =
-"http://localhost/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/auth/login.php";
+   $linkLogin = "http://localhost/entornosGraficos-SitioWeb/auth/login.php";
 
 $mail->Body = "
 
