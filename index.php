@@ -82,7 +82,7 @@ include("includes/header.php");
 
     <h2 class="text-center mb-4">
 
-        Destinfffffos destacados
+        Destinos destacados
 
     </h2>
 
@@ -102,7 +102,7 @@ include("includes/header.php");
 
                     <h5>$850.000</h5>
 
-                </div>
+                </div>           
 
             </div>
 
