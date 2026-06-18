@@ -94,49 +94,7 @@ $totalPromociones = mysqli_fetch_assoc(
 
 ?>
 
-<div class="container-fluid">
-
-    <div class="row">
-
-        <!-- SIDEBAR -->
-
-        <div class="col-md-3 col-lg-2 sidebar-admin">
-
-            <h4 class="text-center mb-4">
-
-                CEO
-
-            </h4>
-
-            <a href="../ceo/dashboard.php">
-
-                Dashboard
-
-            </a>
-
-            <a href="../ceo/vuelos/listar.php">
-
-                Vuelos
-
-            </a>
-
-            <a href="../ceo/promociones/listar.php">
-
-                Promociones
-
-            </a>
-
-            <a href="#">
-
-                Reportes
-
-            </a>
-
-        </div>
-
-        <!-- CONTENIDO -->
-
-        <div class="col-md-9 col-lg-10 p-4">
+<div class="container mt-5">
 
             <h2>
 
@@ -256,39 +214,7 @@ $totalPromociones = mysqli_fetch_assoc(
 
             </div>
 
-            <!-- ACCESOS -->
-
-            <div class="card card-custom">
-
-                <div class="card-body">
-
-                    <h4>
-
-                        Accesos rápidos
-
-                    </h4>
-
-                    <hr>
-
-                    <a
-                    href="../ceo/vuelos/listar.php"
-                    class="btn btn-primary">
-
-                        Gestionar Vuelos
-
-                    </a>
-
-                    <a
-                    href="../ceo/promociones/listar.php"
-                    class="btn btn-success">
-
-                        Gestionar Promociones
-
-                    </a>
-
-                </div>
-
-            </div>
+            
 
         </div>
 
