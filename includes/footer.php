@@ -10,13 +10,14 @@
 
         <p>
 
-            <a href="#">
-                Mapa del Sitio
-            </a>
+        
+        <a href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/mapa.php">
+            Mapa del Sitio
+        </a>
 
             |
 
-            <a href="#">
+            <a href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/contacto.php  ">
                 Contacto
             </a>
 
