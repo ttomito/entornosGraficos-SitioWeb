@@ -197,11 +197,32 @@ mysqli_fetch_assoc(
                 </div>
 
             </div>
+<a
+href="../admin/reportes/usuarios.php"
+class="btn btn-dark">
+
+    Reporte Usuarios
+
+</a>
+
+<a
+href="../admin/reportes/vuelos.php"
+class="btn btn-secondary">
+
+    Reporte Vuelos
+
+</a>
+<a
+href="../admin/reportes/ventas.php"
+class="btn btn-primary">
+
+    Reporte ventas
+
+</a>
         </div>
+ 
 
-    </div>
 
-</div>
 
 <?php
 
