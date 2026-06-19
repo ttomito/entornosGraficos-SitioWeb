@@ -140,6 +140,11 @@ $alertas = [
         'icon'  => 'success',
         'title' => '¡Actualizada!',
         'text'  => 'La aerolínea fue actualizada.'
+    ],
+    'creada' => [
+        'icon'  => 'success',
+        'title' => '¡Creada!',
+        'text'  => 'Se ha creado la aerolínea.'
     ]
 ];
 
