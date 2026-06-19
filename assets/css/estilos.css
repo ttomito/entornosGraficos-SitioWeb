@@ -142,11 +142,70 @@ body {
   margin-top: 10px;
 }
 
-th, td {
+th,
+td {
   background-color: #f0f4f8;
   font-size: 20px;
   font-weight: bold;
   padding: 10px;
   text-align: center;
   vertical-align: middle;
+}
+
+/* =========================
+   EFECTOS HOVER GENERALES
+========================= */
+
+.card-hover,
+.card-custom,
+.dashboard-card {
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.card-hover:hover,
+.card-custom:hover,
+.dashboard-card:hover {
+  transform: translateY(-10px);
+
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Imágenes de vuelos */
+
+.card-hover img {
+  transition: transform 0.4s ease;
+}
+
+.card-hover:hover img {
+  transform: scale(1.05);
+}
+
+/* Botones */
+
+.btn {
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+}
+
+/* Estadísticas */
+
+.estadistica-card:hover {
+  background: #ffffff;
+
+  border-bottom: 5px solid #0d6efd;
+}
+
+/* Hero */
+
+.hero h1 {
+  transition: 0.3s;
+}
+
+.hero h1:hover {
+  transform: scale(1.02);
 }
