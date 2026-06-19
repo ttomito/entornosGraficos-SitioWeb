@@ -11,7 +11,7 @@
         <p>
 
         
-        <a href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/mapa.php">
+        <a href="./mapa.php">
             Mapa del Sitio
         </a>
 

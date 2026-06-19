@@ -1,7 +1,6 @@
 <?php
 
-if(session_status() == PHP_SESSION_NONE)
-{
+if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
@@ -15,7 +14,7 @@ if(session_status() == PHP_SESSION_NONE)
     <meta charset="UTF-8">
 
     <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+        content="width=device-width, initial-scale=1.0">
 
     <title>
 
@@ -24,347 +23,338 @@ if(session_status() == PHP_SESSION_NONE)
     </title>
 
     <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-    rel="stylesheet">
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet">
 
     <link
-    rel="stylesheet"
-    href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/assets/css/estilos.css">
+        rel="stylesheet"
+        href="/entornosGraficos-SitioWeb/assets/css/estilos.css">
 
 </head>
 
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm">
 
-    <div class="container">
+        <div class="container">
 
-        <a
-        class="navbar-brand fw-bold fs-3"
-        href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/index.php">
+            <a
+                class="navbar-brand fw-bold fs-3"
+                href="/entornosGraficos-SitioWeb/index.php"
+                style="color: blue;">
 
-            ✈ AirTickets
+                AirTickets
 
-        </a>
+            </a>
 
-        <button
-        class="navbar-toggler"
-        type="button"
-        data-bs-toggle="collapse"
-        data-bs-target="#menuNavbar">
+            <button
+                class="navbar-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#menuNavbar">
 
-            <span class="navbar-toggler-icon"></span>
+                <span class="navbar-toggler-icon"></span>
 
-        </button>
+            </button>
 
-        <div
-        class="collapse navbar-collapse"
-        id="menuNavbar">
+            <div
+                class="collapse navbar-collapse"
+                id="menuNavbar">
 
-          <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav ms-auto">
 
-<?php
+                    <?php
 
-if(!isset($_SESSION['tipo']))
-{
-?>
+                    if (!isset($_SESSION['tipo'])) {
+                    ?>
 
-    <li class="nav-item">
+                        <li class="nav-item">
 
-        <a class="nav-link"
-        href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/index.php">
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/index.php">
 
-            Inicio
+                                Inicio
 
-        </a>
+                            </a>
 
-    </li>
+                        </li>
 
-    <li class="nav-item">
+                        <li class="nav-item">
 
-        <a class="nav-link" href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/cliente/vuelos/listar.php">
+                            <a class="nav-link" href="/entornosGraficos-SitioWeb/cliente/vuelos/listar.php">
 
-            Vuelos
+                                Vuelos
 
-        </a>
+                            </a>
 
-    </li>
+                        </li>
 
-    <li class="nav-item">
+                        <li class="nav-item">
 
-        <a class="nav-link" href="#">
+                            <a class="nav-link" href="#">
 
-            Promociones
+                                Promociones
 
-        </a>
+                            </a>
 
-    </li>
+                        </li>
 
-    <li class="nav-item">
+                        <li class="nav-item">
 
-        <a class="nav-link" href="#">
+                            <a class="nav-link" href="#">
 
-            Novedades
+                                Novedades
 
-        </a>
+                            </a>
 
-    </li>
+                        </li>
 
-<?php
-}
-elseif($_SESSION['tipo'] == 'CLIENTE')
-{
-?>
+                    <?php
+                    } elseif ($_SESSION['tipo'] == 'CLIENTE') {
+                    ?>
 
-    <li class="nav-item">
+                        <li class="nav-item">
 
-        <a class="nav-link"
-        href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/cliente/dashboard.php">
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/cliente/dashboard.php">
 
-            Inicio
+                                Inicio
 
-        </a>
+                            </a>
 
-    </li>
+                        </li>
 
-    <li class="nav-item">
+                        <li class="nav-item">
 
-        <a class="nav-link"
-        href="../cliente/vuelos/listar.php">
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/cliente/vuelos/listar.php">
 
-            Vuelos
+                                Vuelos
 
-        </a>
+                            </a>
 
-    </li>
+                        </li>
 
-    <li class="nav-item">
+                        <li class="nav-item">
 
-        <a class="nav-link"
-        href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/cliente/reservas/listar.php">
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/cliente/reservas/listar.php">
 
-            Reservas
+                                Reservas
 
-        </a>
+                            </a>
 
-    </li>
+                        </li>
 
-    <li class="nav-item">
+                        <li class="nav-item">
 
-        <a class="nav-link"
-        href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/cliente/promociones/listar.php">
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/cliente/promociones/listar.php">
 
-            Promociones
+                                Promociones
 
-        </a>
+                            </a>
 
-    </li>
+                        </li>
 
-    <li class="nav-item">
+                        <li class="nav-item">
 
-        <a class="nav-link"
-        href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/cliente/novedades/listar.php">
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/cliente/novedades/listar.php">
 
-            Novedades
+                                Novedades
 
-        </a>
+                            </a>
 
-    </li>
+                        </li>
 
-    <li class="nav-item">
+                        <li class="nav-item">
 
-        <a class="nav-link"
-        href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/perfil/index.php">
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/perfil/index.php">
 
-            Mi Perfil
+                                Mi Perfil
 
-        </a>
+                            </a>
 
-    </li>
+                        </li>
 
-<?php
-}
-elseif($_SESSION['tipo'] == 'CEO')
-{
-?>
+                    <?php
+                    } elseif ($_SESSION['tipo'] == 'CEO') {
+                    ?>
 
-    <li class="nav-item">
+                        <li class="nav-item">
 
-        <a class="nav-link"
-        href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/ceo/dashboard.php">
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/ceo/dashboard.php">
 
-            Dashboard
+                                Dashboard
 
-        </a>
+                            </a>
 
-    </li>
+                        </li>
 
-    <li class="nav-item">
+                        <li class="nav-item">
 
-        <a class="nav-link"
-        href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/ceo/vuelos/listar.php">
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/ceo/vuelos/listar.php">
 
-            Mis Vuelos
+                                Mis Vuelos
 
-        </a>
+                            </a>
 
-    </li>
+                        </li>
 
-    <li class="nav-item">
+                        <li class="nav-item">
 
-        <a class="nav-link"
-        href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/ceo/promociones/listar.php">
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/ceo/promociones/listar.php">
 
-            Promociones
+                                Promociones
 
-        </a>
+                            </a>
 
-    </li>
+                        </li>
 
-    <li class="nav-item">
+                        <li class="nav-item">
 
-        <a class="nav-link"
-        href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/perfil/index.php">
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/perfil/index.php">
 
-            Mi Perfil
+                                Mi Perfil
 
-        </a>
+                            </a>
 
-    </li>
+                        </li>
 
-<?php
-}
-elseif($_SESSION['tipo'] == 'ADMIN')
-{
-?>
+                    <?php
+                    } elseif ($_SESSION['tipo'] == 'ADMIN') {
+                    ?>
 
-    <li class="nav-item">
+                        <li class="nav-item">
 
-        <a class="nav-link"
-        href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/admin/dashboard.php">
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/admin/dashboard.php">
 
-            Dashboard
+                                Dashboard
 
-        </a>
+                            </a>
 
-    </li>
+                        </li>
 
-    <li class="nav-item">
+                        <li class="nav-item">
 
-        <a class="nav-link"
-        href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/admin/aerolineas/listar.php">
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/admin/aerolineas/listar.php">
 
-            Aerolíneas
+                                Aerolíneas
 
-        </a>
+                            </a>
 
-    </li>
+                        </li>
 
-    <li class="nav-item">
+                        <li class="nav-item">
 
-        <a class="nav-link"
-        href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/admin/ceos/listar.php">
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/admin/ceos/listar.php">
 
-            CEOs
+                                CEOs
 
-        </a>
+                            </a>
 
-    </li>
+                        </li>
 
-    <li class="nav-item">
+                        <li class="nav-item">
 
-        <a class="nav-link"
-        href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/admin/promociones/listar.php">
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/admin/promociones/listar.php">
 
-            Promociones
+                                Promociones
 
-        </a>
+                            </a>
 
-    </li>
+                        </li>
 
-    <li class="nav-item">
+                        <li class="nav-item">
 
-        <a class="nav-link"
-        href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/admin/novedades/listar.php">
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/admin/novedades/listar.php">
 
-            Novedades
+                                Novedades
 
-        </a>
+                            </a>
 
-    </li>
+                        </li>
 
-    <li class="nav-item">
+                        <li class="nav-item">
 
-        <a class="nav-link"
-        href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/perfil/index.php">
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/perfil/index.php">
 
-            Mi Perfil
+                                Mi Perfil
 
-        </a>
+                            </a>
 
-    </li>
+                        </li>
 
-<?php
-}
-?>
+                    <?php
+                    }
+                    ?>
 
-</ul>
+                </ul>
 
-            <div class="ms-lg-3 mt-3 mt-lg-0">
+                <div class="ms-lg-3 mt-3 mt-lg-0">
 
-            <?php
+                    <?php
 
-            if(isset($_SESSION['id']))
-            {
-            ?>
+                    if (isset($_SESSION['id'])) {
+                    ?>
 
-                <span class="text-white me-3">
+                        <span class="text-white me-3">
 
-                    Hola,
+                            Hola,
 
-                    <?php echo $_SESSION['nombre']; ?>
+                            <?php echo $_SESSION['nombre']; ?>
 
-                </span>
+                        </span>
 
-                <a
-                href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/auth/logout.php"
-                class="btn btn-danger">
+                        <a
+                            href="/entornosGraficos-SitioWeb/auth/logout.php"
+                            class="btn btn-danger">
 
-                    Salir
+                            Salir
 
-                </a>
+                        </a>
 
-            <?php
-            }
-            else
-            {
-            ?>
+                    <?php
+                    } else {
+                    ?>
 
-                <a
-                href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/auth/login.php"
-                class="btn btn-outline-light me-2">
+                        <a
+                            href="/entornosGraficos-SitioWeb/auth/login.php"
+                            class="btn btn-outline-light me-2">
 
-                    Ingresar
+                            Ingresar
 
-                </a>
+                        </a>
 
-                <a
-                href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/auth/registro.php"
-                class="btn btn-warning">
+                        <a
+                            href="/entornosGraficos-SitioWeb/auth/registro.php"
+                            class="btn btn-warning">
 
-                    Registrarse
+                            Registrarse
 
-                </a>
+                        </a>
 
-            <?php
-            }
+                    <?php
+                    }
 
-            ?>
+                    ?>
+
+                </div>
 
             </div>
 
         </div>
 
-    </div>
-
-</nav>
+    </nav>

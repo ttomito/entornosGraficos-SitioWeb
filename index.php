@@ -25,7 +25,7 @@ include("includes/header.php");
 
                 </p>
 
-              <div class="search-box mt-4">
+            <div class="search-box mt-4">
 
     <div class="row g-3">
 

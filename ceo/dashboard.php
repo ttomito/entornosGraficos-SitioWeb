@@ -29,12 +29,18 @@ $resultadoAerolinea = mysqli_query(
     $sqlAerolinea
 );
 
+if (!$resultadoAerolinea) {
+    die(mysqli_error($link));
+}
+
 $datosAerolinea = mysqli_fetch_assoc(
     $resultadoAerolinea
 );
 
-$nombreAerolinea =
-$datosAerolinea['nombreAerolinea'];
+$nombreAerolinea = $datosAerolinea['nombreAerolinea'];
+
+
+
 
 /*
     Total vuelos de la aerolínea
