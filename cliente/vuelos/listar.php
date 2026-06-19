@@ -20,6 +20,46 @@ $resultado = mysqli_query(
 ?>
 
 <div class="container mt-4">
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-3">
+
+            <input
+                type="text"
+                class="form-control"
+                placeholder="Origen">
+
+        </div>
+
+        <div class="col-md-3">
+
+            <input
+                type="text"
+                class="form-control"
+                placeholder="Destino">
+
+        </div>
+
+        <div class="col-md-3">
+
+            <input
+                type="date"
+                class="form-control">
+
+        </div>
+
+        <div class="col-md-3">
+
+            <button
+                class="btn btn-primary w-100">
+
+                Buscar vuelo
+
+            </button>
+
+        </div>
+
+    </div>
 
     <div class="d-flex justify-content-between mb-4">
 
@@ -55,48 +95,51 @@ $resultado = mysqli_query(
                 <tbody>
 
                 <?php while($fila = mysqli_fetch_assoc($resultado)){ ?>
+                    <?php if ($fila['asientosDisponibles'] !=0){?>
+                    
+                        <?php $url = '../reservas/reservar.php?codVuelo=' . $fila['codVuelo']; ?>
 
-                    <tr>
+                        <tr style="cursor:pointer;" onclick="window.location.href='<?= $url ?>'">
+                            <td>
 
-                        <td>
+                                <img src="<?= $fila['imagenVuelo'] ?>" alt="" style="width:12vw; height:7vw;border-radius: 7px">
+                            </td>
+                            <td>
 
-                            <img src="<?= $fila['imagenVuelo'] ?>" alt="" style="width:12vw; height:7vw;object-fit: cover;border-radius: 7px; padding: 0">
-                        </td>
-                        <td>
+                                <?= $fila['origenVuelo'] ?>
 
-                            <?= $fila['origenVuelo'] ?>
+                            </td>
 
-                        </td>
+                            <td>
 
-                        <td>
+                                <?= $fila['destinoVuelo'] ?>
 
-                            <?= $fila['destinoVuelo'] ?>
+                            </td>
 
-                        </td>
+                            <td>
 
-                        <td>
+                                <?= $fila['fechaVuelo'] ?>
 
-                            <?= $fila['fechaVuelo'] ?>
-
-                        </td>
-
-
-                        <td>
-
-                            $<?= $fila['precioVuelo'] ?>
-
-                        </td>
-
-                        <td>
+                            </td>
 
 
+                            <td>
 
-                        </td>
+                                $<?= $fila['precioVuelo'] ?>
+
+                            </td>
+
+                            <td>
+
+                                <button></button>
+
+                            </td>
 
 
 
-                    </tr>
-
+                        </tr>
+                        
+                    <?php } ?>
                 <?php } ?>
 
                 </tbody>

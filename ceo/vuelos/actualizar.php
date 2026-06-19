@@ -44,7 +44,8 @@ destinoVuelo = '{$_POST['destino']}',
 fechaVuelo = '{$_POST['fecha']}',
 horaSalida = '{$_POST['hora']}',
 precioVuelo = '{$_POST['precio']}',
-asientosDisponibles = '{$_POST['asientos']}'
+asientosDisponibles = '{$_POST['asientos']}',
+imagenVuelo = '{$_POST['imagen']}'
 
 WHERE codVuelo = $idVuelo
 

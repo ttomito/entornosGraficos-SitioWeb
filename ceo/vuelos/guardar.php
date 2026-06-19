@@ -28,6 +28,7 @@ $fecha = $_POST['fecha'];
 $hora = $_POST['hora'];
 $precio = $_POST['precio'];
 $asientos = $_POST['asientos'];
+$imagen = $_POST['imagen'];
 
 $sql = "
 
@@ -39,7 +40,8 @@ destinoVuelo,
 fechaVuelo,
 horaSalida,
 precioVuelo,
-asientosDisponibles
+asientosDisponibles,
+imagenVuelo
 )
 VALUES
 (
@@ -49,7 +51,8 @@ VALUES
 '$fecha',
 '$hora',
 '$precio',
-'$asientos'
+'$asientos',
+'$imagen'
 )
 
 ";

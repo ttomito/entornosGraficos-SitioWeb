@@ -79,6 +79,7 @@ $resultado = mysqli_query(
                         <th>ID</th>
                         <th>Descripción</th>
                         <th>Descuento</th>
+                        <th>Fecha limite</th>
                         <th>Estado</th>
                         <th>Acciones</th>
 
@@ -97,6 +98,8 @@ $resultado = mysqli_query(
                         <td><?= $fila['descripcionPromocion'] ?></td>
 
                         <td><?= $fila['descuentoPromocion'] ?>%</td>
+
+                        <td><?= $fila['fechaLimitePromocion'] ?></td>
 
                         <td><?= $fila['estadoPromocion'] ?></td>
 
