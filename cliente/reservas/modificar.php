@@ -3,11 +3,27 @@
 include("../../includes/verificarSession.php");
 include("../../includes/header.php");
 
-$codVuelo = $_GET['codVuelo'];
+$codReserva = $_GET['codReserva'];
 
 
 $sql = "
 
+SELECT *
+
+FROM reservas
+
+WHERE codReserva = $codReserva
+
+";
+$resultado = mysqli_query(
+    $link, 
+    $sql);
+
+$reserva = mysqli_fetch_assoc($resultado);
+
+$codVuelo= $reserva['codVuelo'];
+
+$sqlvuelos = "
 SELECT *
 
 FROM vuelos
@@ -15,14 +31,13 @@ FROM vuelos
 WHERE codVuelo = $codVuelo
 
 ";
-$resultado = mysqli_query(
-    $link, 
-    $sql);
-$vuelo = mysqli_fetch_assoc($resultado);
-$idUsuario = $_SESSION['id'];
-$hoy = new DateTime();
-$precio= $vuelo['precioVuelo'];
+$resultadoVuelo= mysqli_query(
+    $link,
+    $sqlvuelos);
+
+$vuelo= mysqli_fetch_assoc($resultadoVuelo);
 ?>
+
 
 <div class="container mt-5">
 
@@ -34,7 +49,7 @@ $precio= $vuelo['precioVuelo'];
 
 <div class="card-body p-5">
 
-<h2>Reservar Vuelo</h2>
+<h2>Datos reserva</h2>
 
 <?php if(isset($_GET['error'])){ ?>
 
@@ -46,13 +61,7 @@ $precio= $vuelo['precioVuelo'];
 
 <?php } ?>
 
-<form action="guardar.php" method="post">
 
-<div class="mb-3">
-
-<input type="hidden" name="codVuelo" value="<?=$codVuelo?>">
-<input type="hidden" name="precio" value="<?=$precio?>">
-</div>
 
 <div class="mb-3">
     Fecha de vuelo: <?= $vuelo['fechaVuelo'] ?>
@@ -68,42 +77,43 @@ $precio= $vuelo['precioVuelo'];
     Destino: <?= $vuelo['destinoVuelo'] ?>
 </div>
 <div class="mb-3">
-    Precio: <?= $vuelo['precioVuelo'] ?>
+    Precio asientos: <?= $vuelo['precioVuelo'] ?>
+</div>
+<div class="mb-3">
+    Precio total:<?= $reserva['precioFinal'] ?>
 </div>
 <div class="mb-3">
     Asientos disponibles: <?= $vuelo['asientosDisponibles'] ?>
 </div>
+
+<form action="guardarModificaciones.php" method="post">
+
 <div class="mb-3 d-flex">
-<label>Cantidad de asientos:</label>
+
+<input type="hidden" name="codReserva" value="<?=$reserva['codReserva']?>">
+
+<label>Asiento reservados:</label>
 
 <input
 type="number"
 name="cantAsientos"
 class="form-control w-50"
 min="1"
-max="<?= $vuelo['asientosDisponibles'] ?>"
+max="<?= $vuelo['asientosDisponibles']+$reserva['cantAsientos'] ?>"
+value="<?= $reserva['cantAsientos'] ?>" 
 required>
-
 </div>
-
 <button class="btn btn-primary">
 
 Guardar cambios
 
 </button>
-
 </form>
-
+</div>
+</div>
+</div>
+</div>
 </div>
 
-</div>
 
-</div>
-
-</div>
-
-</div>
-
-<?php
-include("../../includes/footer.php");
-?>
+<div>

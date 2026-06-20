@@ -47,10 +47,12 @@ $resultado = mysqli_query(
 
                     <tr>
                         <th>Imagen</th>
+                        <th>Asientos</th>
                         <th>Origen</th>
                         <th>Destino</th>
                         <th>Fecha vuelo</th>
                         <th>Fecha reserva</th>
+                        <th>Precio Final</th>
                         <th>Estado</th>
                     </tr>
 
@@ -75,7 +77,9 @@ $resultado = mysqli_query(
                         );
                         $fila_2 = mysqli_fetch_assoc($resultado_2);
                     ?>
-                        <tr>
+                    <?php $url = '../reservas/verReserva.php?codReserva=' . $fila['codReserva']; ?>
+
+                        <tr style="cursor:pointer;" onclick="window.location.href='<?= $url ?>'">
 
                             <td>
 
@@ -83,6 +87,12 @@ $resultado = mysqli_query(
                                     src="<?= $fila_2['imagenVuelo'] ?>"
                                     style="width:12vw; height:7vw; border-radius:7px"
                                 >
+
+                            </td>
+
+                            <td>
+
+                                <?= $fila['cantAsientos'] ?>
 
                             </td>
 
@@ -108,6 +118,10 @@ $resultado = mysqli_query(
 
                                 <?= $fila['fechaReserva'] ?>
                                 
+                            </td>
+
+                            <td>
+                                <?= $fila['precioFinal'] ?>
                             </td>
 
                             <td>
