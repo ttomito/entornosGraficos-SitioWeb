@@ -16,7 +16,7 @@ v.destinoVuelo,
 v.fechaVuelo,
 v.asientosDisponibles,
 
-COUNT(r.codReserva) reservas
+COALESCE(SUM(r.cantAsientos),0) ocupados
 
 FROM vuelos v
 
@@ -107,7 +107,7 @@ $resultado = mysqli_query(
 
                         <td>
 
-                            <?= $fila['reservas'] ?>
+                            <?= $fila['ocupados'] ?>
 
                         </td>
 

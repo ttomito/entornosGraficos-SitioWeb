@@ -39,7 +39,7 @@ $usuario = mysqli_fetch_assoc(
 
                     <h2>
 
-                        Miii Perfil
+                        Mi Perfil
 
                     </h2>
 

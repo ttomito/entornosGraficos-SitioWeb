@@ -88,10 +88,14 @@ required>
 
 <button class="btn btn-primary">
 
-Guardar cambios
+Reservar
 
 </button>
+<a href="../vuelos/listar.php" class="btn btn-danger">
 
+Volver
+
+</a>
 </form>
 
 </div>

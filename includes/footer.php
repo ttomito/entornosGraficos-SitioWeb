@@ -11,13 +11,13 @@
         <p>
 
         
-        <a href="./mapa.php">
+        <a href="/entornosGraficos-SitioWeb/mapa.php">
             Mapa del Sitio
         </a>
 
             |
 
-            <a href="/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/contacto.php  ">
+            <a href="/entornosGraficos-SitioWeb/contacto.php  ">
                 Contacto
             </a>
 

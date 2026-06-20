@@ -93,11 +93,25 @@ $resultado = mysqli_query(
                 </thead>
 
                 <tbody>
-
+                <?php $hoy = new DateTime() ?>
                 <?php while($fila = mysqli_fetch_assoc($resultado)){ ?>
-                    <?php if ($fila['asientosDisponibles'] !=0){?>
-                    
-                        <?php $url = '../reservas/reservar.php?codVuelo=' . $fila['codVuelo']; ?>
+                    <?php $fechaVuelo = new DateTime($fila['fechaVuelo']);
+                    if ($fila['asientosDisponibles'] !=0 && $fechaVuelo>=$hoy){?>
+                        
+                        <?php if (
+                            isset($_SESSION['tipo'])
+                            &&
+                            $_SESSION['tipo']=='CLIENTE'
+                        )
+                            {
+                                $url = '../reservas/reservar.php?codVuelo=' . $fila['codVuelo']; 
+                            }
+                        else 
+                            {
+                                $url= '/entornosGraficos-SitioWeb/auth/login.php';
+                            }
+                        
+                        ?>
 
                         <tr style="cursor:pointer;" onclick="window.location.href='<?= $url ?>'">
                             <td>
@@ -129,11 +143,6 @@ $resultado = mysqli_query(
 
                             </td>
 
-                            <td>
-
-                                <button></button>
-
-                            </td>
 
 
 
