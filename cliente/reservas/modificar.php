@@ -36,6 +36,8 @@ $resultadoVuelo= mysqli_query(
     $sqlvuelos);
 
 $vuelo= mysqli_fetch_assoc($resultadoVuelo);
+$descuento=(($vuelo['precioVuelo']-($reserva['precioFinal']/$reserva['cantAsientos']))/$vuelo['precioVuelo'])*100;
+$precioFinal = $vuelo['precioVuelo'] - ($vuelo['precioVuelo'] * $descuento / 100);
 ?>
 
 
@@ -49,7 +51,7 @@ $vuelo= mysqli_fetch_assoc($resultadoVuelo);
 
 <div class="card-body p-5">
 
-<h2>Datos reserva</h2>
+<h2>Modificar reserva</h2>
 
 <?php if(isset($_GET['error'])){ ?>
 
@@ -77,10 +79,14 @@ $vuelo= mysqli_fetch_assoc($resultadoVuelo);
     Destino: <?= $vuelo['destinoVuelo'] ?>
 </div>
 <div class="mb-3">
-    Precio asientos: <?= $vuelo['precioVuelo'] ?>
+    Precio asientos: $<?= $vuelo['precioVuelo'] ?>
+</div>
+
+<div class="mb-3">
+    Descuento: <?= $descuento ?>%
 </div>
 <div class="mb-3">
-    Precio total:<?= $reserva['precioFinal'] ?>
+    Precio final:$<?= $precioFinal ?>
 </div>
 <div class="mb-3">
     Asientos disponibles: <?= $vuelo['asientosDisponibles'] ?>

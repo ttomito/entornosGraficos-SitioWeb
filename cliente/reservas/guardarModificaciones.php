@@ -22,6 +22,7 @@ $resultado = mysqli_query(
     $sql
 );
 
+
 $reserva = mysqli_fetch_assoc(
     $resultado
 );
@@ -66,7 +67,37 @@ if($nuevosDisponibles < 0)
     );
     exit();
 }
-$precioFinal = $vuelo['precioVuelo'] * $asientos;
+$codAerolinea=$vuelo['codAerolinea'];
+
+$sqlProm = "
+
+SELECT *
+
+FROM promociones
+
+WHERE codAerolinea = $codAerolinea
+
+AND estadoPromocion = 'APROBADA'
+
+";
+
+$resultado_prom = mysqli_query(
+    $link,
+    $sqlProm);
+
+$descuentoMaximo = 0;
+$hoy = date("Y-m-d");
+while($promocion=mysqli_fetch_assoc($resultado_prom))
+    {
+        if(
+            $promocion['descuentoPromocion']>$descuentoMaximo 
+            && 
+            $promocion['fechaLimitePromocion']>=$hoy)
+            {
+                $descuentoMaximo = $promocion['descuentoPromocion'];
+            }
+    };
+$precioFinal = ($vuelo['precioVuelo']-($vuelo['precioVuelo']*$descuentoMaximo/100)) * $asientos;
 
 
 $sqlVuelo = "

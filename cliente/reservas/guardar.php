@@ -7,11 +7,11 @@ $idUsuario= $_SESSION ['id'];
 $codVuelo= $_POST['codVuelo'];
 $fecha= date("Y-m-d");
 $cantAsientos= $_POST['cantAsientos'];
-$precio= $_POST['precio']*$cantAsientos;
+$precio= $_POST['precio'];
 
 $sqlVuelo = "
 
-SELECT asientosDisponibles, precioVuelo
+SELECT asientosDisponibles
 
 FROM vuelos
 
@@ -30,7 +30,7 @@ $vuelo = mysqli_fetch_assoc(
 
 $asientosDisponibles = $vuelo['asientosDisponibles'];
 
-$precio= $vuelo['precioVuelo']*$cantAsientos;
+$precioFinal= $precio*$cantAsientos;
 
 if($cantAsientos > $asientosDisponibles)
 {
@@ -58,6 +58,8 @@ WHERE codUsuario = $idUsuario
 AND codVuelo = $codVuelo
 
 AND estadoReserva != 'CANCELADA'
+
+AND estadoReserva != 'CONFIRMADA'
 
 ";
 
@@ -90,7 +92,7 @@ VALUES
     $codVuelo,
     '$fecha',
     'PENDIENTE',    
-    $precio,
+    $precioFinal,
     $cantAsientos
 
 )

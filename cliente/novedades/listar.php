@@ -56,7 +56,18 @@ $resultado = mysqli_query(
                 $fechaPublicacion = new DateTime($fila['fechaPublicacion']);
                 $fechaExpiracion = new DateTime($fila['fechaExpiracion']);
                 if ($fechaExpiracion>$hoy && $hoy>$fechaPublicacion) {?>
-                    <?php $url = '../novedades/verNovedad.php?codNovedad=' . $fila['codNovedad'];  ?>
+                    <?php if (
+                            isset($_SESSION['tipo'])
+                            &&
+                            $_SESSION['tipo']=='CLIENTE'
+                        )
+                            {
+                            $url = '../novedades/verNovedad.php?codNovedad=' . $fila['codNovedad'];  }
+                            else   
+                                {
+                                $url= '/entornosGraficos-SitioWeb/auth/login.php';
+                                }
+                            ?>
                         <tr style="cursor:pointer;" onclick="window.location.href='<?= $url ?>'">
                             <td>
 

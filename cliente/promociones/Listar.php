@@ -5,11 +5,16 @@ include("../../includes/conexion.php");
 
 $sql = "
 
-SELECT *
+SELECT
+p.*,
+a.nombreAerolinea
 
-FROM promociones
+FROM promociones p
 
-ORDER BY codPromocion DESC
+INNER JOIN aerolineas a
+ON p.codAerolinea = a.codAerolinea
+
+ORDER BY p.codPromocion DESC
 
 ";
 
@@ -43,7 +48,7 @@ $resultado = mysqli_query(
                         <th>Promocion</th>
                         <th>Descripcion</th>
                         <th>Fecha limite</th>
-                        <th>Acciones</th>
+                        <th>Aerolinea</th>
                     </tr>
 
                 </thead>
@@ -52,9 +57,8 @@ $resultado = mysqli_query(
                 <?php $hoy = new DateTime() ?>
                 <?php while($fila = mysqli_fetch_assoc($resultado)){ ?>
                     <?php 
-
                     $fechaLimite = new DateTime($fila['fechaLimitePromocion']);
-                    if ($fila['estadoPromocion'] =="APROBADA" && $fechaLimite > $hoy){
+                    if ($fila['estadoPromocion'] =="APROBADA" && $fechaLimite >= $hoy){
 
                     ?>
                     
@@ -78,13 +82,12 @@ $resultado = mysqli_query(
                                 <?= $fila['fechaLimitePromocion'] ?>
                                 
                             </td>
+                            
                             <td>
 
-                                <button class="btn btn-primary">Obtener</button>
+                                <?= $fila['nombreAerolinea'] ?>
 
                             </td>
-
-
 
                         </tr>
                         

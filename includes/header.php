@@ -101,7 +101,7 @@ if (session_status() == PHP_SESSION_NONE) {
 
                         <li class="nav-item">
 
-                            <a class="nav-link" href="#">
+                            <a class="nav-link" href="/entornosGraficos-SitioWeb/cliente/novedades/listar.php"">
 
                                 Novedades
 
