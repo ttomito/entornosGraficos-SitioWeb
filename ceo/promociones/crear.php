@@ -7,79 +7,56 @@ include("../../includes/header.php");
 
 <div class="container mt-5">
 
-<div class="row justify-content-center">
+    <div class="row justify-content-center">
 
-<div class="col-md-8">
+    <div class="col-md-8">
 
-<div class="card card-custom">
+        <div class="card card-custom">
 
-<div class="card-body p-5">
+            <div class="card-body p-5">
 
-<h2>Nueva Promoción</h2>
+                <h2>Nueva Promoción</h2>
 
-<form
-action="guardar.php"
-method="post">
+                <form action="guardar.php" method="post">
 
-<div class="mb-3">
+                    <div class="mb-3">
 
-<label>
+                        <label>Descripción</label>
+                        <textarea name="descripcion" class="form-control" required></textarea>
 
-Descripción
+                    </div>
 
-</label>
+                    <div class="mb-3">
 
-<textarea
-name="descripcion"
-class="form-control"
-required>
+                        <label>Descuento %</label>
+                        <input type="number"
+                               name="descuento"
+                               class="form-control"
+                               min="1"
+                               max="100"
+                               required>
+                    </div>
 
-</textarea>
+                    <div class="mb-3">
 
-</div>
+                        <label>Fecha límite</label>
+                        <input type="date"
+                               name="fechaLimite"
+                               class="form-control"
+                               min="<?= date('Y-m-d', strtotime('+1 day')) ?>"
+                               required>
 
-<div class="mb-3">
+                    </div>
 
-<label>
+                    <button class="btn btn-primary mt-3">Guardar</button>
 
-Descuento %
+                </form>
 
-</label>
+            </div>
 
-<input
-type="number"
-name="descuento"
-class="form-control"
-required>
+        </div>
 
-</div>
-
-<label>
-
-Fecha limite
-
-</label>
-
-<input
-type="date"
-name="fechaLimite"
-class="form-control"
-required>
-
-<button
-class="btn btn-primary mt-3">
-
-Guardar
-
-</button>
-
-</form>
-
-</div>
-
-</div>
-
-</div>
+    </div>
 
 </div>
 

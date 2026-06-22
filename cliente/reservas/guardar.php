@@ -8,33 +8,10 @@ $codVuelo= $_POST['codVuelo'];
 $fecha= date("Y-m-d");
 $precio= $_POST['precio'];
 
-$sql = "
+$sql = "INSERT INTO reservas (codUsuario, codVuelo, fechaReserva, estadoReserva, precioFinal)
+VALUES ($idUsuario, $codVuelo, '$fecha', 'PENDIENTE', $precio)";
+mysqli_query($link, $sql);
 
-INSERT INTO reservas
-(
-    codUsuario,
-    codVuelo,
-    fechaReserva,
-    estadoReserva,
-    precioFinal
-)
-VALUES
-(
-    $idUsuario,
-    $codVuelo,
-    '$fecha',
-    'PENDIENTE',    
-    $precio
-)
-
-";
-mysqli_query(
-    $link,
-    $sql
-);
-
-header(
-    "Location: listar.php"
-);
+header("Location: listar.php");
 
 exit();

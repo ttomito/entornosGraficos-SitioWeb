@@ -17,52 +17,30 @@ include("../../includes/header.php");
 
                     <h2>Nueva Novedad</h2>
 
-                    <form
-                    action="guardar.php"
-                    method="post">
+                    <form action="guardar.php" method="post">
 
                         <div class="mb-3">
 
                             <label>Novedad</label>
-
-                            <textarea
-                            name="texto"
-                            class="form-control"
-                            rows="4"
-                            required></textarea>
+                            <textarea name="texto" class="form-control" rows="4" required></textarea>
 
                         </div>
 
                         <div class="mb-3">
 
                             <label>Fecha Publicación</label>
-
-                            <input
-                            type="date"
-                            name="publicacion"
-                            class="form-control"
-                            required>
+                            <input type="date" name="publicacion" class="form-control" required>
 
                         </div>
 
                         <div class="mb-3">
 
                             <label>Fecha Expiración</label>
-
-                            <input
-                            type="date"
-                            name="expiracion"
-                            class="form-control"
-                            required>
+                            <input type="date" name="expiracion" class="form-control" required>
 
                         </div>
 
-                        <button
-                        class="btn btn-primary">
-
-                            Guardar
-
-                        </button>
+                        <button class="btn btn-primary">Guardar</button>
 
                     </form>
 

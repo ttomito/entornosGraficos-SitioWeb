@@ -3,31 +3,20 @@
 include("../../includes/header.php");
 include("../../includes/conexion.php");
 
-$sql = "
+$sql = "SELECT * FROM promociones ORDER BY codPromocion DESC";
 
-SELECT *
+$resultado = mysqli_query($link, $sql);
 
-FROM promociones
-
-ORDER BY codPromocion DESC
-
-";
-
-$resultado = mysqli_query(
-    $link,
-    $sql
-);
+if (!$resultado) {
+    die(mysqli_error($link));
+}
 ?>
 
 <div class="container mt-4">
 
     <div class="d-flex justify-content-between mb-4">
 
-        <h2>
-
-            promociones disponibles
-
-        </h2>
+        <h2>promociones disponibles</h2>
 
     </div>
 
@@ -57,34 +46,20 @@ $resultado = mysqli_query(
                     if ($fila['estadoPromocion'] =="APROBADA" && $fechaLimite > $hoy){
 
                     ?>
-                    
-                        
+                
                         <tr>
-
                             <td>
-
                                 <?= $fila['descuentoPromocion']?>%
-
                             </td>
-
                             <td>
-
                                 <?= $fila['descripcionPromocion'] ?>
-
                             </td>
-
                             <td>
-
                                 <?= $fila['fechaLimitePromocion'] ?>
-                                
                             </td>
                             <td>
-
                                 <button class="btn btn-primary">Obtener</button>
-
                             </td>
-
-
 
                         </tr>
                         

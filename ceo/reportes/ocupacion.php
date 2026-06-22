@@ -6,10 +6,7 @@ include("../../includes/header.php");
 
 $idCEO = $_SESSION['id'];
 
-$sql = "
-
-SELECT
-
+$sql = "SELECT
 v.codVuelo,
 v.origenVuelo,
 v.destinoVuelo,
@@ -19,40 +16,19 @@ v.asientosDisponibles,
 COUNT(r.codReserva) reservas
 
 FROM vuelos v
-
 LEFT JOIN reservas r
 ON v.codVuelo = r.codVuelo
-
 AND r.estadoReserva = 'CONFIRMADA'
+WHERE v.codAerolinea = (SELECT codAerolinea FROM usuarios WHERE codUsuario = $idCEO)
+GROUP BY v.codVuelo ORDER BY v.fechaVuelo";
 
-WHERE v.codAerolinea =
-(
-    SELECT codAerolinea
-    FROM usuarios
-    WHERE codUsuario = $idCEO
-)
-
-GROUP BY
-v.codVuelo
-
-ORDER BY v.fechaVuelo
-
-";
-
-$resultado = mysqli_query(
-    $link,
-    $sql
-);
+$resultado = mysqli_query($link, $sql);
 
 ?>
 
 <div class="container mt-5">
 
-    <h2>
-
-        Ocupación de Vuelos
-
-    </h2>
+    <h2>Ocupación de Vuelos</h2>
 
     <div class="card card-custom">
 
@@ -80,43 +56,24 @@ $resultado = mysqli_query(
                 <?php while($fila = mysqli_fetch_assoc($resultado)){ ?>
 
                     <tr>
-
                         <td>
-
                             <?= $fila['codVuelo'] ?>
-
                         </td>
-
                         <td>
-
                             <?= $fila['origenVuelo'] ?>
-
                         </td>
-
                         <td>
-
                             <?= $fila['destinoVuelo'] ?>
-
                         </td>
-
                         <td>
-
                             <?= $fila['fechaVuelo'] ?>
-
                         </td>
-
                         <td>
-
                             <?= $fila['reservas'] ?>
-
                         </td>
-
                         <td>
-
                             <?= $fila['asientosDisponibles'] ?>
-
                         </td>
-
                     </tr>
 
                 <?php } ?>
