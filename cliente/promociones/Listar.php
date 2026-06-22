@@ -137,6 +137,7 @@ mysqli_query($link,$sql);
                         <th>Descripcion</th>
                         <th>Fecha limite</th>
                         <th>Aerolinea</th>
+                        <th>Acción</th>
                     </tr>
 
                 </thead>
@@ -176,6 +177,17 @@ mysqli_query($link,$sql);
                                 <?= $fila['nombreAerolinea'] ?>
 
                             </td>
+                            <td>
+
+<a
+href="../vuelos/listar.php?promo=<?= $fila['codPromocion'] ?>"
+class="btn btn-primary btn-sm">
+
+Ver vuelos
+
+</a>
+
+</td>
 
                         </tr>
                         

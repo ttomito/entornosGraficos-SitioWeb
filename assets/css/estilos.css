@@ -209,3 +209,49 @@ td {
 .hero h1:hover {
   transform: scale(1.02);
 }
+.netflix-wrapper {
+  position: relative;
+}
+
+.netflix-scroll {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  padding: 10px 5px;
+}
+
+.netflix-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.netflix-card {
+  flex: 0 0 auto;
+  width: 260px;
+}
+
+.netflix-prev,
+.netflix-next {
+  position: absolute;
+  top: 50%;
+
+  transform: translateY(-50%);
+
+  z-index: 10;
+
+  width: 50px;
+  height: 50px;
+
+  border-radius: 50%;
+
+  opacity: 0.8;
+}
+
+.netflix-prev {
+  left: -25px;
+}
+
+.netflix-next {
+  right: -25px;
+}

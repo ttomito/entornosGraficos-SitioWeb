@@ -6,22 +6,52 @@ include("includes/conexion.php");
 */
 
 
+/*Destinos populares*/ 
+$destinosPopulares = mysqli_query(
+$link,
+"
+
+SELECT
+v.destinoVuelo,
+v.imagenVuelo,
+COUNT(*) cantidad
+
+FROM reservas r
+
+INNER JOIN vuelos v
+ON r.codVuelo = v.codVuelo
+
+WHERE YEAR(r.fechaReserva)
+>= YEAR(CURDATE()) - 3
+
+GROUP BY
+v.destinoVuelo,
+v.imagenVuelo
+
+ORDER BY cantidad DESC
+
+LIMIT 8
+
+"
+);
+
+
+
 $vuelosHome = mysqli_query(
+$link,
+"
 
-    $link,
+SELECT *
 
-    "
+FROM vuelos
 
-    SELECT *
+WHERE fechaVuelo >= CURDATE()
 
-    FROM vuelos
+ORDER BY fechaVuelo ASC
 
-    ORDER BY fechaVuelo ASC
+LIMIT 15
 
-    LIMIT 6
-
-    "
-
+"
 );
 $totalAerolineas = mysqli_fetch_assoc(
     mysqli_query(
@@ -43,6 +73,9 @@ $totalUsuarios = mysqli_fetch_assoc(
         "SELECT COUNT(*) total FROM usuarios"
     )
 );
+
+
+
 
 /*
     Promociones
@@ -108,10 +141,32 @@ align-items:center;
             de forma rápida, segura y sencilla.
 
         </p>
+        <div class="mt-4">
+
+    <a
+    href="cliente/vuelos/listar.php"
+    class="btn btn-warning btn-lg me-2">
+
+        Buscar vuelos
+
+    </a>
+
+    <a
+    href="cliente/promociones/listar.php"
+    class="btn btn-outline-light btn-lg">
+
+        Ver promociones
+
+    </a>
+
+</div>
 
     </div>
 
 </section>
+
+
+
 <section class="container my-5">
 
     <div class="row text-center">
@@ -176,6 +231,99 @@ align-items:center;
     </div>
 
 </section>
+
+<section class="container my-5">
+
+<h2 class="fw-bold mb-4">
+
+Destinos Más Populares
+
+</h2>
+
+<div class="netflix-wrapper">
+
+<button
+class="btn btn-dark netflix-prev"
+onclick="moverDestinos(-1)">
+
+❮
+
+</button>
+
+<div
+id="destinosScroll"
+class="d-flex netflix-scroll pb-3">
+
+
+<?php
+
+while(
+$destino =
+mysqli_fetch_assoc(
+$destinosPopulares
+))
+{
+?>
+
+<div
+class="card  netflix-card shadow border-0"
+style="
+min-width:260px;
+">
+
+<img
+src="<?= $destino['imagenVuelo'] ?>"
+style="
+height:180px;
+object-fit:cover;
+">
+
+<div class="card-body">
+
+<h5>
+
+<?= $destino['destinoVuelo'] ?>
+
+</h5>
+
+<p class="text-muted">
+
+<?= $destino['cantidad'] ?>
+
+reservas
+
+</p>
+
+<a
+href="cliente/vuelos/listar.php"
+class="btn btn-primary btn-sm">
+
+Ver vuelos
+
+</a>
+
+</div>
+
+</div>
+
+<?php
+}
+?>
+
+</div>
+
+</div>
+
+<button
+class="btn btn-dark netflix-next"
+onclick="moverDestinos(1)">
+
+❯
+
+</button>
+
+</div>
+</section>
     <section class="container my-5">
 
     <h2 class="text-center mb-4">
@@ -210,6 +358,13 @@ align-items:center;
                         <?= $promo['descuentoPromocion'] ?>% OFF
 
                     </h3>
+                    <a
+href="cliente/vuelos/listar.php?promo=<?= $promo['codPromocion'] ?>"
+class="btn btn-success mt-3">
+
+    Ver vuelos con esta promoción
+
+</a>
 
                 </div>
 
@@ -269,6 +424,15 @@ class="card border-0 shadow-lg h-100 card-hover">
                         <?= $novedad['fechaExpiracion'] ?>
 
                     </small>
+                    <br><br>
+
+<a
+href="cliente/novedades/listar.php"
+class="btn btn-primary">
+
+    Más información
+
+</a>
 
                 </div>
 
@@ -424,43 +588,36 @@ class="card shadow-lg border-0 h-100 card-hover">
     </div>
 
 </section>
-<section
-class="py-5"
-style="
-background:#f8f9fa;
-">
+<section class="container my-5">
 
-<div class="container-fluid">
+<h2 class="fw-bold mb-4">
 
-    <h2
-    class="text-center fw-bold mb-5">
+✈ Próximos Vuelos
 
-        Próximos Vuelos
+</h2>
 
-    </h2>
+<div
+class="d-flex netflix-scroll pb-3"
 
-    <div class="row">
 
 <?php
 
-$i = 1;
-
 while(
 $vuelo =
-mysqli_fetch_assoc($vuelosHome)
-)
+mysqli_fetch_assoc(
+$vuelosHome
+))
 {
 ?>
 
 <div
-class="col-lg-2 col-md-4 col-sm-6 mb-4">
-
-<div
-class="card card-hover shadow border-0 h-100">
+class="card  netflix-card  shadow border-0"
+style="
+min-width:260px;
+">
 
 <img
 src="<?= $vuelo['imagenVuelo'] ?>"
-class="card-img-top"
 style="
 height:200px;
 object-fit:cover;
@@ -478,7 +635,13 @@ object-fit:cover;
 
 </h5>
 
-<h4 class="text-success">
+<p>
+
+📅 <?= $vuelo['fechaVuelo'] ?>
+
+</p>
+
+<p class="fw-bold text-success">
 
 $
 
@@ -489,51 +652,94 @@ $vuelo['precioVuelo'],
 '.'
 ) ?>
 
-</h4>
-
-<button
-class="btn btn-outline-primary"
-data-bs-toggle="collapse"
-data-bs-target="#v<?= $i ?>">
-
-Ver detalle
-
-</button>
-
-<div
-id="v<?= $i ?>"
-class="collapse mt-3">
-
-<p>
-
-Fecha:
-<?= $vuelo['fechaVuelo'] ?>
-
 </p>
 
-<p>
+<?php
 
-Hora:
-<?= $vuelo['horaSalida'] ?>
-
-</p>
-
-<p>
-
-Asientos:
-<?= $vuelo['asientosDisponibles'] ?>
-
-</p>
+if(isset($_SESSION['id']))
+{
+?>
 
 <a
-href="cliente/vuelos/listar.php"
+href="cliente/reservas/reservar.php?codVuelo=<?= $vuelo['codVuelo'] ?>"
 class="btn btn-warning">
 
-Reservar
+Ver disponibilidad
 
 </a>
 
+<?php
+}
+else
+{
+?>
+
+<a
+href="auth/login.php"
+class="btn btn-primary">
+
+Iniciar sesión
+
+</a>
+
+<?php
+}
+?>
+
 </div>
+
+</div>
+
+<?php
+}
+?>
+
+</div>
+
+</section>
+
+<section class="container my-5">
+
+<h2 class="text-center fw-bold mb-5">
+
+Destinos Populares
+
+</h2>
+
+<div class="row text-center">
+
+<?php
+while(
+$destino =
+mysqli_fetch_assoc(
+$destinosPopulares
+))
+{
+?>
+
+<div class="col-md-3 mb-3">
+
+<div class="card shadow card-hover">
+
+<div class="card-body">
+
+<h5>
+
+<?= $destino['origenVuelo'] ?>
+
+→
+
+<?= $destino['destinoVuelo'] ?>
+
+</h5>
+
+<p class="text-muted">
+
+<?= $destino['total'] ?>
+
+reservas
+
+</p>
 
 </div>
 
@@ -542,14 +748,8 @@ Reservar
 </div>
 
 <?php
-
-$i++;
-
 }
-
 ?>
-
-</div>
 
 </div>
 
@@ -611,6 +811,23 @@ border-radius:20px;
 <?php
 }
 ?>
+
+<script>
+
+function moverDestinos(direccion)
+{
+    const contenedor =
+    document.getElementById(
+    'destinosScroll'
+    );
+
+    contenedor.scrollBy({
+        left: direccion * 600,
+        behavior:'smooth'
+    });
+}
+
+</script>
 
 <?php
 

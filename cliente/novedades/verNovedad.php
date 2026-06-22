@@ -3,8 +3,7 @@
 include("../../includes/verificarSession.php");
 include("../../includes/header.php");
 
-$codReserva = $_GET['codNovedad'];
-
+$codNovedad = $_GET['codNovedad'];
 
 $sql = "
 
@@ -12,8 +11,7 @@ SELECT *
 
 FROM novedades
 
-WHERE codNovedad = $codReserva
-
+WHERE codNovedad = $codNovedad
 ";
 $resultado = mysqli_query(
     $link, 
@@ -54,5 +52,17 @@ $novedad = mysqli_fetch_assoc($resultado);
 <div class="mb-3">
     Novedad:<br>
     <?= $novedad['textoNovedad'] ?>
+</div>
+
+<div class="mt-4">
+
+    <a
+    href="listar.php"
+    class="btn btn-secondary">
+
+        ← Volver
+
+    </a>
+
 </div>
 

@@ -3,15 +3,68 @@
 include("../../includes/header.php");
 include("../../includes/conexion.php");
 
+$registrosPorPagina = 10;
+
+$pagina = isset($_GET['pagina'])
+? (int)$_GET['pagina']
+: 1;
+
+if($pagina < 1)
+{
+    $pagina = 1;
+}
+
+$inicio =
+($pagina - 1)
+*
+$registrosPorPagina;
+
+
+/*
+| CONSULTA PRINCIPAL
+*/
+
 $sql = "
 
-SELECT *
+SELECT
+v.*,
+COALESCE(
+MAX(
+CASE
+WHEN p.estadoPromocion='APROBADA'
+AND p.fechaLimitePromocion >= CURDATE()
+THEN p.descuentoPromocion
+ELSE 0
+END
+),
+0
+) AS descuento
 
-FROM vuelos
+FROM vuelos v
+
+LEFT JOIN promociones p
+ON v.codAerolinea = p.codAerolinea
 
 WHERE 1=1
 
 ";
+
+if(!empty($_GET['promo']))
+{
+$sql .= "
+
+AND v.codAerolinea =
+(
+    SELECT codAerolinea
+
+    FROM promociones
+
+    WHERE codPromocion =
+    ".$_GET['promo']."
+)
+
+";
+}
 
 if(!empty($_GET['origen']))
 {
@@ -36,13 +89,133 @@ AND fechaVuelo='".$_GET['fecha']."'
 ";
 }
 
-$sql .= "
 
-ORDER BY codVuelo DESC
+/*
+| CONTEO PARA PAGINACIÓN
+*/
+
+$sqlConteo = "
+
+SELECT COUNT(*) AS total
+
+FROM vuelos v
+
+WHERE 1=1
 
 ";
 
+if(!empty($_GET['promo']))
+{
+$sqlConteo .= "
+
+AND v.codAerolinea =
+(
+    SELECT codAerolinea
+
+    FROM promociones
+
+    WHERE codPromocion =
+    ".$_GET['promo']."
+)
+
+";
+}
+
+if(!empty($_GET['origen']))
+{
+$sqlConteo .= "
+AND origenVuelo
+LIKE '%".$_GET['origen']."%'
+";
+}
+
+if(!empty($_GET['destino']))
+{
+$sqlConteo .= "
+AND destinoVuelo
+LIKE '%".$_GET['destino']."%'
+";
+}
+
+if(!empty($_GET['fecha']))
+{
+$sqlConteo .= "
+AND fechaVuelo='".$_GET['fecha']."'
+";
+}
+
+$resultadoConteo =
+mysqli_query(
+$link,
+$sqlConteo
+);
+
+$filaConteo =
+mysqli_fetch_assoc(
+$resultadoConteo
+);
+
+$totalRegistros =
+$filaConteo['total'];
+
+$totalPaginas =
+ceil(
+$totalRegistros
+/
+$registrosPorPagina
+);
+
+
+/*
+| PAGINACIÓN
+*/
+
+
+
+$queryString = '';
+
+if(!empty($_GET['origen']))
+{
+    $queryString .= '&origen=' . $_GET['origen'];
+}
+
+if(!empty($_GET['destino']))
+{
+    $queryString .= '&destino=' . $_GET['destino'];
+}
+
+if(!empty($_GET['fecha']))
+{
+    $queryString .= '&fecha=' . $_GET['fecha'];
+}
+
+if(!empty($_GET['promo']))
+{
+    $queryString .= '&promo=' . $_GET['promo'];
+}
+
+
+
+
+$sql .= "
+
+GROUP BY v.codVuelo
+
+ORDER BY v.codVuelo DESC
+
+LIMIT $inicio,
+$registrosPorPagina
+
+";
+
+
+
 $resultado = mysqli_query($link, $sql);
+
+if(!$resultado)
+{
+    die(mysqli_error($link));
+}
 ?>
 
 <div class="container mt-4">
@@ -109,6 +282,31 @@ Buscar
 
     </div>
 
+    <?php
+
+if(isset($_GET['promo']))
+{
+?>
+
+<div
+class="alert alert-info">
+
+Mostrando vuelos asociados a la promoción seleccionada.
+
+<a
+href="listar.php"
+class="btn btn-sm btn-outline-primary ms-3">
+
+Quitar filtro
+
+</a>
+
+</div>
+
+<?php
+}
+?>
+
     <div class="card card-custom">
 
         <div class="card-body">
@@ -124,6 +322,7 @@ Buscar
 <th>Destino</th>
 <th>Fecha</th>
 <th>Precio</th>
+<th>Promoción</th>
 <th>Asientos</th>
 <th>Acción</th>
 
@@ -139,77 +338,186 @@ $hoy = new DateTime();
 
 while($fila = mysqli_fetch_assoc($resultado))
 {
+    $fechaVuelo = new DateTime($fila['fechaVuelo']);
 
-$fechaVuelo =
-new DateTime(
-$fila['fechaVuelo']
-);
+    if(
+        $fila['asientosDisponibles'] > 0
+        &&
+        $fechaVuelo >= $hoy
+    )
+    {
 
-if(
-$fila['asientosDisponibles'] > 0
-&&
-$fechaVuelo >= $hoy
-)
-{
+        $precioFinal = $fila['precioVuelo'];
+
+        if($fila['descuento'] > 0)
+        {
+            $precioFinal =
+            $fila['precioVuelo']
+            -
+            (
+                $fila['precioVuelo']
+                *
+                $fila['descuento']
+                / 100
+            );
+        }
 ?>
 
 <tr>
 
-<td>
+    <td>
 
-<img
-src="<?= $fila['imagenVuelo'] ?>"
-style="
-width:12vw;
-height:7vw;
-border-radius:7px">
+        <img
+        src="<?= $fila['imagenVuelo'] ?>"
+        style="
+        width:12vw;
+        height:7vw;
+        object-fit:cover;
+        border-radius:7px;">
 
-</td>
+    </td>
 
-<td>
+    <td>
 
-<?= $fila['origenVuelo'] ?>
+        <?= $fila['origenVuelo'] ?>
 
-</td>
+    </td>
 
-<td>
+    <td>
 
-<?= $fila['destinoVuelo'] ?>
+        <?= $fila['destinoVuelo'] ?>
 
-</td>
+    </td>
 
-<td>
+    <td>
 
-<?= $fila['fechaVuelo'] ?>
+        <?= $fila['fechaVuelo'] ?>
 
-</td>
+    </td>
 
-<td>
+    <td>
 
-$<?= number_format(
-$fila['precioVuelo'],
-0,
-',',
-'.'
-) ?>
+        <?php if($fila['descuento'] > 0){ ?>
 
-</td>
+            <span class="text-danger text-decoration-line-through">
 
-<td>
+                $<?= number_format(
+                    $fila['precioVuelo'],
+                    0,
+                    ',',
+                    '.'
+                ) ?>
 
-<?= $fila['asientosDisponibles'] ?>
+            </span>
 
-</td>
+            <br>
 
-<td>
+            <span class="fw-bold text-success">
 
-<?php
+                $<?= number_format(
+                    $precioFinal,
+                    0,
+                    ',',
+                    '.'
+                ) ?>
+
+            </span>
+
+        <?php } else { ?>
+
+            $<?= number_format(
+                $fila['precioVuelo'],
+                0,
+                ',',
+                '.'
+            ) ?>
+
+        <?php } ?>
+
+    </td>
+
+    <td>
+
+        <?php if($fila['descuento'] > 0){ ?>
+
+            <span class="badge bg-danger">
+
+                🔥 <?= $fila['descuento'] ?>% OFF
+
+            </span>
+
+        <?php } else { ?>
+
+            <span class="badge bg-secondary">
+
+                Sin promo
+
+            </span>
+
+        <?php } ?>
+
+    </td>
+
+    <td>
+
+        <?= $fila['asientosDisponibles'] ?>
+
+    </td>
+
+    <td>
+
+        <?php
 
 if(
-isset($_SESSION['tipo'])
-&&
-$_SESSION['tipo']=='CLIENTE'
+    isset($_SESSION['tipo'])
+    &&
+    $_SESSION['tipo'] == 'CLIENTE'
 )
+{
+
+$idUsuario = $_SESSION['id'];
+
+$sqlReserva = "
+
+SELECT *
+
+FROM reservas
+
+WHERE codUsuario = $idUsuario
+
+AND codVuelo = {$fila['codVuelo']}
+
+AND estadoReserva != 'CANCELADA'
+
+LIMIT 1
+
+";
+
+$resultadoReserva =
+mysqli_query(
+$link,
+$sqlReserva
+);
+
+if(
+mysqli_num_rows(
+$resultadoReserva
+) > 0
+)
+{
+?>
+
+<a
+href="../reservas/listar.php"
+class="btn btn-primary btn-sm">
+
+Ver reservas
+
+</a>
+
+<?php
+}
+else
 {
 ?>
 
@@ -222,6 +530,8 @@ Reservar
 </a>
 
 <?php
+}
+
 }
 else
 {
@@ -239,12 +549,12 @@ Iniciar sesión
 }
 ?>
 
-</td>
+    </td>
 
 </tr>
 
 <?php
-}
+    }
 }
 ?>
 
@@ -253,9 +563,80 @@ Iniciar sesión
 
             </table>
 
+            <div class="d-flex justify-content-center mt-4">
+
+<nav>
+
+<ul class="pagination">
+
+<?php if($pagina > 1){ ?>
+
+<li class="page-item">
+
+<a
+class="page-link"
+href="?pagina=<?= $pagina-1 ?>">
+
+Anterior
+
+</a>
+
+</li>
+
+<?php } ?>
+
+<?php
+
+for(
+$i=1;
+$i<=$totalPaginas;
+$i++
+)
+{
+?>
+
+<li
+class="page-item
+<?= $i==$pagina ? 'active' : '' ?>">
+
+<a
+class="page-link"
+href="?pagina=<?= $i ?><?= $queryString ?>">
+<?= $i ?>
+
+</a>
+
+</li>
+
+<?php
+}
+?>
+
+<?php if($pagina < $totalPaginas){ ?>
+
+<li class="page-item">
+
+<a
+class="page-link"
+href="?pagina=<?= $pagina+1 ?><?= $queryString ?>">
+Siguiente
+
+</a>
+
+</li>
+
+<?php } ?>
+
+</ul>
+
+</nav>
+
+</div>
+
         </div>
 
     </div>
 
 </div>
 <?php include("../../includes/footer.php"); ?>
+

@@ -122,7 +122,7 @@ mysqli_query(
 );
 
 header(
-    "Location: listar.php"
+    "Location: ../vuelos/listar.php"
 );
 
 exit();
