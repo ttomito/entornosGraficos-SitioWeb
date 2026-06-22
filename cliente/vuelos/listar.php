@@ -9,57 +9,44 @@ SELECT *
 
 FROM vuelos
 
+WHERE 1=1
+
+";
+
+if(!empty($_GET['origen']))
+{
+$sql .= "
+AND origenVuelo
+LIKE '%".$_GET['origen']."%'
+";
+}
+
+if(!empty($_GET['destino']))
+{
+$sql .= "
+AND destinoVuelo
+LIKE '%".$_GET['destino']."%'
+";
+}
+
+if(!empty($_GET['fecha']))
+{
+$sql .= "
+AND fechaVuelo='".$_GET['fecha']."'
+";
+}
+
+$sql .= "
+
 ORDER BY codVuelo DESC
 
 ";
 
-$resultado = mysqli_query(
-    $link,
-    $sql
-);
+$resultado = mysqli_query($link, $sql);
 ?>
 
 <div class="container mt-4">
-    <div class="row g-3 mb-4">
-
-        <div class="col-md-3">
-
-            <input
-                type="text"
-                class="form-control"
-                placeholder="Origen">
-
-        </div>
-
-        <div class="col-md-3">
-
-            <input
-                type="text"
-                class="form-control"
-                placeholder="Destino">
-
-        </div>
-
-        <div class="col-md-3">
-
-            <input
-                type="date"
-                class="form-control">
-
-        </div>
-
-        <div class="col-md-3">
-
-            <button
-                class="btn btn-primary w-100">
-
-                Buscar vuelo
-
-            </button>
-
-        </div>
-
-    </div>
+    
 
     <div class="d-flex justify-content-between mb-4">
 
@@ -69,6 +56,57 @@ $resultado = mysqli_query(
 
         </h2>
 
+        <form method="GET">
+
+<div class="row g-3 mb-4">
+
+<div class="col-md-3">
+
+<input
+type="text"
+name="origen"
+class="form-control"
+placeholder="Origen"
+value="<?= $_GET['origen'] ?? '' ?>">
+
+</div>
+
+<div class="col-md-3">
+
+<input
+type="text"
+name="destino"
+class="form-control"
+placeholder="Destino"
+value="<?= $_GET['destino'] ?? '' ?>">
+
+</div>
+
+<div class="col-md-3">
+
+<input
+type="date"
+name="fecha"
+class="form-control"
+value="<?= $_GET['fecha'] ?? '' ?>">
+
+</div>
+
+<div class="col-md-3">
+
+<button
+class="btn btn-primary w-100">
+
+Buscar
+
+</button>
+
+</div>
+
+</div>
+
+</form>
+
     </div>
 
     <div class="card card-custom">
@@ -77,81 +115,141 @@ $resultado = mysqli_query(
 
             <table class="table table-hover">
 
-                <thead>
+               <thead>
 
-                    <tr>
-                        <th>imagen</th>
-                        <th>Origen</th>
-                        <th>Destino</th>
-                        <th>Fecha</th>
+<tr>
 
-                        <th>Precio</th>
+<th>Imagen</th>
+<th>Origen</th>
+<th>Destino</th>
+<th>Fecha</th>
+<th>Precio</th>
+<th>Asientos</th>
+<th>Acción</th>
 
+</tr>
 
-                    </tr>
+</thead>
 
-                </thead>
+<tbody>
 
-                <tbody>
-                <?php $hoy = new DateTime() ?>
-                <?php while($fila = mysqli_fetch_assoc($resultado)){ ?>
-                    <?php $fechaVuelo = new DateTime($fila['fechaVuelo']);
-                    if ($fila['asientosDisponibles'] !=0 && $fechaVuelo>=$hoy){?>
-                        
-                        <?php if (
-                            isset($_SESSION['tipo'])
-                            &&
-                            $_SESSION['tipo']=='CLIENTE'
-                        )
-                            {
-                                $url = '../reservas/reservar.php?codVuelo=' . $fila['codVuelo']; 
-                            }
-                        else 
-                            {
-                                $url= '/entornosGraficos-SitioWeb/auth/login.php';
-                            }
-                        
-                        ?>
+<?php
 
-                        <tr style="cursor:pointer;" onclick="window.location.href='<?= $url ?>'">
-                            <td>
+$hoy = new DateTime();
 
-                                <img src="<?= $fila['imagenVuelo'] ?>" alt="" style="width:12vw; height:7vw;border-radius: 7px">
-                            </td>
-                            <td>
+while($fila = mysqli_fetch_assoc($resultado))
+{
 
-                                <?= $fila['origenVuelo'] ?>
+$fechaVuelo =
+new DateTime(
+$fila['fechaVuelo']
+);
 
-                            </td>
+if(
+$fila['asientosDisponibles'] > 0
+&&
+$fechaVuelo >= $hoy
+)
+{
+?>
 
-                            <td>
+<tr>
 
-                                <?= $fila['destinoVuelo'] ?>
+<td>
 
-                            </td>
+<img
+src="<?= $fila['imagenVuelo'] ?>"
+style="
+width:12vw;
+height:7vw;
+border-radius:7px">
 
-                            <td>
+</td>
 
-                                <?= $fila['fechaVuelo'] ?>
+<td>
 
-                            </td>
+<?= $fila['origenVuelo'] ?>
 
+</td>
 
-                            <td>
+<td>
 
-                                $<?= $fila['precioVuelo'] ?>
+<?= $fila['destinoVuelo'] ?>
 
-                            </td>
+</td>
 
+<td>
 
+<?= $fila['fechaVuelo'] ?>
 
+</td>
 
-                        </tr>
-                        
-                    <?php } ?>
-                <?php } ?>
+<td>
 
-                </tbody>
+$<?= number_format(
+$fila['precioVuelo'],
+0,
+',',
+'.'
+) ?>
+
+</td>
+
+<td>
+
+<?= $fila['asientosDisponibles'] ?>
+
+</td>
+
+<td>
+
+<?php
+
+if(
+isset($_SESSION['tipo'])
+&&
+$_SESSION['tipo']=='CLIENTE'
+)
+{
+?>
+
+<a
+href="../reservas/reservar.php?codVuelo=<?= $fila['codVuelo'] ?>"
+class="btn btn-success btn-sm">
+
+Reservar
+
+</a>
+
+<?php
+}
+else
+{
+?>
+
+<a
+href="/entornosGraficos-SitioWeb/auth/login.php"
+class="btn btn-warning btn-sm">
+
+Iniciar sesión
+
+</a>
+
+<?php
+}
+?>
+
+</td>
+
+</tr>
+
+<?php
+}
+}
+?>
+
+</tbody>
+
 
             </table>
 

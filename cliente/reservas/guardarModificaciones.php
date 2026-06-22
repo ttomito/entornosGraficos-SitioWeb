@@ -7,6 +7,9 @@ $asientos= $_POST['cantAsientos'];
 
 $codReserva = $_POST['codReserva'];
 
+$idUsuario =
+$_SESSION['id'];
+
 $sql = "
 
 SELECT *
@@ -14,6 +17,8 @@ SELECT *
 FROM reservas
 
 WHERE codReserva = $codReserva
+
+AND codUsuario = $idUsuario
 
 ";
 

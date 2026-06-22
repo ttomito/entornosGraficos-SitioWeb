@@ -17,90 +17,171 @@ $resultado = mysqli_query(
     $link,
     $sql
 );
+
+
+
+$sql = "
+
+SELECT *
+
+FROM novedades
+
+ORDER BY codNovedad DESC
+
+";
+
+$resultado = mysqli_query(
+    $link,
+    $sql
+);
+
+$hoy = new DateTime();
+
 ?>
 
 <div class="container mt-4">
 
+```
+<div class="d-flex justify-content-between mb-4">
 
-    <div class="d-flex justify-content-between mb-4">
+    <h2>
 
-        <h2>
+        Novedades
 
-            Novedades
+    </h2>
 
-        </h2>
+</div>
 
-    </div>
+<div class="row">
 
-    <div class="card card-custom">
+<?php
+
+while($fila = mysqli_fetch_assoc($resultado))
+{
+    $fechaPublicacion =
+    new DateTime(
+        $fila['fechaPublicacion']
+    );
+
+    $fechaExpiracion =
+    new DateTime(
+        $fila['fechaExpiracion']
+    );
+
+    if(
+        $fechaExpiracion >= $hoy
+    )
+    {
+?>
+
+<div class="col-md-4 mb-4">
+
+    <div
+    class="card shadow-lg border-0 h-100 card-hover">
 
         <div class="card-body">
 
-            <table class="table table-hover">
+            <span
+            class="badge bg-primary mb-3">
 
-                <thead>
+                Novedad
 
-                    <tr>
-                        <th>Titulo</th>
-                        <th>Fecha de publicacion</th>
-                        <th>Fecha de expiracion</th>
+            </span>
 
-                    </tr>
+            <h4>
 
-                </thead>
+                <?= $fila['tituloNovedad'] ?>
 
-                <tbody>
-                <?php $hoy = new DateTime() ?>
-                <?php while($fila = mysqli_fetch_assoc($resultado)){ ?>
-                <?php
-                $fechaPublicacion = new DateTime($fila['fechaPublicacion']);
-                $fechaExpiracion = new DateTime($fila['fechaExpiracion']);
-                if ($fechaExpiracion>$hoy && $hoy>$fechaPublicacion) {?>
-                    <?php if (
-                            isset($_SESSION['tipo'])
-                            &&
-                            $_SESSION['tipo']=='CLIENTE'
-                        )
-                            {
-                            $url = '../novedades/verNovedad.php?codNovedad=' . $fila['codNovedad'];  }
-                            else   
-                                {
-                                $url= '/entornosGraficos-SitioWeb/auth/login.php';
-                                }
-                            ?>
-                        <tr style="cursor:pointer;" onclick="window.location.href='<?= $url ?>'">
-                            <td>
+            </h4>
 
-                                <?= $fila['tituloNovedad'] ?>
+            <p>
 
-                            </td>                         
+                <?= substr(
+                    $fila['textoNovedad'],
+                    0,
+                    150
+                ) ?>
 
-                            <td>
+                ...
 
-                                <?= $fila['fechaPublicacion'] ?>
+            </p>
 
-                            </td>
+            <hr>
 
+            <small>
 
-                            <td>
+                Publicado:
 
-                                <?= $fila['fechaExpiracion'] ?>
+                <?= $fila['fechaPublicacion'] ?>
 
-                            </td>
+            </small>
 
+            <br>
 
+            <small>
 
+                Expira:
 
-                        </tr>
-                    <?php } ?>
-                    <?php } ?>
-                </tbody>
+                <?= $fila['fechaExpiracion'] ?>
 
-            </table>
+            </small>
+
+            <br><br>
+
+            <?php
+
+            if(
+            isset($_SESSION['tipo'])
+            &&
+            $_SESSION['tipo']=='CLIENTE'
+            )
+            {
+            ?>
+
+            <a
+            href="../novedades/verNovedad.php?codNovedad=<?= $fila['codNovedad'] ?>"
+            class="btn btn-primary">
+
+                Ver Novedad
+
+            </a>
+
+            <?php
+            }
+            else
+            {
+            ?>
+
+            <a
+            href="/entornosGraficos-SitioWeb/auth/login.php"
+            class="btn btn-warning">
+
+                Iniciar Sesión
+
+            </a>
+
+            <?php
+            }
+            ?>
 
         </div>
 
     </div>
 
 </div>
+
+<?php
+    }
+}
+?>
+
+</div>
+```
+
+</div>
+
+<?php
+include("../../includes/footer.php");
+?>
+
 <?php include("../../includes/footer.php"); ?>

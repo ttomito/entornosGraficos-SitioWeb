@@ -6,6 +6,9 @@ include("../../includes/header.php");
 $codReserva = $_GET['codReserva'];
 
 
+$idUsuario =
+$_SESSION['id'];
+
 $sql = "
 
 SELECT *
@@ -13,6 +16,8 @@ SELECT *
 FROM reservas
 
 WHERE codReserva = $codReserva
+
+AND codUsuario = $idUsuario
 
 ";
 $resultado = mysqli_query(

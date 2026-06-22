@@ -24,15 +24,103 @@ $resultado = mysqli_query(
 );
 ?>
 
+<?php
+
+$filtroDescripcion =
+$_GET['descripcion'] ?? '';
+
+$filtroAerolinea =
+$_GET['aerolinea'] ?? '';
+
+$sql = "
+
+SELECT
+p.*,
+a.nombreAerolinea
+
+FROM promociones p
+
+INNER JOIN aerolineas a
+ON p.codAerolinea = a.codAerolinea
+
+WHERE 1=1
+
+";
+
+if($filtroDescripcion != '')
+{
+    $sql .= "
+    AND p.descripcionPromocion
+    LIKE '%$filtroDescripcion%'
+    ";
+}
+
+if($filtroAerolinea != '')
+{
+    $sql .= "
+    AND a.nombreAerolinea
+    LIKE '%$filtroAerolinea%'
+    ";
+}
+
+$sql .= "
+
+ORDER BY p.codPromocion DESC
+
+";
+
+$resultado =
+mysqli_query($link,$sql);
+
+?>
+
+
 <div class="container mt-4">
 
     <div class="d-flex justify-content-between mb-4">
 
         <h2>
 
-            promociones disponibles
+            Promociones disponibles
 
         </h2>
+
+        <form method="GET" class="row mb-4">
+
+    <div class="col-md-5">
+
+        <input
+        type="text"
+        name="descripcion"
+        class="form-control"
+        placeholder="Buscar descripción"
+        value="<?= $filtroDescripcion ?>">
+
+    </div>
+
+    <div class="col-md-5">
+
+        <input
+        type="text"
+        name="aerolinea"
+        class="form-control"
+        placeholder="Buscar aerolínea"
+        value="<?= $filtroAerolinea ?>">
+
+    </div>
+
+    <div class="col-md-2">
+
+        <button
+        class="btn btn-primary w-100">
+
+            Buscar
+
+        </button>
+
+    </div>
+
+</form>
 
     </div>
 
