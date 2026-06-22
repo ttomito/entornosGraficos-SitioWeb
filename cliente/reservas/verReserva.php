@@ -6,6 +6,9 @@ include("../../includes/header.php");
 $codReserva = $_GET['codReserva'];
 
 
+$idUsuario =
+$_SESSION['id'];
+
 $sql = "
 
 SELECT *
@@ -13,6 +16,8 @@ SELECT *
 FROM reservas
 
 WHERE codReserva = $codReserva
+
+AND codUsuario = $idUsuario
 
 ";
 $resultado = mysqli_query(
@@ -102,7 +107,7 @@ Modificar reserva
 
 </a>
 
-<a href="cancelar.php?codReserva=<?= $codReserva ?>" class="btn btn-danger">
+<a href="cancelarReserva.php?codReserva=<?= $codReserva ?>" class="btn btn-danger" onclick="return confirm('¿Está seguro que desea cancelar la reserva?')">
 
 Cancelar Reserva
 

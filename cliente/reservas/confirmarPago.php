@@ -3,24 +3,33 @@
 include("../../includes/verificarSession.php");
 include("../../includes/conexion.php");
 
-$codReserva = $_POST['codReserva'];
+$codReserva =
+(int)$_POST['codReserva'];
+
+$idUsuario =
+$_SESSION['id'];
 
 $sql = "
 
 UPDATE reservas
 
-SET estadoReserva = 'CONFIRMADA'
+SET estadoReserva='CONFIRMADA'
 
-WHERE codReserva = $codReserva
+WHERE codReserva=$codReserva
+
+AND codUsuario=$idUsuario
 
 ";
 
 mysqli_query(
-    $link,
-    $sql
+$link,
+$sql
 );
 
-header("Location: listar.php");
+header(
+"Location:listar.php"
+);
+
 exit();
 
 ?>
