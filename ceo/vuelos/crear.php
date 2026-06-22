@@ -92,6 +92,18 @@ required>
 
 </div>
 
+<div class="mb-3">
+
+<label>Imagen de referencia</label>
+
+<input
+type="text"
+name="imagen"
+class="form-control"
+required>
+
+</div>
+
 <button class="btn btn-primary">
 
 Guardar

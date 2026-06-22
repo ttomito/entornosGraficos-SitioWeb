@@ -98,6 +98,20 @@ if(!$promocion)
 
                         </div>
 
+                        <div class="mb-3">
+                            <label>
+
+                            Fecha limite
+
+                            </label>
+
+                            <input
+                            type="date"
+                            name="fechaLimite"
+                            class="form-control"
+                            required>
+                        </div>
+
                         <button
                         class="btn btn-primary">
 

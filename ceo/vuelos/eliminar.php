@@ -6,7 +6,7 @@ include("../../includes/conexion.php");
 
 $idCEO = $_SESSION['id'];
 
-$idVuelo = $_POST['id'];
+$idVuelo = $_GET['id'];
 
 $sqlValidacion = "
 
@@ -44,7 +44,8 @@ destinoVuelo = '{$_POST['destino']}',
 fechaVuelo = '{$_POST['fecha']}',
 horaSalida = '{$_POST['hora']}',
 precioVuelo = '{$_POST['precio']}',
-asientosDisponibles = '{$_POST['asientos']}'
+asientosDisponibles = '{$_POST['asientos']}',
+imagenVuelo = '{$_POST['imagen']}'
 
 WHERE codVuelo = $idVuelo
 

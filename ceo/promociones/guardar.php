@@ -9,6 +9,7 @@ $descripcion = $_POST['descripcion'];
 
 $descuento = $_POST['descuento'];
 
+$fechaLimite = $_POST['fechaLimite'];
 $sqlCEO = "
 
 SELECT codAerolinea
@@ -37,14 +38,16 @@ INSERT INTO promociones
     codAerolinea,
     descripcionPromocion,
     descuentoPromocion,
-    estadoPromocion
+    estadoPromocion,
+    fechaLimitePromocion
 )
 VALUES
 (
     $codAerolinea,
     '$descripcion',
     $descuento,
-    'PENDIENTE'
+    'PENDIENTE',
+    '$fechaLimite'
 )
 
 ";

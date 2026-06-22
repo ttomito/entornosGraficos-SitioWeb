@@ -54,8 +54,20 @@ required>
 
 </div>
 
+<label>
+
+Fecha limite
+
+</label>
+
+<input
+type="date"
+name="fechaLimite"
+class="form-control"
+required>
+
 <button
-class="btn btn-primary">
+class="btn btn-primary mt-3">
 
 Guardar
 

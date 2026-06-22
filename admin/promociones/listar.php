@@ -49,6 +49,7 @@ Aprobación de Promociones
 <th>Aerolínea</th>
 <th>Descripción</th>
 <th>Descuento</th>
+<th>Fecha limite</th>
 <th>Estado</th>
 <th>Acciones</th>
 
@@ -69,6 +70,8 @@ Aprobación de Promociones
 <td><?= $fila['descripcionPromocion'] ?></td>
 
 <td><?= $fila['descuentoPromocion'] ?>%</td>
+
+<td><?= $fila['fechaLimitePromocion'] ?></td>
 
 <td><?= $fila['estadoPromocion'] ?></td>
 

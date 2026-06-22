@@ -14,6 +14,8 @@ if($descuento < 1 || $descuento > 100)
     die("Descuento inválido");
 }
 
+$fechaLimite= $_POST['fechaLimite'];
+
 $sql = "
 
 UPDATE promociones
@@ -21,7 +23,8 @@ UPDATE promociones
 SET
 descripcionPromocion = '$descripcion',
 descuentoPromocion = $descuento,
-estadoPromocion = 'PENDIENTE'
+estadoPromocion = 'PENDIENTE',
+fechaLimitePromocion = '$fechaLimite'
 
 WHERE codPromocion = $id
 
