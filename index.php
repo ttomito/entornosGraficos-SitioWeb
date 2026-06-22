@@ -1,74 +1,228 @@
 <?php
 
+include("includes/conexion.php");
+/*
+    Estadísticas
+*/
+
+
+/*Destinos populares*/ 
+$destinosPopulares = mysqli_query(
+$link,
+"
+
+SELECT
+v.destinoVuelo,
+v.imagenVuelo,
+COUNT(*) cantidad
+
+FROM reservas r
+
+INNER JOIN vuelos v
+ON r.codVuelo = v.codVuelo
+
+WHERE YEAR(r.fechaReserva)
+>= YEAR(CURDATE()) - 3
+
+GROUP BY
+v.destinoVuelo,
+v.imagenVuelo
+
+ORDER BY cantidad DESC
+
+LIMIT 8
+
+"
+);
+
+
+
+$vuelosHome = mysqli_query(
+$link,
+"
+
+SELECT *
+
+FROM vuelos
+
+WHERE fechaVuelo >= CURDATE()
+
+ORDER BY fechaVuelo ASC
+
+LIMIT 15
+
+"
+);
+$totalAerolineas = mysqli_fetch_assoc(
+    mysqli_query(
+        $link,
+        "SELECT COUNT(*) total FROM aerolineas"
+    )
+);
+
+$totalVuelos = mysqli_fetch_assoc(
+    mysqli_query(
+        $link,
+        "SELECT COUNT(*) total FROM vuelos"
+    )
+);
+
+$totalUsuarios = mysqli_fetch_assoc(
+    mysqli_query(
+        $link,
+        "SELECT COUNT(*) total FROM usuarios"
+    )
+);
+
+
+
+
+/*
+    Promociones
+*/
+
+$promociones = mysqli_query(
+    $link,
+    "
+    SELECT *
+    FROM promociones
+    WHERE estadoPromocion='APROBADA'
+    LIMIT 3
+    "
+);
+
+/*
+    Novedades
+*/
+
+$novedades = mysqli_query(
+    $link,
+    "
+    SELECT *
+    FROM novedades
+    WHERE CURDATE()
+    BETWEEN fechaPublicacion
+    AND fechaExpiracion
+    LIMIT 3
+    "
+);
+?>
+
+
+<?php
+
 include("includes/header.php");
 
 ?>
 
-<section class="hero">
+<section class="py-5 text-center text-white"
+style="
+background:
+linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,.55)),
+url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05');
+background-size:cover;
+background-position:center;
+min-height:500px;
+display:flex;
+align-items:center;
+">
 
     <div class="container">
 
-        <div class="row justify-content-center">
+        <h1 class="display-3 fw-bold">
 
-            <div class="col-lg-10 text-center">
+            Encontrá tu próximo destino
 
-                <h1 class="hero-title">
+        </h1>
 
-                    Encontrá tu próximo vuelo
+        <p class="lead mt-3">
 
-                </h1>
+            Reservá vuelos nacionales e internacionales
+            de forma rápida, segura y sencilla.
 
-                <p class="hero-subtitle">
+        </p>
+        <div class="mt-4">
 
-                    Reservá vuelos nacionales e internacionales
-                    al mejor precio.
+    <a
+    href="cliente/vuelos/listar.php"
+    class="btn btn-warning btn-lg me-2">
 
-                </p>
+        Buscar vuelos
 
-            <div class="search-box mt-4">
+    </a>
 
-    <div class="row g-3">
+    <a
+    href="cliente/promociones/listar.php"
+    class="btn btn-outline-light btn-lg">
 
-        <div class="col-md-3">
+        Ver promociones
 
-            <input
-                type="text"
-                class="form-control"
-                placeholder="Origen">
+    </a>
 
-        </div>
-
-        <div class="col-md-3">
-
-            <input
-                type="text"
-                class="form-control"
-                placeholder="Destino">
-
-        </div>
-
-        <div class="col-md-3">
-
-            <input
-                type="date"
-                class="form-control">
-
-        </div>
-
-        <div class="col-md-3">
-
-            <button
-                class="btn btn-primary w-100">
-
-                Buscar vuelo
-
-            </button>
-
-        </div>
+</div>
 
     </div>
 
-</div>
+</section>
+
+
+
+<section class="container my-5">
+
+    <div class="row text-center">
+
+        <div class="col-md-4 mb-3">
+
+<div class="card shadow-sm card-hover estadistica-card">
+                <div class="card-body">
+
+                    <h2 class="text-primary">
+
+                        <?= $totalAerolineas['total'] ?>
+
+                    </h2>
+
+                    <h5>Aerolíneas</h5>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-4 mb-3">
+
+<div class="card shadow-sm card-hover estadistica-card">
+                <div class="card-body">
+
+                    <h2 class="text-success">
+
+                        <?= $totalVuelos['total'] ?>
+
+                    </h2>
+
+                    <h5>Vuelos</h5>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-4 mb-3">
+
+<div class="card shadow-sm card-hover estadistica-card">
+                <div class="card-body">
+
+                    <h2 class="text-warning">
+
+                        <?= $totalUsuarios['total'] ?>
+
+                    </h2>
+
+                    <h5>Usuarios</h5>
+
+                </div>
 
             </div>
 
@@ -80,47 +234,137 @@ include("includes/header.php");
 
 <section class="container my-5">
 
+<h2 class="fw-bold mb-4">
+
+Destinos Más Populares
+
+</h2>
+
+<div class="netflix-wrapper">
+
+<button
+class="btn btn-dark netflix-prev"
+onclick="moverDestinos(-1)">
+
+❮
+
+</button>
+
+<div
+id="destinosScroll"
+class="d-flex netflix-scroll pb-3">
+
+
+<?php
+
+while(
+$destino =
+mysqli_fetch_assoc(
+$destinosPopulares
+))
+{
+?>
+
+<div
+class="card  netflix-card shadow border-0"
+style="
+min-width:260px;
+">
+
+<img
+src="<?= $destino['imagenVuelo'] ?>"
+style="
+height:180px;
+object-fit:cover;
+">
+
+<div class="card-body">
+
+<h5>
+
+<?= $destino['destinoVuelo'] ?>
+
+</h5>
+
+<p class="text-muted">
+
+<?= $destino['cantidad'] ?>
+
+reservas
+
+</p>
+
+<a
+href="cliente/vuelos/listar.php"
+class="btn btn-primary btn-sm">
+
+Ver vuelos
+
+</a>
+
+</div>
+
+</div>
+
+<?php
+}
+?>
+
+</div>
+
+</div>
+
+<button
+class="btn btn-dark netflix-next"
+onclick="moverDestinos(1)">
+
+❯
+
+</button>
+
+</div>
+</section>
+    <section class="container my-5">
+
     <h2 class="text-center mb-4">
 
-        Destinos destacados
+        Promociones Destacadas
 
     </h2>
 
     <div class="row">
 
-        <div class="col-md-4">
+        <?php while($promo = mysqli_fetch_assoc($promociones)){ ?>
 
-            <div class="card card-custom">
+        <div class="col-md-4 mb-4">
 
-                <img
-                    src="https://picsum.photos/400/200?1"
-                    class="card-img-top">
-
+<div class="card h-100 shadow-lg card-hover border-0">
                 <div class="card-body">
 
-                    <h4>Madrid</h4>
+                    <span class="badge bg-success">
 
-                    <h5>$850.000</h5>
+                        Promoción
 
-                </div>           
+                    </span>
 
-            </div>
+                    <h5 class="mt-3">
 
-        </div>
+                        <?= $promo['descripcionPromocion'] ?>
 
-        <div class="col-md-4">
+                    </h5>
 
-            <div class="card card-custom">
+                    <h3 class="text-danger">
 
-                <img
-                    src="https://picsum.photos/400/200?2"
-                    class="card-img-top">
+                        <?= $promo['descuentoPromocion'] ?>% OFF
 
-                <div class="card-body">
+                    </h3>
+                    <a
+href="cliente/vuelos/listar.php?promo=<?= $promo['codPromocion'] ?>"
+class="btn btn-success mt-3">
 
-                    <h4>Miami</h4>
+    Ver vuelos con esta promoción
 
-                    <h5>$1.200.000</h5>
+</a>
 
                 </div>
 
@@ -128,19 +372,212 @@ include("includes/header.php");
 
         </div>
 
-        <div class="col-md-4">
+        <?php } ?>
 
-            <div class="card card-custom">
+    </div>
 
-                <img
-                    src="https://picsum.photos/400/200?3"
-                    class="card-img-top">
+</section>
 
-                <div class="card-body">
 
-                    <h4>Bariloche</h4>
+<section class="container my-5">
 
-                    <h5>$180.000</h5>
+    <h2 class="text-center mb-5 fw-bold">
+
+        Últimas Novedades
+
+    </h2>
+
+    <div class="row">
+
+        <?php
+
+        while($novedad = mysqli_fetch_assoc($novedades))
+        {
+        ?>
+
+        <div class="col-md-4 mb-4">
+
+           <div
+class="card border-0 shadow-lg h-100 card-hover">
+
+                <div class="card-body p-4">
+
+                    <span
+                    class="badge bg-primary mb-3">
+
+                        Novedad
+
+                    </span>
+
+                    <p class="lead">
+
+                        <?= $novedad['textoNovedad'] ?>
+
+                    </p>
+
+                    <hr>
+
+                    <small class="text-muted">
+
+                        Vigente hasta:
+
+                        <?= $novedad['fechaExpiracion'] ?>
+
+                    </small>
+                    <br><br>
+
+<a
+href="cliente/novedades/listar.php"
+class="btn btn-primary">
+
+    Más información
+
+</a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <?php
+        }
+        ?>
+
+    </div>
+
+</section>
+<section
+class="py-4 bg-dark text-white">
+
+<div class="container text-center">
+
+<h3>
+
+✈ Más de 50 destinos disponibles
+
+</h3>
+
+<p>
+
+Promociones exclusivas,
+vuelos nacionales e internacionales.
+
+</p>
+
+</div>
+
+</section>
+<section class="py-5 bg-light">
+
+    <div class="container">
+
+        <h2
+        class="text-center fw-bold mb-5">
+
+            ¿Cómo funciona?
+
+        </h2>
+
+        <div class="row">
+
+            <div class="col-md-4 mb-4">
+
+              <div
+class="card shadow-lg border-0 h-100 card-hover">
+
+                    <div
+                    class="card-body text-center p-5">
+
+                        <div class="display-1">
+
+                            🔎
+
+                        </div>
+
+                        <h3
+                        class="text-primary mt-3">
+
+                            Buscar
+
+                        </h3>
+
+                        <p>
+
+                            Encontrá vuelos según
+                            origen, destino y fecha.
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-md-4 mb-4">
+
+               <div
+class="card shadow-lg border-0 h-100 card-hover">
+
+                    <div
+                    class="card-body text-center p-5">
+
+                        <div class="display-1">
+
+                            ✈️
+
+                        </div>
+
+                        <h3
+                        class="text-success mt-3">
+
+                            Reservar
+
+                        </h3>
+
+                        <p>
+
+                            Elegí el vuelo ideal
+                            para tu viaje.
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-md-4 mb-4">
+
+                 <div
+class="card shadow-lg border-0 h-100 card-hover">
+
+                    <div
+                    class="card-body text-center p-5">
+
+                        <div class="display-1">
+
+                            ✅
+
+                        </div>
+
+                        <h3
+                        class="text-warning mt-3">
+
+                            Confirmar
+
+                        </h3>
+
+                        <p>
+
+                            Gestioná tus compras
+                            y reservas fácilmente.
+
+                        </p>
+
+                    </div>
 
                 </div>
 
@@ -151,6 +588,246 @@ include("includes/header.php");
     </div>
 
 </section>
+<section class="container my-5">
+
+<h2 class="fw-bold mb-4">
+
+✈ Próximos Vuelos
+
+</h2>
+
+<div
+class="d-flex netflix-scroll pb-3"
+
+
+<?php
+
+while(
+$vuelo =
+mysqli_fetch_assoc(
+$vuelosHome
+))
+{
+?>
+
+<div
+class="card  netflix-card  shadow border-0"
+style="
+min-width:260px;
+">
+
+<img
+src="<?= $vuelo['imagenVuelo'] ?>"
+style="
+height:200px;
+object-fit:cover;
+">
+
+<div class="card-body">
+
+<h5>
+
+<?= $vuelo['origenVuelo'] ?>
+
+→
+
+<?= $vuelo['destinoVuelo'] ?>
+
+</h5>
+
+<p>
+
+📅 <?= $vuelo['fechaVuelo'] ?>
+
+</p>
+
+<p class="fw-bold text-success">
+
+$
+
+<?= number_format(
+$vuelo['precioVuelo'],
+0,
+',',
+'.'
+) ?>
+
+</p>
+
+<?php
+
+if(isset($_SESSION['id']))
+{
+?>
+
+<a
+href="cliente/reservas/reservar.php?codVuelo=<?= $vuelo['codVuelo'] ?>"
+class="btn btn-warning">
+
+Ver disponibilidad
+
+</a>
+
+<?php
+}
+else
+{
+?>
+
+<a
+href="auth/login.php"
+class="btn btn-primary">
+
+Iniciar sesión
+
+</a>
+
+<?php
+}
+?>
+
+</div>
+
+</div>
+
+<?php
+}
+?>
+
+</div>
+
+</section>
+
+<section class="container my-5">
+
+<h2 class="text-center fw-bold mb-5">
+
+Destinos Populares
+
+</h2>
+
+<div class="row text-center">
+
+<?php
+while(
+$destino =
+mysqli_fetch_assoc(
+$destinosPopulares
+))
+{
+?>
+
+<div class="col-md-3 mb-3">
+
+<div class="card shadow card-hover">
+
+<div class="card-body">
+
+<h5>
+
+<?= $destino['origenVuelo'] ?>
+
+→
+
+<?= $destino['destinoVuelo'] ?>
+
+</h5>
+
+<p class="text-muted">
+
+<?= $destino['total'] ?>
+
+reservas
+
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+<?php
+}
+?>
+
+</div>
+
+</section>
+
+<?php
+if(!isset($_SESSION['id']))
+{
+?>
+
+<section class="container my-5">
+
+ <div
+class="card border-0 shadow-lg card-hover"
+style="
+background:
+linear-gradient(
+135deg,
+#0d6efd,
+#0a3d91
+);
+color:white;
+border-radius:20px;
+">
+
+        <div
+        class="card-body p-5 text-center 
+        ">
+
+            <h2 class="fw-bold">
+
+                ¿Listo para comenzar tu viaje?
+
+            </h2>
+
+           <p class="lead text-white">
+
+                Registrate gratis y comenzá a reservar
+                vuelos nacionales e internacionales.
+
+            </p>
+
+            <a
+            href="auth/registro.php"
+            class="btn btn-warning btn-lg ">
+
+                Crear Cuenta
+
+            </a>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<?php
+}
+?>
+
+<script>
+
+function moverDestinos(direccion)
+{
+    const contenedor =
+    document.getElementById(
+    'destinosScroll'
+    );
+
+    contenedor.scrollBy({
+        left: direccion * 600,
+        behavior:'smooth'
+    });
+}
+
+</script>
 
 <?php
 

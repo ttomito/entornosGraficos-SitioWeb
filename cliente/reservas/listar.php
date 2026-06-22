@@ -3,7 +3,7 @@
 include("../../includes/header.php");
 include("../../includes/conexion.php");
 
-$idCliente= $_SESSION['id'];
+$idCliente = $_SESSION['id'];
 
 $sql = "
 
@@ -21,7 +21,6 @@ $resultado = mysqli_query(
     $link,
     $sql
 );
-
 
 ?>
 
@@ -46,81 +45,151 @@ $resultado = mysqli_query(
                 <thead>
 
                     <tr>
+
                         <th>Imagen</th>
+                        <th>Asientos</th>
                         <th>Origen</th>
                         <th>Destino</th>
                         <th>Fecha vuelo</th>
                         <th>Fecha reserva</th>
+                        <th>Precio Final</th>
                         <th>Estado</th>
+                        <th>Acción</th>
+
                     </tr>
 
                 </thead>
 
                 <tbody>
-                    <?php while($fila = mysqli_fetch_assoc($resultado)){ ?>
-                    <?php
-                        $sql = "
 
-                        SELECT *
+                <?php while($fila = mysqli_fetch_assoc($resultado)){ ?>
 
-                        FROM vuelos
+                <?php
 
-                        WHERE codVuelo = {$fila['codVuelo']}
+                $sqlVuelo = "
 
-                        ";
+                SELECT *
 
-                        $resultado_2 = mysqli_query(
-                            $link,
-                            $sql
-                        );
-                        $fila_2 = mysqli_fetch_assoc($resultado_2);
-                    ?>
-                        <tr>
+                FROM vuelos
 
-                            <td>
+                WHERE codVuelo = {$fila['codVuelo']}
 
-                                <img
-                                    src="<?= $fila_2['imagenVuelo'] ?>"
-                                    style="width:12vw; height:7vw; border-radius:7px"
-                                >
+                ";
 
-                            </td>
+                $resultadoVuelo = mysqli_query(
+                    $link,
+                    $sqlVuelo
+                );
 
-                            <td>
+                $vuelo = mysqli_fetch_assoc(
+                    $resultadoVuelo
+                );
 
-                                <?= $fila_2['origenVuelo'] ?>
+                ?>
 
-                            </td>
+                <tr>
 
-                            <td>
+                    <td>
 
-                                <?= $fila_2['destinoVuelo'] ?>
-                                
-                            </td>
+                        <img
+                        src="<?= $vuelo['imagenVuelo'] ?>"
+                        style="
+                        width:12vw;
+                        height:7vw;
+                        border-radius:7px;
+                        object-fit:cover;
+                        ">
 
-                            <td>
+                    </td>
 
-                                <?= $fila_2['fechaVuelo'] ?>
-                                
-                            </td>
+                    <td>
 
-                            <td>
+                        <?= $fila['cantAsientos'] ?>
 
-                                <?= $fila['fechaReserva'] ?>
-                                
-                            </td>
+                    </td>
 
-                            <td>
+                    <td>
 
-                                <?= $fila['estadoReserva'] ?>
-                                
-                            </td>
+                        <?= $vuelo['origenVuelo'] ?>
 
+                    </td>
 
+                    <td>
 
-                        </tr>
-                        
-                    <?php } ?>
+                        <?= $vuelo['destinoVuelo'] ?>
+
+                    </td>
+
+                    <td>
+
+                        <?= $vuelo['fechaVuelo'] ?>
+
+                    </td>
+
+                    <td>
+
+                        <?= $fila['fechaReserva'] ?>
+
+                    </td>
+
+                    <td>
+
+                        $<?= number_format(
+                            $fila['precioFinal'],
+                            0,
+                            ',',
+                            '.'
+                        ) ?>
+
+                    </td>
+
+                    <td>
+
+                        <?php
+
+                        if(
+                            $fila['estadoReserva']
+                            ==
+                            'CONFIRMADA'
+                        )
+                        {
+                            echo
+                            '<span class="badge bg-success">CONFIRMADA</span>';
+                        }
+                        elseif(
+                            $fila['estadoReserva']
+                            ==
+                            'PENDIENTE'
+                        )
+                        {
+                            echo
+                            '<span class="badge bg-warning text-dark">PENDIENTE</span>';
+                        }
+                        else
+                        {
+                            echo
+                            '<span class="badge bg-danger">CANCELADA</span>';
+                        }
+
+                        ?>
+
+                    </td>
+
+                    <td>
+
+                        <a
+                        href="verReserva.php?codReserva=<?= $fila['codReserva'] ?>"
+                        class="btn btn-primary btn-sm">
+
+                            Seguir solicitud
+
+                        </a>
+
+                    </td>
+
+                </tr>
+
+                <?php } ?>
 
                 </tbody>
 
@@ -131,4 +200,5 @@ $resultado = mysqli_query(
     </div>
 
 </div>
+
 <?php include("../../includes/footer.php"); ?>

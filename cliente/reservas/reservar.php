@@ -19,9 +19,41 @@ $resultado = mysqli_query(
     $link, 
     $sql);
 $vuelo = mysqli_fetch_assoc($resultado);
+$codAerolinea=$vuelo['codAerolinea'];
+
+$sqlProm = "
+
+SELECT *
+
+FROM promociones
+
+WHERE codAerolinea = $codAerolinea
+
+AND estadoPromocion = 'APROBADA'
+
+";
+
+$resultado_prom = mysqli_query(
+    $link,
+    $sqlProm);
+
+$descuentoMaximo = 0;
+$hoy = date("Y-m-d");
+while($promocion=mysqli_fetch_assoc($resultado_prom))
+    {
+        if(
+            $promocion['descuentoPromocion']>$descuentoMaximo 
+            && 
+            $promocion['fechaLimitePromocion']>=$hoy)
+            {
+                $descuentoMaximo = $promocion['descuentoPromocion'];
+            }
+    };
+
+
 $idUsuario = $_SESSION['id'];
-$hoy = new DateTime();
 $precio= $vuelo['precioVuelo'];
+$precioFinal = $precio - ($precio * $descuentoMaximo / 100);
 ?>
 
 <div class="container mt-5">
@@ -36,12 +68,22 @@ $precio= $vuelo['precioVuelo'];
 
 <h2>Reservar Vuelo</h2>
 
+<?php if(isset($_GET['error'])){ ?>
+
+<div class="alert alert-danger">
+
+    <?= $_GET['error'] ?>
+
+</div>
+
+<?php } ?>
+
 <form action="guardar.php" method="post">
 
 <div class="mb-3">
 
 <input type="hidden" name="codVuelo" value="<?=$codVuelo?>">
-<input type="hidden" name="precio" value="<?=$precio?>">
+<input type="hidden" name="precio" value="<?= $precioFinal ?>">
 </div>
 
 <div class="mb-3">
@@ -58,15 +100,39 @@ $precio= $vuelo['precioVuelo'];
     Destino: <?= $vuelo['destinoVuelo'] ?>
 </div>
 <div class="mb-3">
-    Precio final: <?= $vuelo['precioVuelo'] ?>
+    Precio: <?= $vuelo['precioVuelo'] ?>
 </div>
-<div class="mb-3"></div>
+<div class="mb-3">
+    Descuentos(solo aplica mayor): <?= $descuentoMaximo ?>%
+</div>
+<div class="mb-3">
+    Precio final por asiento: $<?= $precioFinal ?>
+</div>
+<div class="mb-3">
+    Asientos disponibles: <?= $vuelo['asientosDisponibles'] ?>
+</div>
+<div class="mb-3 d-flex">
+<label>Cantidad de asientos:</label>
+<input
+type="number"
+name="cantAsientos"
+class="form-control w-50"
+min="1"
+max="<?= $vuelo['asientosDisponibles'] ?>"
+required>
+
+</div>
+
 <button class="btn btn-primary">
 
-Guardar Reserva
+Reservar
 
 </button>
+<a href="../vuelos/listar.php" class="btn btn-danger">
 
+Volver
+
+</a>
 </form>
 
 </div>

@@ -41,7 +41,7 @@ if (session_status() == PHP_SESSION_NONE) {
             <a
                 class="navbar-brand fw-bold fs-3"
                 href="/entornosGraficos-SitioWeb/index.php"
-                style="color: blue;">
+                style="color: white;">
 
                 AirTickets
 
@@ -101,7 +101,7 @@ if (session_status() == PHP_SESSION_NONE) {
 
                         <li class="nav-item">
 
-                            <a class="nav-link" href="#">
+                            <a class="nav-link" href="/entornosGraficos-SitioWeb/cliente/novedades/listar.php"">
 
                                 Novedades
 

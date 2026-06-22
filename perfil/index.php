@@ -30,6 +30,7 @@ $usuario = mysqli_fetch_assoc($resultado);
                 <div class="card-body p-5">
 
                     <h2> Mi Perfil</h2>
+                    
                     <hr>
 
                     <form action="actualizar.php" method="post">
