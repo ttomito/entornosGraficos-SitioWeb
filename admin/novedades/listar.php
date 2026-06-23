@@ -108,6 +108,21 @@ $alertas = [
         'title' => '¡Error!',
         'text'  => 'Los campos no pueden ser vacíos.'
     ],
+    'imagen_invalida' => [
+        'icon'  => 'error',
+        'title' => '¡Error!',
+        'text'  => 'Formato de la imagen inválido.'
+    ],
+    'imagen_muy_grande' => [
+        'icon'  => 'error',
+        'title' => '¡Error!',
+        'text'  => 'La imagen puede pesar hasta 3MB.'
+    ],
+    'error_imagen' => [
+        'icon'  => 'error',
+        'title' => '¡Error!',
+        'text'  => 'Ocurrió un error con la imagen.'
+    ],
 ];
 
 if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)){

@@ -8,7 +8,7 @@ $id = $_GET['id'];
 
 $sql = "SELECT * FROM novedades WHERE codNovedad = $id";
 
-$resultado = mysqli_query($link,$sql);
+$resultado = mysqli_query($link, $sql);
 if (!$resultado) {
     die("Error en la consulta: " . mysqli_error($link));
 }
@@ -29,9 +29,17 @@ $novedad = mysqli_fetch_assoc($resultado);
 
                     <h2>Editar Novedad</h2>
 
-                    <form action="actualizar.php" method="post">
+                    <form action="actualizar.php" method="post" enctype="multipart/form-data">
 
                         <input type="hidden" name="id" value="<?= $novedad['codNovedad'] ?>">
+                        <input type="hidden" name="imagenActual" value="<?= $novedad['imagen'] ?>">
+
+                        <div class="mb-3">
+
+                            <label>Título novedad</label>
+                            <input type="text" name="tituloNovedad" class="form-control" value="<?= $novedad['tituloNovedad'] ?>" required>
+
+                        </div>
 
                         <div class="mb-3">
 
@@ -51,6 +59,21 @@ $novedad = mysqli_fetch_assoc($resultado);
 
                             <label>Fecha Expiración</label>
                             <input type="date" name="expiracion" value="<?= $novedad['fechaExpiracion'] ?>" class="form-control">
+
+                        </div>
+
+                        <div class="mb-3">
+
+                            <label>Imagen</label>
+
+                            <?php if (!empty($novedad['imagen'])): ?>
+                                <div class="mb-2">
+                                    <img src="../../uploads/novedades/<?= $novedad['imagen'] ?>" alt="Imagen actual" style="max-height: 150px; border-radius: 6px;">
+                                    <p class="text-muted mt-1" style="font-size: 0.85rem;">Imagen actual. Seleccioná una nueva para reemplazarla.</p>
+                                </div>
+                            <?php endif; ?>
+
+                            <input type="file" name="imagen" class="form-control" accept="image/*">
 
                         </div>
 
