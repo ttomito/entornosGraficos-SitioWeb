@@ -26,14 +26,16 @@ if (empty($nombre) || empty($pais)) {
 $sql = "UPDATE aerolineas SET nombreAerolinea = '$nombre', descripcionAerolinea = '$descripcion', codPais = '$pais' WHERE codAerolinea = $id";
 
 $resultado = mysqli_query($link, $sql);
+
 if (!$resultado) {
     error_log("Error al actualizar aerolínea: " . mysqli_stmt_error($stmt));
     header("Location: editar.php?alerta=error_servidor");
     exit();
+} else {
+    header("Location: listar.php?alerta=actualizada");
+    exit();
 }
 
-header("Location: listar.php?alerta=actualizada");
 
-exit();
 
 ?>

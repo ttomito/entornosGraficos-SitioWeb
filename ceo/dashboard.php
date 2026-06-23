@@ -6,114 +6,58 @@ include("../includes/conexion.php");
 
 $idCEO = $_SESSION['id'];
 
-/*
-    Obtener aerolínea asignada
-*/
+//Obtener aerolínea asignada
 
-$sqlAerolinea = "
+$sqlAerolinea = "SELECT a.nombreAerolinea FROM usuarios u LEFT JOIN aerolineas a ON u.codAerolinea = a.codAerolinea WHERE u.codUsuario = $idCEO ";
 
-SELECT
-a.nombreAerolinea
-
-FROM usuarios u
-
-LEFT JOIN aerolineas a
-ON u.codAerolinea = a.codAerolinea
-
-WHERE u.codUsuario = $idCEO
-
-";
-
-$resultadoAerolinea = mysqli_query(
-    $link,
-    $sqlAerolinea
-);
+$resultadoAerolinea = mysqli_query($link, $sqlAerolinea);
 
 if (!$resultadoAerolinea) {
     die(mysqli_error($link));
 }
 
-$datosAerolinea = mysqli_fetch_assoc(
-    $resultadoAerolinea
-);
+$datosAerolinea = mysqli_fetch_assoc($resultadoAerolinea);
 
 $nombreAerolinea = $datosAerolinea['nombreAerolinea'];
 
 
 
 
-/*
-    Total vuelos de la aerolínea
-*/
+//Total vuelos de la aerolínea
 
-$sqlVuelos = "
-
-SELECT COUNT(*) AS total
-
+$sqlVuelos = "SELECT COUNT(*) AS total
 FROM vuelos
-
-WHERE codAerolinea =
-(
+WHERE codAerolinea = (
     SELECT codAerolinea
     FROM usuarios
     WHERE codUsuario = $idCEO
-)
+)";
 
-";
+$resultadoVuelos = mysqli_query($link, $sqlVuelos);
 
-$resultadoVuelos = mysqli_query(
-    $link,
-    $sqlVuelos
-);
+$totalVuelos = mysqli_fetch_assoc($resultadoVuelos);
 
-$totalVuelos = mysqli_fetch_assoc(
-    $resultadoVuelos
-);
+//Total promociones
 
-/*
-    Total promociones
-*/
-
-$sqlPromociones = "
-
-SELECT COUNT(*) AS total
-
+$sqlPromociones = "SELECT COUNT(*) AS total
 FROM promociones
-
 WHERE codAerolinea =
 (
     SELECT codAerolinea
     FROM usuarios
     WHERE codUsuario = $idCEO
-)
+)";
 
-";
-
-$resultadoPromociones = mysqli_query(
-    $link,
-    $sqlPromociones
-);
-
-$totalPromociones = mysqli_fetch_assoc(
-    $resultadoPromociones
-);
+$resultadoPromociones = mysqli_query($link, $sqlPromociones);
+$totalPromociones = mysqli_fetch_assoc($resultadoPromociones);
 
 ?>
 
 <div class="container mt-5">
 
-            <h2>
+            <h2>Bienvenido <?= $_SESSION['nombre'] ?></h2>
 
-                Bienvenido
-                <?= $_SESSION['nombre'] ?>
-
-            </h2>
-
-            <p class="text-muted">
-
-                Panel de gestión de la aerolínea.
-
-            </p>
+            <p class="text-muted">Panel de gestión de la aerolínea.</p>
 
             <!-- AEROLÍNEA -->
 
@@ -121,43 +65,18 @@ $totalPromociones = mysqli_fetch_assoc(
 
                 <div class="card-body">
 
-                    <h5>
-
-                        Aerolínea asignada
-
-                    </h5>
-
+                    <h5>Aerolínea asignada</h5>
                     <hr>
-
                     <?php
-                    if($nombreAerolinea)
-                    {
+                        if($nombreAerolinea){
                     ?>
-
-                        <h3 class="text-success">
-
-                            <?= $nombreAerolinea ?>
-
-                        </h3>
-
+                        <h3 class="text-success"><?= $nombreAerolinea ?></h3>
                     <?php
                     }
-                    else
-                    {
+                        else{
                     ?>
-
-                        <h3 class="text-danger">
-
-                            Sin aerolínea asignada
-
-                        </h3>
-
-                        <p>
-
-                            Contacte al administrador para que le asigne una aerolínea.
-
-                        </p>
-
+                        <h3 class="text-danger">Sin aerolínea asignada</h3>
+                        <p>Contacte al administrador para que le asigne una aerolínea.</p>
                     <?php
                     }
                     ?>
@@ -176,17 +95,8 @@ $totalPromociones = mysqli_fetch_assoc(
 
                         <div class="card-body">
 
-                            <h5>
-
-                                Vuelos
-
-                            </h5>
-
-                            <h2>
-
-                                <?= $totalVuelos['total'] ?>
-
-                            </h2>
+                            <h5>Vuelos</h5>
+                            <h2><?= $totalVuelos['total'] ?></h2>
 
                         </div>
 
@@ -200,17 +110,8 @@ $totalPromociones = mysqli_fetch_assoc(
 
                         <div class="card-body">
 
-                            <h5>
-
-                                Promociones
-
-                            </h5>
-
-                            <h2>
-
-                                <?= $totalPromociones['total'] ?>
-
-                            </h2>
+                            <h5>Promociones</h5>
+                            <h2><?= $totalPromociones['total'] ?></h2>
 
                         </div>
 
@@ -218,23 +119,10 @@ $totalPromociones = mysqli_fetch_assoc(
 
                 </div>
 
-            </div><a
-href="../ceo/reportes/ventas.php"
-class="btn btn-primary">
-
-    Reporte Ventas
-
-</a>
-
-<a
-href="../ceo/reportes/ocupacion.php"
-class="btn btn-success">
-
-    Ocupación Vuelos
-
-</a>
-
+            </div>
             
+            <a href="../ceo/reportes/ventas.php" class="btn btn-primary">Reporte Ventas</a>
+            <a href="../ceo/reportes/ocupacion.php" class="btn btn-success">Ocupación Vuelos</a>
 
         </div>
 

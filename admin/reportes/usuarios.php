@@ -4,35 +4,19 @@ include("../../includes/verificarSession.php");
 include("../../includes/conexion.php");
 include("../../includes/header.php");
 
-$sql = "
+$sql = "SELECT codUsuario, nombreUsuario, emailUsuario, tipoUsuario, estadoCuenta FROM usuarios ORDER BY nombreUsuario ";
 
-SELECT
-codUsuario,
-nombreUsuario,
-emailUsuario,
-tipoUsuario,
-estadoCuenta
+$resultado = mysqli_query($link, $sql);
 
-FROM usuarios
-
-ORDER BY nombreUsuario
-
-";
-
-$resultado = mysqli_query(
-    $link,
-    $sql
-);
+if (!$resultado) {
+    die("Error en la consulta: " . mysqli_error($link));
+}
 
 ?>
 
 <div class="container mt-5">
 
-    <h2>
-
-        Reporte de Usuarios
-
-    </h2>
+    <h2>Reporte de Usuarios</h2>
 
     <div class="card card-custom mt-4">
 
@@ -60,35 +44,11 @@ $resultado = mysqli_query(
 
                     <tr>
 
-                        <td>
-
-                            <?= $fila['codUsuario'] ?>
-
-                        </td>
-
-                        <td>
-
-                            <?= $fila['nombreUsuario'] ?>
-
-                        </td>
-
-                        <td>
-
-                            <?= $fila['emailUsuario'] ?>
-
-                        </td>
-
-                        <td>
-
-                            <?= $fila['tipoUsuario'] ?>
-
-                        </td>
-
-                        <td>
-
-                            <?= $fila['estadoCuenta'] ?>
-
-                        </td>
+                        <td><?= $fila['codUsuario'] ?></td>
+                        <td><?= $fila['nombreUsuario'] ?></td>
+                        <td><?= $fila['emailUsuario'] ?></td>
+                        <td><?= $fila['tipoUsuario'] ?></td>
+                        <td><?= $fila['estadoCuenta'] ?></td>
 
                     </tr>
 

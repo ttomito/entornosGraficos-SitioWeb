@@ -4,35 +4,17 @@ include("../../includes/verificarSession.php");
 include("../../includes/conexion.php");
 include("../../includes/header.php");
 
-$sql = "
+$sql = "SELECT v.*, a.nombreAerolinea FROM vuelos v INNER JOIN aerolineas a ON v.codAerolinea = a.codAerolinea ORDER BY fechaVuelo ";
 
-SELECT
-v.*,
-a.nombreAerolinea
-
-FROM vuelos v
-
-INNER JOIN aerolineas a
-ON v.codAerolinea = a.codAerolinea
-
-ORDER BY fechaVuelo
-
-";
-
-$resultado = mysqli_query(
-    $link,
-    $sql
-);
-
+$resultado = mysqli_query($link,$sql);
+if (!$resultado) {
+    die("Error en la consulta: " . mysqli_error($link));
+}
 ?>
 
 <div class="container mt-5">
 
-    <h2>
-
-        Reporte de Vuelos
-
-    </h2>
+    <h2>Reporte de Vuelos</h2>
 
     <div class="card card-custom mt-4">
 
@@ -63,17 +45,11 @@ $resultado = mysqli_query(
                     <tr>
 
                         <td><?= $fila['codVuelo'] ?></td>
-
                         <td><?= $fila['nombreAerolinea'] ?></td>
-
                         <td><?= $fila['origenVuelo'] ?></td>
-
                         <td><?= $fila['destinoVuelo'] ?></td>
-
                         <td><?= $fila['fechaVuelo'] ?></td>
-
                         <td>$<?= $fila['precioVuelo'] ?></td>
-
                         <td><?= $fila['asientosDisponibles'] ?></td>
 
                     </tr>

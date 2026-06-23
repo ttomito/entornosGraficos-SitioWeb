@@ -72,21 +72,11 @@ mysqli_query($link,$sqlTotal)
 
 <div class="container mt-5">
 
-    <h2>
-
-        Reporte de Ventas
-
-    </h2>
+    <h2>Reporte de Ventas</h2>
 
     <div class="alert alert-success">
 
-        Total vendido:
-
-        <strong>
-
-            $<?= $total['total'] ?? 0 ?>
-
-        </strong>
+        Total vendido: <strong>$<?= $total['total'] ?? 0 ?></strong>
 
     </div>
 
@@ -116,17 +106,11 @@ mysqli_query($link,$sqlTotal)
                 <?php while($fila = mysqli_fetch_assoc($resultado)){ ?>
 
                     <tr>
-
                         <td><?= $fila['codReserva'] ?></td>
-
                         <td><?= $fila['nombreUsuario'] ?></td>
-
                         <td><?= $fila['origenVuelo'] ?></td>
-
                         <td><?= $fila['destinoVuelo'] ?></td>
-
                         <td><?= $fila['fechaReserva'] ?></td>
-
                         <td>$<?= $fila['precioFinal'] ?></td>
 
                     </tr>

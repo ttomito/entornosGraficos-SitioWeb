@@ -70,7 +70,7 @@ include("../../includes/header.php");
             text:                '¿Desea crear la aerolínea?',
             icon:                'warning',
             showCancelButton:    true,
-            confirmButtonColor:  'rgb(5, 153, 0)',
+            confirmButtonColor:  '#198754',
             cancelButtonColor:   '#6c757d',
             confirmButtonText:   'Sí, crear',
             cancelButtonText:    'Cancelar'

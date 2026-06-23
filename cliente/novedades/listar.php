@@ -108,10 +108,17 @@ while($fila = mysqli_fetch_assoc($resultado))
 
 <div class="col-md-4 mb-4">
 
-    <div
-    class="card shadow-lg border-0 h-100 card-hover">
+    <div class="card shadow-lg border-0 h-100 card-hover">
 
-        <div class="card-body">
+    <?php if (!empty($fila['imagen'])) { ?>
+        <img
+            src="../../uploads/novedades/<?php echo $fila['imagen'] ?>"
+            class="card-img-top"
+            alt="Imagen de novedad"
+            style="height: 200px; object-fit: cover;">
+    <?php } ?>
+
+    <div class="card-body">
 
             <span
             class="badge bg-primary mb-3">

@@ -198,7 +198,7 @@ if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)){
             text:                `¿Desea activar la aerolínea "${nombre}"?`,
             icon:                'warning',
             showCancelButton:    true,
-            confirmButtonColor:  'rgb(5, 153, 0)',
+            confirmButtonColor:  '#198754',
             cancelButtonColor:   '#6c757d',
             confirmButtonText:   'Sí, activar',
             cancelButtonText:    'Cancelar'
