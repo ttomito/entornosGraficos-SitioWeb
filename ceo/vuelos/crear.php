@@ -17,7 +17,7 @@ include("../../includes/header.php");
 
                     <h2>Nuevo Vuelo</h2>
 
-                    <form action="guardar.php" method="post">
+                    <form action="guardar.php" method="post" enctype="multipart/form-data">
 
                         <div class="mb-3">
                             <label>Origen</label>
@@ -51,7 +51,7 @@ include("../../includes/header.php");
 
                         <div class="mb-3">
                             <label>Imagen de referencia</label>
-                            <input type="text" name="imagen" class="form-control" required>
+                            <input type="file" name="imagen" class="form-control" accept="image/*">
                         </div>
 
                         <button class="btn btn-primary">Guardar</button>
