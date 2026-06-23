@@ -68,6 +68,19 @@ if (session_status() == PHP_SESSION_NONE) {
                     if (!isset($_SESSION['tipo'])) {
                     ?>
 
+ <li class="nav-item">
+
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php">
+
+                                Sobre Nosotros
+
+                            </a>
+
+                        </li>
+
+
+
                         <li class="nav-item">
 
                             <a class="nav-link"
@@ -112,6 +125,17 @@ if (session_status() == PHP_SESSION_NONE) {
                     <?php
                     } elseif ($_SESSION['tipo'] == 'CLIENTE') {
                     ?>
+
+                     <li class="nav-item">
+
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php">
+
+                                Sobre Nosotros
+
+                            </a>
+
+                        </li>
 
                         <li class="nav-item">
 
@@ -183,6 +207,17 @@ if (session_status() == PHP_SESSION_NONE) {
                     } elseif ($_SESSION['tipo'] == 'CEO') {
                     ?>
 
+                     <li class="nav-item">
+
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php">
+
+                                Sobre Nosotros
+
+                            </a>
+
+                        </li>
+
                         <li class="nav-item">
 
                             <a class="nav-link"
@@ -230,6 +265,18 @@ if (session_status() == PHP_SESSION_NONE) {
                     <?php
                     } elseif ($_SESSION['tipo'] == 'ADMIN') {
                     ?>
+
+
+ <li class="nav-item">
+
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php">
+
+                                Sobre Nosotros
+
+                            </a>
+
+                        </li>
 
                         <li class="nav-item">
 
