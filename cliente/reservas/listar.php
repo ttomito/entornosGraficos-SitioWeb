@@ -154,7 +154,7 @@ $resultado = mysqli_query(
                         )
                         {
                             echo
-                            '<span class="badge bg-success">CONFIRMADA</span>';
+                            '<span class="badge bg-success">Confirmada</span>';
                         }
                         elseif(
                             $fila['estadoReserva']
@@ -163,12 +163,12 @@ $resultado = mysqli_query(
                         )
                         {
                             echo
-                            '<span class="badge bg-warning text-dark">PENDIENTE</span>';
+                            '<span class="badge bg-warning text-dark">Pendiente</span>';
                         }
                         else
                         {
                             echo
-                            '<span class="badge bg-danger">CANCELADA</span>';
+                            '<span class="badge bg-danger">Cancelada</span>';
                         }
 
                         ?>

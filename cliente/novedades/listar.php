@@ -3,22 +3,52 @@
 include("../../includes/header.php");
 include("../../includes/conexion.php");
 
-$sql = "
+$registrosPorPagina = 6;
 
-SELECT *
+$pagina = isset($_GET['pagina'])
+? (int)$_GET['pagina']
+: 1;
+
+if($pagina < 1)
+{
+    $pagina = 1;
+}
+
+$inicio =
+($pagina - 1)
+*
+$registrosPorPagina;
+
+
+
+$sqlConteo = "
+
+SELECT COUNT(*) total
 
 FROM novedades
 
-ORDER BY fechaPublicacion DESC
-
 ";
 
-$resultado = mysqli_query(
-    $link,
-    $sql
+$resultadoConteo =
+mysqli_query(
+$link,
+$sqlConteo
 );
 
+$filaConteo =
+mysqli_fetch_assoc(
+$resultadoConteo
+);
 
+$totalRegistros =
+$filaConteo['total'];
+
+$totalPaginas =
+ceil(
+$totalRegistros
+/
+$registrosPorPagina
+);
 
 $sql = "
 
@@ -27,6 +57,9 @@ SELECT *
 FROM novedades
 
 ORDER BY codNovedad DESC
+
+LIMIT $inicio,
+$registrosPorPagina
 
 ";
 
@@ -41,7 +74,6 @@ $hoy = new DateTime();
 
 <div class="container mt-4">
 
-```
 <div class="d-flex justify-content-between mb-4">
 
     <h2>
@@ -176,12 +208,80 @@ while($fila = mysqli_fetch_assoc($resultado))
 ?>
 
 </div>
-```
+<div class="d-flex justify-content-center mt-4">
+
+<nav>
+
+<ul class="pagination">
+
+<?php if($pagina > 1){ ?>
+
+<li class="page-item">
+
+<a
+class="page-link"
+href="?pagina=<?= $pagina-1 ?>">
+
+Anterior
+
+</a>
+
+</li>
+
+<?php } ?>
+
+<?php
+
+for(
+$i=1;
+$i<=$totalPaginas;
+$i++
+)
+{
+?>
+
+<li
+class="page-item
+<?= $i==$pagina ? 'active' : '' ?>">
+
+<a
+class="page-link"
+href="?pagina=<?= $i ?>">
+
+<?= $i ?>
+
+</a>
+
+</li>
+
+<?php
+}
+?>
+
+<?php if($pagina < $totalPaginas){ ?>
+
+<li class="page-item">
+
+<a
+class="page-link"
+href="?pagina=<?= $pagina+1 ?>">
+
+Siguiente
+
+</a>
+
+</li>
+
+<?php } ?>
+
+</ul>
+
+</nav>
 
 </div>
 
-<?php
-include("../../includes/footer.php");
-?>
+</div>
+
+
 
 <?php include("../../includes/footer.php"); ?>

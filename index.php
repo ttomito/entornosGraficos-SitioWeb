@@ -13,20 +13,17 @@ $link,
 
 SELECT
 v.destinoVuelo,
-v.imagenVuelo,
-COUNT(*) cantidad
+COUNT(r.codReserva) AS cantidad,
+MAX(v.imagenVuelo) AS imagenVuelo
 
 FROM reservas r
 
 INNER JOIN vuelos v
 ON r.codVuelo = v.codVuelo
 
-WHERE YEAR(r.fechaReserva)
->= YEAR(CURDATE()) - 3
+WHERE r.fechaReserva >= DATE_SUB(CURDATE(), INTERVAL 3 YEAR)
 
-GROUP BY
-v.destinoVuelo,
-v.imagenVuelo
+GROUP BY v.destinoVuelo
 
 ORDER BY cantidad DESC
 
@@ -34,6 +31,8 @@ LIMIT 8
 
 "
 );
+
+
 
 
 
@@ -266,10 +265,8 @@ $destinosPopulares
 ?>
 
 <div
-class="card  netflix-card shadow border-0"
-style="
-min-width:260px;
-">
+class="card  netflix-card shadow border-0 card-hover"
+>
 
 <img
 src="<?= $destino['imagenVuelo'] ?>"
@@ -295,7 +292,7 @@ reservas
 </p>
 
 <a
-href="cliente/vuelos/listar.php"
+href="cliente/vuelos/listar.php?destino=<?= urlencode($destino['destinoVuelo']) ?>"
 class="btn btn-primary btn-sm">
 
 Ver vuelos
@@ -311,9 +308,6 @@ Ver vuelos
 ?>
 
 </div>
-
-</div>
-
 <button
 class="btn btn-dark netflix-next"
 onclick="moverDestinos(1)">
@@ -321,6 +315,9 @@ onclick="moverDestinos(1)">
 ❯
 
 </button>
+</div>
+
+
 
 </div>
 </section>
@@ -468,126 +465,9 @@ vuelos nacionales e internacionales.
 </div>
 
 </section>
-<section class="py-5 bg-light">
 
-    <div class="container">
 
-        <h2
-        class="text-center fw-bold mb-5">
 
-            ¿Cómo funciona?
-
-        </h2>
-
-        <div class="row">
-
-            <div class="col-md-4 mb-4">
-
-              <div
-class="card shadow-lg border-0 h-100 card-hover">
-
-                    <div
-                    class="card-body text-center p-5">
-
-                        <div class="display-1">
-
-                            🔎
-
-                        </div>
-
-                        <h3
-                        class="text-primary mt-3">
-
-                            Buscar
-
-                        </h3>
-
-                        <p>
-
-                            Encontrá vuelos según
-                            origen, destino y fecha.
-
-                        </p>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="col-md-4 mb-4">
-
-               <div
-class="card shadow-lg border-0 h-100 card-hover">
-
-                    <div
-                    class="card-body text-center p-5">
-
-                        <div class="display-1">
-
-                            ✈️
-
-                        </div>
-
-                        <h3
-                        class="text-success mt-3">
-
-                            Reservar
-
-                        </h3>
-
-                        <p>
-
-                            Elegí el vuelo ideal
-                            para tu viaje.
-
-                        </p>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="col-md-4 mb-4">
-
-                 <div
-class="card shadow-lg border-0 h-100 card-hover">
-
-                    <div
-                    class="card-body text-center p-5">
-
-                        <div class="display-1">
-
-                            ✅
-
-                        </div>
-
-                        <h3
-                        class="text-warning mt-3">
-
-                            Confirmar
-
-                        </h3>
-
-                        <p>
-
-                            Gestioná tus compras
-                            y reservas fácilmente.
-
-                        </p>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
 <section class="container my-5">
 
 <h2 class="fw-bold mb-4">
@@ -596,8 +476,17 @@ class="card shadow-lg border-0 h-100 card-hover">
 
 </h2>
 
+<div class="netflix-wrapper">
+
+<button
+class="btn btn-dark netflix-prev"
+onclick="moverVuelos(-1)">
+❮
+</button>
+
 <div
-class="d-flex netflix-scroll pb-3"
+id="vuelosScroll"
+class="netflix-scroll">
 
 
 <?php
@@ -611,10 +500,8 @@ $vuelosHome
 ?>
 
 <div
-class="card  netflix-card  shadow border-0"
-style="
-min-width:260px;
-">
+class="card  netflix-card  shadow border-0 card-hover"
+>
 
 <img
 src="<?= $vuelo['imagenVuelo'] ?>"
@@ -695,65 +582,18 @@ Iniciar sesión
 ?>
 
 </div>
+<button
+class="btn btn-dark netflix-next"
+onclick="moverVuelos(1)">
+❯
+</button>
+</div>
 
+
+
+</div>
 </section>
 
-<section class="container my-5">
-
-<h2 class="text-center fw-bold mb-5">
-
-Destinos Populares
-
-</h2>
-
-<div class="row text-center">
-
-<?php
-while(
-$destino =
-mysqli_fetch_assoc(
-$destinosPopulares
-))
-{
-?>
-
-<div class="col-md-3 mb-3">
-
-<div class="card shadow card-hover">
-
-<div class="card-body">
-
-<h5>
-
-<?= $destino['origenVuelo'] ?>
-
-→
-
-<?= $destino['destinoVuelo'] ?>
-
-</h5>
-
-<p class="text-muted">
-
-<?= $destino['total'] ?>
-
-reservas
-
-</p>
-
-</div>
-
-</div>
-
-</div>
-
-<?php
-}
-?>
-
-</div>
-
-</section>
 
 <?php
 if(!isset($_SESSION['id']))
@@ -816,18 +656,27 @@ border-radius:20px;
 
 function moverDestinos(direccion)
 {
-    const contenedor =
-    document.getElementById(
-    'destinosScroll'
-    );
+document.getElementById(
+'destinosScroll'
+).scrollBy({
+left: direccion * 300,
+behavior: 'smooth'
+});
+}
 
-    contenedor.scrollBy({
-        left: direccion * 600,
-        behavior:'smooth'
-    });
+function moverVuelos(direccion)
+{
+document.getElementById(
+'vuelosScroll'
+).scrollBy({
+left: direccion * 300,
+behavior: 'smooth'
+});
 }
 
 </script>
+
+
 
 <?php
 

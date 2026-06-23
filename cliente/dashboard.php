@@ -57,6 +57,8 @@ mysqli_query($link,$sqlNovedades)
 
 ?>
 
+
+
 <div class="container mt-5">
 
 
@@ -149,10 +151,13 @@ mysqli_query($link,$sqlNovedades)
     </div>
 
 </div>
-
-
-
 </div>
+
+
+
+
+
+
 
 <?php
 include("../includes/footer.php");
