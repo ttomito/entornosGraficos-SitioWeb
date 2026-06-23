@@ -174,12 +174,12 @@ if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)){
 
         Swal.fire({
             title:               '¿Estás seguro?',
-            text:                `¿Desea eliminar la aerolínea "${nombre}"?`,
+            text:                `¿Desea ocultar la aerolínea "${nombre}"?`,
             icon:                'warning',
             showCancelButton:    true,
             confirmButtonColor:  '#d33',
             cancelButtonColor:   '#6c757d',
-            confirmButtonText:   'Sí, eliminar',
+            confirmButtonText:   'Sí, ocultar',
             cancelButtonText:    'Cancelar'
         }).then((result) => {
             if (result.isConfirmed)
