@@ -17,7 +17,14 @@ include("../../includes/header.php");
 
                     <h2>Nueva Novedad</h2>
 
-                    <form action="guardar.php" method="post">
+                    <form action="guardar.php" method="post" enctype="multipart/form-data">
+
+                        <div class="mb-3">
+
+                            <label>Título novedad</label>
+                            <input type="text" name="tituloNovedad" class="form-control" rows="4" required>
+
+                        </div>
 
                         <div class="mb-3">
 
@@ -37,6 +44,13 @@ include("../../includes/header.php");
 
                             <label>Fecha Expiración</label>
                             <input type="date" name="expiracion" class="form-control" required>
+
+                        </div>
+
+                        <div class="mb-3">
+
+                            <label>Imagen</label>
+                            <input type="file" name="imagen" class="form-control" accept="image/*">
 
                         </div>
 
