@@ -7,7 +7,7 @@ include("../../includes/conexion.php");
 $idCEO = $_SESSION['id'];
 $idVuelo = $_POST['id'];
 
-if($idCEO <= 0 || $idVuelo <=0){
+if ($idCEO <= 0 || $idVuelo <= 0) {
     header("Location: listar.php");
     die("Acceso denegado");
 }
@@ -21,7 +21,7 @@ AND u.codUsuario = $idCEO";
 
 $validacion = mysqli_query($link, $sqlValidacion);
 
-if(mysqli_num_rows($validacion) == 0){
+if (mysqli_num_rows($validacion) == 0) {
     header("Location: listar.php");
     die("Acceso denegado");
 }
@@ -32,64 +32,95 @@ $fecha = $_POST['fecha'];
 $hora = $_POST['hora'];
 $precio = $_POST['precio'];
 $asientos = $_POST['asientos'];
-$imagen = $_POST['imagen'];
+$imagenActual = $_POST['imagenActual'];
 
-if(empty($origen) || empty($destino) || empty($fecha) || empty($hora) || empty($precio) || empty($asientos) || empty($imagen)){
+if (empty($origen) || empty($destino) || empty($fecha) || empty($hora) || empty($precio) || empty($asientos)) {
     header("Location: editar.php?alerta=campos_vacios");
     exit();
 }
 
-// formato y que la fecha sea hoy o futura
 $fechaObj = DateTime::createFromFormat('Y-m-d', $fecha);
-$hoy      = new DateTime('today');
+$hoy = new DateTime('today');
 
 if (!$fechaObj || $fechaObj->format('Y-m-d') !== $fecha || $fechaObj < $hoy) {
-    header("Location: listar.php?alerta=fecha_invalida");
+    header("Location: editar.php?alerta=fecha_invalida");
     exit();
 }
 
-// formato de hora HH:MM:SS
 if (!preg_match('/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/', $hora)) {
-    // Si el input HTML no manda segundos, completarlos
     if (preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $hora)) {
         $hora .= ':00';
     } else {
-        header("Location: listar.php?alerta=hora_invalida");
+        header("Location: editar.php?alerta=hora_invalida");
         exit();
     }
 }
 
-// precio (0 a 5.000.000)
 if (!is_numeric($precio) || $precio < 0 || $precio > 5000000) {
-    header("Location: listar.php?alerta=precio_invalido");
+    header("Location: editar.php?alerta=precio_invalido");
     exit();
 }
 
-// asientos de 0 a 500
 if (!ctype_digit((string)$asientos) || $asientos < 0 || $asientos > 500) {
-    header("Location: listar.php?alerta=asientos_invalidos");
+    header("Location: editar.php?alerta=asientos_invalidos");
     exit();
+}
+
+$nombreImagen = $imagenActual;
+
+if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] === UPLOAD_ERR_OK) {
+
+    $carpeta = "../../uploads/vuelos/";
+
+    if (!is_dir($carpeta)) {
+        mkdir($carpeta, 0755, true);
+    }
+
+    $maxTamanio = 3 * 1024 * 1024; // 3MB
+    if ($_FILES['imagen']['size'] > $maxTamanio) {
+        header("Location: listar.php?alerta=imagen_muy_grande");
+        exit();
+    }
+
+    $extension = strtolower(pathinfo($_FILES['imagen']['name'], PATHINFO_EXTENSION));
+    $extensionesPermitidas = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+    if (!in_array($extension, $extensionesPermitidas)) {
+        header("Location: listar.php?alerta=imagen_invalida");
+        exit();
+    }
+
+    $nombreImagen = uniqid('vuelo_', true) . '.' . $extension;
+
+    if (!move_uploaded_file($_FILES['imagen']['tmp_name'], $carpeta . $nombreImagen)) {
+        header("Location: listar.php?alerta=error_imagen");
+        exit();
+    }
+
+    if (!empty($imagenActual) && file_exists($carpeta . $imagenActual)) {
+        unlink($carpeta . $imagenActual);
+    }
 }
 
 $sql = "UPDATE vuelos
 SET
-origenVuelo = '{$_POST['origen']}',
-destinoVuelo = '{$_POST['destino']}',
-fechaVuelo = '{$_POST['fecha']}',
-horaSalida = '{$_POST['hora']}',
-precioVuelo = '{$_POST['precio']}',
-asientosDisponibles = '{$_POST['asientos']}',
-imagenVuelo = '{$_POST['imagen']}'
+origenVuelo = '$origen',
+destinoVuelo = '$destino',
+fechaVuelo = '$fecha',
+horaSalida = '$hora',
+precioVuelo = '$precio',
+asientosDisponibles = '$asientos',
+imagenVuelo = '$nombreImagen'
 WHERE codVuelo = $idVuelo";
 
 $resultado = mysqli_query($link, $sql);
 
 if (!$resultado) {
-    error_log("Error al actualizar vuelo: " . mysqli_stmt_error($stmt));
-    header("Location: editar.php?alerta=error_servidor");
+    header("Location: listar.php?alerta=error_servidor");
     exit();
 } else {
     header("Location: listar.php?alerta=actualizado");
     exit();
 }
+
 ?>

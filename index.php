@@ -478,7 +478,7 @@ object-fit:cover;
 
     <h2 class="fw-bold mb-4">
 
-        ✈ Próximos Vuelos
+        Próximos Vuelos
 
     </h2>
 
@@ -509,11 +509,11 @@ object-fit:cover;
                     class="card  netflix-card  shadow border-0 card-hover">
 
                     <img
-                        src="<?= $vuelo['imagenVuelo'] ?>"
+                        src="uploads/vuelos/<?php echo $vuelo['imagenVuelo']; ?>"
                         style="
-height:200px;
-object-fit:cover;
-">
+                        height:200px;
+                        object-fit:cover;
+                        ">
 
                     <div class="card-body">
 

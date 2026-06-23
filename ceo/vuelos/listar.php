@@ -152,6 +152,11 @@ $alertas = [
         'title' => '¡Oculto!',
         'text'  => 'Se ha ocultado el vuelo y sus reservas.'
     ],
+    'campos_vacios' => [
+        'icon'  => 'error',
+        'title' => '¡Error!',
+        'text'  => 'No pueden haber campos vacíos.'
+    ],
     'actualizado' => [
         'icon'  => 'success',
         'title' => '¡Modificado!',
@@ -176,7 +181,22 @@ $alertas = [
         'icon'  => 'error',
         'title' => '¡Error!',
         'text'  => 'Cantidad de asientos inválida.'
-    ]
+    ],
+    'imagen_invalida' => [
+        'icon'  => 'error',
+        'title' => '¡Error!',
+        'text'  => 'Formato de la imagen inválido.'
+    ],
+    'imagen_muy_grande' => [
+        'icon'  => 'error',
+        'title' => '¡Error!',
+        'text'  => 'La imagen puede pesar hasta 3MB.'
+    ],
+    'error_imagen' => [
+        'icon'  => 'error',
+        'title' => '¡Error!',
+        'text'  => 'Ocurrió un error con la imagen.'
+    ],
 ];
 
 if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)){
