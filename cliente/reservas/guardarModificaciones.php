@@ -7,6 +7,17 @@ $asientos= $_POST['cantAsientos'];
 
 $codReserva = $_POST['codReserva'];
 
+$sql = "
+
+SELECT *
+
+FROM reservas
+
+WHERE codReserva = $codReserva
+
+";
+
+
 $idUsuario =
 $_SESSION['id'];
 

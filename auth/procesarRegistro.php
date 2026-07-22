@@ -7,8 +7,11 @@ require '../vendor/autoload.php';
 
 include("../includes/conexion.php");
 
-
 $nombre = $_POST['nombre'];
+
+$apellido = $_POST['apellido'];
+
+$dni = $_POST['dni'];
 
 $email = $_POST['email'];
 
@@ -17,6 +20,7 @@ $telefono = $_POST['telefono'];
 $clave = $_POST['clave'];
 
 $tipoUsuario = $_POST['tipoUsuario'];
+
 $token = bin2hex(random_bytes(32));
 
 if ($tipoUsuario == "CEO") {
@@ -30,9 +34,15 @@ if ($tipoUsuario == "CEO") {
 }
 
 $consulta = "
+
 SELECT *
+
 FROM usuarios
-WHERE emailUsuario = '$email'
+
+WHERE emailUsuario='$email'
+
+OR dniUsuario='$dni'
+
 ";
 
 $resultado = mysqli_query($link, $consulta);
@@ -41,30 +51,34 @@ if (mysqli_num_rows($resultado) > 0) {
     header("Location: registro.php?existe=1");
     exit();
 }
-
 $vSql = "
 
 INSERT INTO usuarios
 (
-    nombreUsuario,
-    emailUsuario,
-    claveUsuario,
-    telefonoUsuario,
-    tipoUsuario,
-    estadoCuenta,
-    tokenValidacion,
-    aprobadoAdmin
+nombreUsuario,
+apellidoUsuario,
+dniUsuario,
+emailUsuario,
+claveUsuario,
+telefonoUsuario,
+tipoUsuario,
+estadoCuenta,
+tokenValidacion,
+aprobadoAdmin
 )
+
 VALUES
 (
-    '$nombre',
-    '$email',
-    '$clave',
-    '$telefono',
-    '$tipoUsuario',
-    '$estado',
-    '$token',
-    '$aprobadoAdmin'
+'$nombre',
+'$apellido',
+'$dni',
+'$email',
+'$clave',
+'$telefono',
+'$tipoUsuario',
+'$estado',
+'$token',
+'$aprobadoAdmin'
 )
 
 ";
