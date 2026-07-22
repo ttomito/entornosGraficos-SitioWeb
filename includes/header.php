@@ -4,6 +4,8 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+$rutaActual = $_SERVER['PHP_SELF'];
+
 ?>
 
 <!DOCTYPE html>

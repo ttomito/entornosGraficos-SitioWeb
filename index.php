@@ -548,32 +548,54 @@ object-fit:cover;
 
                         <?php
 
-                        if (isset($_SESSION['id'])) {
-                        ?>
 
-                            <a
-                                href="cliente/reservas/reservar.php?codVuelo=<?= $vuelo['codVuelo'] ?>"
-                                class="btn btn-warning">
+if(
+    isset($_SESSION['tipo'])
+    &&
+    $_SESSION['tipo'] == 'CLIENTE'
+)
+{
+?>
 
-                                Ver disponibilidad
+    <a
+        href="cliente/reservas/reservar.php?codVuelo=<?= $vuelo['codVuelo'] ?>"
+        class="btn btn-warning">
 
-                            </a>
+        Ver disponibilidad
 
-                        <?php
-                        } else {
-                        ?>
+    </a>
 
-                            <a
-                                href="auth/login.php"
-                                class="btn btn-primary">
+<?php
+}
+elseif(!isset($_SESSION['id']))
+{
+?>
 
-                                Iniciar sesión
+    <a
+        href="auth/login.php"
+        class="btn btn-primary">
 
-                            </a>
+        Iniciar sesión
 
-                        <?php
-                        }
-                        ?>
+    </a>
+
+<?php
+}
+else
+{
+?>
+
+    <button
+        class="btn btn-secondary"
+        disabled>
+
+        Cuenta de cliente requerida
+
+    </button>
+
+<?php
+}
+?>
 
                     </div>
 

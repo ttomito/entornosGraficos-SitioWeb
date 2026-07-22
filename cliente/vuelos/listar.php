@@ -301,13 +301,18 @@ $fechaFlexible = false;
 <div class="container mt-4">
     
 
-    <div class="d-flex justify-content-between mb-4">
+<div class="row align-items-start mb-4">
+
+    <div class="col-md-4">
 
         <h2>
 
             Vuelos disponibles
 
         </h2>
+        </div>
+
+        
 <form method="GET">
 
 <p class="text-muted mb-3">
@@ -673,6 +678,9 @@ Reservar
 }
 else
 {
+
+if(!isset($_SESSION['id']))
+{
 ?>
 
 <a
@@ -684,6 +692,22 @@ Iniciar sesión
 </a>
 
 <?php
+}
+else
+{
+?>
+
+<button
+class="btn btn-secondary btn-sm"
+disabled>
+
+Cuenta de cliente requerida
+
+</button>
+
+<?php
+}
+
 }
 ?>
 
