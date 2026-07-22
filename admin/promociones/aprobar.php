@@ -10,6 +10,8 @@ include("../../includes/conexion.php");
 
 $id = $_GET['id'];
 
+
+
 /*
     Obtener datos promoción y CEO
 */
@@ -38,6 +40,11 @@ $resultado = mysqli_query(
 $datos = mysqli_fetch_assoc(
     $resultado
 );
+
+if(!$datos)
+{
+    die("No se encontró el CEO asociado a esta aerolínea.");
+}
 
 $codAerolinea = $datos['codAerolinea'];
 

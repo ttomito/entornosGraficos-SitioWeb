@@ -28,6 +28,7 @@ $sql = "
 
 SELECT
 v.*,
+a.nombreAerolinea,
 COALESCE(
 MAX(
 CASE
@@ -41,6 +42,9 @@ END
 ) AS descuento
 
 FROM vuelos v
+
+INNER JOIN aerolineas a
+ON v.codAerolinea = a.codAerolinea
 
 LEFT JOIN promociones p
 ON v.codAerolinea = p.codAerolinea
@@ -139,9 +143,11 @@ LIKE '%".$_GET['destino']."%'
 
 if(!empty($_GET['fecha']))
 {
-$sqlConteo .= "
-AND fechaVuelo='".$_GET['fecha']."'
-";
+    $fechaBuscada = $_GET['fecha'];
+
+    $sql .= "
+    AND fechaVuelo = '$fechaBuscada'
+    ";
 }
 
 $resultadoConteo =
@@ -208,64 +214,169 @@ $registrosPorPagina
 
 ";
 
-
-
 $resultado = mysqli_query($link, $sql);
 
 if(!$resultado)
 {
     die(mysqli_error($link));
 }
+
+/*
+| Si no encontró vuelos para la fecha,
+| mostramos los más cercanos.
+*/
+
+if(
+    mysqli_num_rows($resultado)==0
+    &&
+    !empty($_GET['fecha'])
+){
+
+$sql = "
+
+SELECT
+v.*,
+a.nombreAerolinea,
+COALESCE(
+MAX(
+CASE
+WHEN p.estadoPromocion='APROBADA'
+AND p.fechaLimitePromocion >= CURDATE()
+THEN p.descuentoPromocion
+ELSE 0
+END
+),
+0
+) AS descuento
+
+FROM vuelos v
+
+INNER JOIN aerolineas a
+ON v.codAerolinea = a.codAerolinea
+
+LEFT JOIN promociones p
+ON v.codAerolinea = p.codAerolinea
+
+WHERE fechaVuelo >= CURDATE()
+
+";
+
+if(!empty($_GET['origen']))
+{
+$sql .= "
+AND origenVuelo LIKE '%".$_GET['origen']."%'
+";
+}
+
+if(!empty($_GET['destino']))
+{
+$sql .= "
+AND destinoVuelo LIKE '%".$_GET['destino']."%'
+";
+}
+
+$sql .= "
+
+GROUP BY v.codVuelo
+
+ORDER BY ABS(DATEDIFF(fechaVuelo,'".$fechaBuscada."'))
+
+LIMIT $inicio,$registrosPorPagina
+
+";
+
+$resultado = mysqli_query($link,$sql);
+
+$fechaFlexible = true;
+
+}
+else
+{
+
+$fechaFlexible = false;
+
+}
 ?>
 
 <div class="container mt-4">
     
 
-    <div class="d-flex justify-content-between mb-4">
+<div class="row align-items-start mb-4">
+
+    <div class="col-md-4">
 
         <h2>
 
             Vuelos disponibles
 
         </h2>
+        </div>
 
-        <form method="GET">
+        
+<form method="GET">
 
-<div class="row g-3 mb-4">
+<p class="text-muted mb-3">
 
-<div class="col-md-3">
+Ingrese la ciudad de origen y destino. Luego seleccione la fecha del viaje.
+
+</p>
+
+<div class="row g-3">
+
+<div class="col-md-4">
+
+<label class="form-label">
+
+Origen
+
+</label>
 
 <input
 type="text"
 name="origen"
 class="form-control"
-placeholder="Origen"
+placeholder="Ej.: Rosario o Buenos Aires"
 value="<?= $_GET['origen'] ?? '' ?>">
+
 
 </div>
 
-<div class="col-md-3">
+<div class="col-md-4">
+
+<label class="form-label">
+
+Destino
+
+</label>
 
 <input
 type="text"
 name="destino"
 class="form-control"
-placeholder="Destino"
+placeholder="Ej.: Madrid o Lima"
 value="<?= $_GET['destino'] ?? '' ?>">
+
 
 </div>
 
-<div class="col-md-3">
+<div class="col-md-2">
+
+<label class="form-label">
+
+Fecha
+
+</label>
 
 <input
 type="date"
 name="fecha"
 class="form-control"
+min="<?= date('Y-m-d') ?>"
 value="<?= $_GET['fecha'] ?? '' ?>">
 
 </div>
 
-<div class="col-md-3">
+<div class="col-md-2 d-flex align-items-end">
 
 <button
 class="btn btn-primary w-100">
@@ -281,25 +392,47 @@ Buscar
 </form>
 
     </div>
-
-    <?php
-
-if(isset($_GET['promo']))
-{
+<?php
+if(
+    !empty($_GET['promo']) ||
+    !empty($_GET['origen']) ||
+    !empty($_GET['destino']) ||
+    !empty($_GET['fecha'])
+){
 ?>
 
-<div
-class="alert alert-info">
+<div class="alert alert-info d-flex justify-content-between align-items-center">
 
-Mostrando vuelos asociados a la promoción seleccionada.
+<span>
+
+Mostrando resultados según los filtros seleccionados.
+
+
+</span>
 
 <a
 href="listar.php"
-class="btn btn-sm btn-outline-primary ms-3">
+class="btn btn-sm btn-outline-primary">
 
-Quitar filtro
+Limpiar filtros
 
 </a>
+
+</div>
+
+<?php
+}
+?>
+<?php
+
+if(isset($fechaFlexible) && $fechaFlexible){
+?>
+
+<div class="alert alert-warning">
+
+No se encontraron vuelos para la fecha seleccionada.
+
+Se muestran los vuelos disponibles para las fechas más cercanas.
 
 </div>
 
@@ -318,6 +451,7 @@ Quitar filtro
 <tr>
 
 <th>Imagen</th>
+<th>Aerolínea</th>
 <th>Origen</th>
 <th>Destino</th>
 <th>Fecha</th>
@@ -336,6 +470,7 @@ Quitar filtro
 
 $hoy = new DateTime();
 
+$cantidadResultados = mysqli_num_rows($resultado);
 while($fila = mysqli_fetch_assoc($resultado))
 {
     $fechaVuelo = new DateTime($fila['fechaVuelo']);
@@ -369,6 +504,8 @@ while($fila = mysqli_fetch_assoc($resultado))
 
         <img
         src="<?= $fila['imagenVuelo'] ?>"
+        alt="Vuelo desde <?= $fila['origenVuelo'] ?> hacia <?= $fila['destinoVuelo'] ?>"
+
         style="
         width:12vw;
         height:7vw;
@@ -376,6 +513,12 @@ while($fila = mysqli_fetch_assoc($resultado))
         border-radius:7px;">
 
     </td>
+
+    <td>
+
+<?= $fila['nombreAerolinea'] ?>
+
+</td>
 
     <td>
 
@@ -535,6 +678,9 @@ Reservar
 }
 else
 {
+
+if(!isset($_SESSION['id']))
+{
 ?>
 
 <a
@@ -546,6 +692,22 @@ Iniciar sesión
 </a>
 
 <?php
+}
+else
+{
+?>
+
+<button
+class="btn btn-secondary btn-sm"
+disabled>
+
+Cuenta de cliente requerida
+
+</button>
+
+<?php
+}
+
 }
 ?>
 

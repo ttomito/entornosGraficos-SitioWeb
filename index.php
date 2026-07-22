@@ -588,29 +588,62 @@ include("includes/header.php");
                                     href="cliente/reservas/reservar.php?codVuelo=<?= (int) $vuelo['codVuelo'] ?>"
                                     class="btn btn-warning">
 
-                                    Ver disponibilidad
-                                    <span class="visually-hidden"> del vuelo <?= $origen ?> a <?= $destinoV ?></span>
 
-                                </a>
 
-                            <?php
-                            } else {
-                            ?>
 
-                                <a
-                                    href="auth/login.php"
-                                    class="btn btn-primary">
+if(
+    isset($_SESSION['tipo'])
+    &&
+    $_SESSION['tipo'] == 'CLIENTE'
+)
+{
+?>
 
-                                    Iniciar sesión
-                                    <span class="visually-hidden"> para ver el vuelo <?= $origen ?> a <?= $destinoV ?></span>
 
-                                </a>
+              
+     <a
+        href="cliente/reservas/reservar.php?codVuelo=<?= (int) $vuelo['codVuelo'] ?>"
+        class="btn btn-warning">
 
-                            <?php
-                            }
-                            ?>
+        Ver disponibilidad
+        <span class="visually-hidden"> del vuelo <?= $origen ?> a <?= $destinoV ?></span>
 
-                        </div>
+     </a>
+
+<?php
+}
+elseif(!isset($_SESSION['id']))
+{
+?>
+
+              
+    <a
+      href="auth/login.php"
+      class="btn btn-primary">
+
+      Iniciar sesión
+      <span class="visually-hidden"> para ver el vuelo <?= $origen ?> a <?= $destinoV ?></span>
+
+    </a>
+
+<?php
+}
+else
+{
+?>
+
+    <button
+        class="btn btn-secondary"
+        disabled>
+
+        Cuenta de cliente requerida
+
+    </button>
+
+<?php
+}
+?>
+
 
                     </div>
 

@@ -4,16 +4,77 @@ include("../../includes/verificarSession.php");
 include("../../includes/conexion.php");
 include("../../includes/header.php");
 
-$sql = "SELECT * FROM aerolineas ORDER BY codAerolinea";
+$registrosPorPagina = 10;
 
-$resultado = mysqli_query($link, $sql);
+$pagina = isset($_GET['pagina'])
+? (int)$_GET['pagina']
+: 1;
 
-if (!$resultado) {
-    die("Error en la consulta: " . mysqli_error($link));
+if($pagina < 1)
+{
+    $pagina = 1;
 }
 
-?>
+$inicio =
+($pagina - 1)
+*
+$registrosPorPagina;
 
+
+/*
+| Conteo
+*/
+
+$sqlConteo = "
+
+SELECT COUNT(*) AS total
+
+FROM aerolineas
+
+";
+
+$resultadoConteo =
+mysqli_query($link,$sqlConteo);
+
+$filaConteo =
+mysqli_fetch_assoc($resultadoConteo);
+
+$totalRegistros =
+$filaConteo['total'];
+
+$totalPaginas =
+ceil(
+$totalRegistros
+/
+$registrosPorPagina
+);
+
+
+/*
+| Consulta principal
+*/
+
+$sql = "
+
+SELECT *
+
+FROM aerolineas
+
+ORDER BY codAerolinea
+
+LIMIT $inicio,
+$registrosPorPagina
+
+";
+
+$resultado =
+mysqli_query($link,$sql);
+
+if(!$resultado)
+{
+    die("Error en la consulta: ".mysqli_error($link));
+}
+?>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <div class="container mt-4">
@@ -84,6 +145,76 @@ if (!$resultado) {
                     </tbody>
 
                 </table>
+                <div class="d-flex justify-content-center mt-4">
+
+<nav>
+
+<ul class="pagination">
+
+<?php if($pagina > 1){ ?>
+
+<li class="page-item">
+
+<a
+class="page-link"
+href="?pagina=<?= $pagina-1 ?>">
+
+Anterior
+
+</a>
+
+</li>
+
+<?php } ?>
+
+<?php
+
+for(
+$i=1;
+$i<=$totalPaginas;
+$i++
+)
+{
+
+?>
+
+<li
+class="page-item
+<?= $i==$pagina ? 'active' : '' ?>">
+
+<a
+class="page-link"
+href="?pagina=<?= $i ?>">
+
+<?= $i ?>
+
+</a>
+
+</li>
+
+<?php } ?>
+
+<?php if($pagina < $totalPaginas){ ?>
+
+<li class="page-item">
+
+<a
+class="page-link"
+href="?pagina=<?= $pagina+1 ?>">
+
+Siguiente
+
+</a>
+
+</li>
+
+<?php } ?>
+
+</ul>
+
+</nav>
+
+</div>
 
             <?php } ?>
 
