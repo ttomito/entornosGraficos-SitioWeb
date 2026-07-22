@@ -1,27 +1,33 @@
 <footer class="footer-custom mt-5">
 
     <div class="container text-center">
-
-        <h5>AirTickets</h5>
+        <p class="fs-5 fw-bold mb-2">AirTickets</p>
 
         <p>
             Sistema de Reservas Aéreas
         </p>
 
-        <p>
+        <nav aria-label="Enlaces del pie de página">
 
-        
-        <a href="/entornosGraficos-SitioWeb/mapa.php">
-            Mapa del Sitio
-        </a>
+            <ul class="list-inline mb-0">
 
-            |
+                <li class="list-inline-item">
+                    <a href="/entornosGraficos-SitioWeb/mapa.php">
+                        Mapa del Sitio
+                    </a>
+                </li>
 
-            <a href="/entornosGraficos-SitioWeb/contacto.php  ">
-                Contacto
-            </a>
+                <li class="list-inline-item" aria-hidden="true">|</li>
 
-        </p>
+                <li class="list-inline-item">
+                    <a href="/entornosGraficos-SitioWeb/contacto.php">
+                        Contacto
+                    </a>
+                </li>
+
+            </ul>
+
+        </nav>
 
         <p>
 

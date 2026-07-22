@@ -16,22 +16,40 @@ $apellido  = $_POST['apellido'];
 $dni       = $_POST['dni'];
 $telefono  = $_POST['telefono'];
 $clave     = $_POST['clave'];
+$claveConfirmacion = $_POST['clave_confirmacion'];
 
-/*
-Verificamos que el DNI no pertenezca a otro usuario
-*/
+if ($nombre === '' || mb_strlen($nombre) > 60) {
+    header("Location: index.php?alerta=datos_invalidos");
+    exit();
+}
+ 
+if ($apellido === '' || mb_strlen($apellido) > 60) {
+    header("Location: index.php?alerta=datos_invalidos");
+    exit();
+}
+ 
+if (!preg_match('/^\d{7,8}$/', $dni)) {
+    header("Location: index.php?alerta=dni_invalido");
+    exit();
+}
+ 
+if (!preg_match('/^[\d\s\-\+\(\)]{6,20}$/', $telefono)) {
+    header("Location: index.php?alerta=telefono_invalido");
+    exit();
+}
+ 
+if ($clave !== '' && strlen($clave) < 8) {
+    header("Location: index.php?alerta=clave_corta");
+    exit();
+}
 
-$sqlVerificar = "
+if ($clave !== '' && $clave !== $claveConfirmacion) {
+    header("Location: index.php?alerta=clave_no_coincide");
+    exit();
+}
 
-SELECT *
-
-FROM usuarios
-
-WHERE dniUsuario = '$dni'
-
-AND codUsuario <> $id
-
-";
+$sqlVerificar = "SELECT * FROM usuarios WHERE dniUsuario = '$dni'
+AND codUsuario <> $id";
 
 $resultadoVerificar = mysqli_query($link,$sqlVerificar);
 
@@ -41,47 +59,28 @@ if(mysqli_num_rows($resultadoVerificar)>0)
     exit();
 }
 
-/*
-Actualización
-*/
 
 if(!empty($clave))
 {
 
-    $sql = "
-
-    UPDATE usuarios
-
-    SET
-
+    $sql = "UPDATE usuarios SET
     nombreUsuario='$nombre',
     apellidoUsuario='$apellido',
     dniUsuario='$dni',
     telefonoUsuario='$telefono',
     claveUsuario='$clave'
-
-    WHERE codUsuario=$id
-
-    ";
+    WHERE codUsuario=$id";
 
 }
 else
 {
 
-    $sql = "
-
-    UPDATE usuarios
-
-    SET
-
+    $sql = "UPDATE usuarios SET
     nombreUsuario='$nombre',
     apellidoUsuario='$apellido',
     dniUsuario='$dni',
     telefonoUsuario='$telefono'
-
-    WHERE codUsuario=$id
-
-    ";
+    WHERE codUsuario=$id";
 
 }
 

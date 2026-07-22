@@ -4,6 +4,8 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+$paginaActual = basename($_SERVER['PHP_SELF']);
+
 ?>
 
 <!DOCTYPE html>
@@ -38,7 +40,11 @@ href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.m
 
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm">
+    <a href="#contenido-principal" class="visually-hidden-focusable">
+        Saltar al contenido principal
+    </a>
+
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm" aria-label="Navegación principal">
 
         <div class="container">
 
@@ -55,7 +61,10 @@ href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.m
                 class="navbar-toggler"
                 type="button"
                 data-bs-toggle="collapse"
-                data-bs-target="#menuNavbar">
+                data-bs-target="#menuNavbar"
+                aria-controls="menuNavbar"
+                aria-expanded="false"
+                aria-label="Abrir menú de navegación">
 
                 <span class="navbar-toggler-icon"></span>
 
@@ -72,10 +81,11 @@ href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.m
                     if (!isset($_SESSION['tipo'])) {
                     ?>
 
- <li class="nav-item">
+                        <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php">
+                            <a class="nav-link<?= $paginaActual == 'pagina.php' ? ' active' : '' ?>"
+                                href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php"
+                                <?= $paginaActual == 'pagina.php' ? ' aria-current="page"' : '' ?>>
 
                                 Sobre Nosotros
 
@@ -87,8 +97,9 @@ href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.m
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/index.php">
+                            <a class="nav-link<?= $paginaActual == 'index.php' ? ' active' : '' ?>"
+                                href="/entornosGraficos-SitioWeb/index.php"
+                                <?= $paginaActual == 'index.php' ? ' aria-current="page"' : '' ?>>
 
                                 Inicio
 
@@ -108,7 +119,7 @@ href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.m
 
                         <li class="nav-item">
 
-                            <a class="nav-link" href="/entornosGraficos-SitioWeb/cliente/promociones/listar.php"">
+                            <a class="nav-link" href="/entornosGraficos-SitioWeb/cliente/promociones/listar.php">
 
                                 Promociones
 
@@ -118,7 +129,7 @@ href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.m
 
                         <li class="nav-item">
 
-                            <a class="nav-link" href="/entornosGraficos-SitioWeb/cliente/novedades/listar.php"">
+                            <a class="nav-link" href="/entornosGraficos-SitioWeb/cliente/novedades/listar.php">
 
                                 Novedades
 
@@ -130,7 +141,7 @@ href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.m
                     } elseif ($_SESSION['tipo'] == 'CLIENTE') {
                     ?>
 
-                     <li class="nav-item">
+                        <li class="nav-item">
 
                             <a class="nav-link"
                                 href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php">
@@ -211,7 +222,7 @@ href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.m
                     } elseif ($_SESSION['tipo'] == 'CEO') {
                     ?>
 
-                     <li class="nav-item">
+                        <li class="nav-item">
 
                             <a class="nav-link"
                                 href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php">
@@ -270,8 +281,7 @@ href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.m
                     } elseif ($_SESSION['tipo'] == 'ADMIN') {
                     ?>
 
-
- <li class="nav-item">
+                        <li class="nav-item">
 
                             <a class="nav-link"
                                 href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php">
@@ -365,15 +375,17 @@ href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.m
 
                             Hola,
 
-                            <?php echo $_SESSION['nombre']; ?>
+                            <?= htmlspecialchars($_SESSION['nombre'], ENT_QUOTES, 'UTF-8') ?>
 
                         </span>
 
+                        
                         <a
                             href="/entornosGraficos-SitioWeb/auth/logout.php"
                             class="btn btn-danger">
 
                             Salir
+                            <span class="visually-hidden"> de la cuenta de <?= htmlspecialchars($_SESSION['nombre'], ENT_QUOTES, 'UTF-8') ?></span>
 
                         </a>
 
