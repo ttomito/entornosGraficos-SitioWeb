@@ -38,9 +38,26 @@ $usuario = mysqli_fetch_assoc($resultado);
                         <div class="mb-3">
 
                             <label>Nombre</label>
-                            <input type="text" name="nombre" class="form-control" value="<?= $usuario['nombreUsuario'] ?>" required>
+                            <input type="text" name="nombre" class="form-control" value="<?= $usuario['nombreUsuario'] ?>" maxlength="60" required>
 
                         </div>
+                        <div class="mb-3">
+
+<label>
+
+Apellido
+
+</label>
+
+<input
+type="text"
+name="apellido"
+class="form-control"
+value="<?= $usuario['apellidoUsuario'] ?>" 
+maxlength="60"
+required>
+
+</div>
 
                         <div class="mb-3">
 
@@ -48,20 +65,57 @@ $usuario = mysqli_fetch_assoc($resultado);
                             <input type="email" class="form-control" value="<?= $usuario['emailUsuario'] ?>" disabled>
 
                         </div>
-
                         <div class="mb-3">
 
-                            <label>Teléfono</label>
-                            <input type="text" name="telefono" class="form-control" value="<?= $usuario['telefonoUsuario'] ?>">
+<label>
 
-                        </div>
+DNI
 
-                        <div class="mb-3">
+</label>
 
-                            <label>Nueva Contraseña</label>
-                            <input type="password" name="clave" class="form-control">
+<input
+type="text"
+name="dni"
+class="form-control"
+value="<?= $usuario['dniUsuario'] ?>"
+maxlength="15"
+required>
 
-                        </div>
+</div>
+
+                       <div class="mb-3">
+
+<label>
+
+Teléfono
+
+</label>
+
+<input
+type="text"
+name="telefono"
+class="form-control"
+value="<?= $usuario['telefonoUsuario'] ?>"
+maxlength="20"
+required>
+
+</div>
+
+                       <div class="mb-3">
+
+<label>
+
+Nueva Contraseña
+
+</label>
+
+<input
+type="password"
+name="clave"
+class="form-control"
+placeholder="Dejar vacío para mantener la actual">
+
+</div>
 
                         <div class="mb-3">
 
@@ -96,7 +150,12 @@ $alertas = [
         'icon'  => 'error',
         'title' => 'Error',
         'text'  => 'Ocurrió un error inesperado. Intente nuevamente.'
-    ]
+    ],
+    'dni' => [
+    'icon'  => 'warning',
+    'title' => 'DNI duplicado',
+    'text'  => 'Ya existe un usuario registrado con ese DNI.'
+]
 ];
 
 if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)){
@@ -127,7 +186,7 @@ if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)){
 
         Swal.fire({
             title:               '¿Estás seguro?',
-            text:                '¿Desea guardar los cambios',
+            text:                '¿Desea guardar los cambios?',
             icon:                'warning',
             showCancelButton:    true,
             confirmButtonColor:  '#198754',

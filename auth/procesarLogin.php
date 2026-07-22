@@ -58,7 +58,8 @@ if(
 
 $_SESSION['id'] = $usuario['codUsuario'];
 
-$_SESSION['nombre'] = $usuario['nombreUsuario'];
+$_SESSION['nombre'] =
+$usuario['nombreUsuario']." ".$usuario['apellidoUsuario'];
 
 $_SESSION['tipo'] = $usuario['tipoUsuario'];
 
