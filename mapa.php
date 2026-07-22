@@ -182,7 +182,7 @@ elseif($_SESSION['tipo'] == 'ADMIN')
 
                 <li>
                     <a href="admin/dashboard.php">
-                        Dashboard
+                        Inicio
                     </a>
                 </li>
 

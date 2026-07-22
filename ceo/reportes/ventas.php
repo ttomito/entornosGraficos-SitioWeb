@@ -74,7 +74,7 @@ mysqli_query($link,$sqlTotal)
 
     <h2>Reporte de Ventas</h2>
 
-    <div class="alert alert-success">
+    <div class="alert alert-info">
 
         Total vendido: <strong>$<?= $total['total'] ?? 0 ?></strong>
 

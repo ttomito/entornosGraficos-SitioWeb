@@ -3,29 +3,25 @@
 include("../../includes/header.php");
 include("../../includes/conexion.php");
 
-$sql = "SELECT
+$filtroDescripcion = $_GET['descripcion'] ?? '';
+$filtroAerolinea   = $_GET['aerolinea'] ?? '';
+
+$sql = "
+
+SELECT
 p.*,
 a.nombreAerolinea
+
 FROM promociones p
+
 INNER JOIN aerolineas a
 ON p.codAerolinea = a.codAerolinea
+
 WHERE p.estadoPromocion = 'APROBADA'
+
 AND p.fechaLimitePromocion >= CURDATE()
-ORDER BY p.codPromocion DESC";
 
-
-$resultado = mysqli_query($link, $sql);
-
-if (!$resultado) {
-    die(mysqli_error($link));
-}
-?>
-
-<?php
-
-$filtroDescripcion = $_GET['descripcion'] ?? '';
-$filtroAerolinea = $_GET['aerolinea'] ?? '';
-
+";
 
 if($filtroDescripcion != '')
 {
@@ -43,59 +39,133 @@ if($filtroAerolinea != '')
     ";
 }
 
-$resultado = mysqli_query($link,$sql);
+$sql .= "
 
-if (!$resultado) {
+ORDER BY p.codPromocion DESC
+
+";
+$resultado = mysqli_query($link, $sql);
+
+if(!$resultado)
+{
     die("Error en la consulta: " . mysqli_error($link));
 }
+
 
 ?>
 
 
+
+
 <div class="container mt-4">
+<div class="row align-items-start mb-4">
+    <div class="col-md-4">
 
-    <div class="d-flex justify-content-between mb-4">
+    <h2>
 
-        <h2>Promociones disponibles</h2>
+        Promociones disponibles
 
-        <form method="GET" class="row mb-4">
+    </h2>
 
-            <div class="col-md-5">
+</div>
 
-                <input
-                type="text"
-                name="descripcion"
-                class="form-control"
-                placeholder="Buscar descripción"
-                value="<?= $filtroDescripcion ?>">
+    <div>
 
-            </div>
+        <p class="text-muted mb-3">
 
-            <div class="col-md-5">
+            Busque promociones por descripción o por nombre de la aerolínea.
 
-                <input
-                type="text"
-                name="aerolinea"
-                class="form-control"
-                placeholder="Buscar aerolínea"
-                value="<?= $filtroAerolinea ?>">
+        </p>
 
-            </div>
+        <form method="GET">
 
-            <div class="col-md-2">
+            <div class="row g-3">
 
-                <button
-                class="btn btn-primary w-100">
+                <div class="col-md-5">
 
-                    Buscar
+                    <label class="form-label">
 
-                </button>
+                        Descripción
+
+                    </label>
+
+                    <input
+                    type="text"
+                    name="descripcion"
+                    class="form-control"
+                    placeholder="Ej.: Europa, Dubái, Bariloche..."
+                    value="<?= $filtroDescripcion ?>">
+
+                </div>
+
+                <div class="col-md-5">
+
+                    <label class="form-label">
+
+                        Aerolínea
+
+                    </label>
+
+                    <input
+                    type="text"
+                    name="aerolinea"
+                    class="form-control"
+                    placeholder="Ej.: Emirates, LATAM, Iberia..."
+                    value="<?= $filtroAerolinea ?>">
+
+                </div>
+
+                <div class="col-md-2 d-flex align-items-end">
+
+                    <button
+                    class="btn btn-primary w-100">
+
+                        Buscar
+
+                    </button>
+
+                </div>
 
             </div>
 
         </form>
 
+
+</div>
+
+        
+
     </div>
+
+    <?php
+if(
+    !empty($filtroDescripcion)
+    ||
+    !empty($filtroAerolinea)
+){
+?>
+
+<div class="alert alert-info d-flex justify-content-between align-items-center">
+
+<span>
+
+Mostrando promociones según los filtros seleccionados.
+
+</span>
+
+<a
+href="listar.php"
+class="btn btn-sm btn-outline-primary">
+
+Limpiar filtros
+
+</a>
+
+</div>
+
+<?php
+}
+?>
 
     <?php
     if(mysqli_num_rows($resultado) > 0){ ?>
