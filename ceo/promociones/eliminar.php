@@ -7,20 +7,12 @@ $id = $_GET['id'];
 
 $idCEO = $_SESSION['id'];
 
-$sql = "
-
-DELETE p
-
+$sql = "DELETE p
 FROM promociones p
-
 INNER JOIN usuarios u
 ON p.codAerolinea = u.codAerolinea
-
 WHERE p.codPromocion = $id
-
-AND u.codUsuario = $idCEO
-
-";
+AND u.codUsuario = $idCEO";
 
 mysqli_query(
     $link,

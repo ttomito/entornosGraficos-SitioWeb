@@ -7,23 +7,20 @@ include("../../includes/header.php");
 $registrosPorPagina = 10;
 
 $pagina = isset($_GET['pagina'])
-? (int)$_GET['pagina']
-: 1;
+    ? (int)$_GET['pagina']
+    : 1;
 
-if($pagina < 1)
-{
+if ($pagina < 1) {
     $pagina = 1;
 }
 
 $inicio =
-($pagina - 1)
-*
-$registrosPorPagina;
+    ($pagina - 1)
+    *
+    $registrosPorPagina;
 
 
-/*
-| Conteo
-*/
+
 
 $sqlConteo = "
 
@@ -34,25 +31,23 @@ FROM aerolineas
 ";
 
 $resultadoConteo =
-mysqli_query($link,$sqlConteo);
+    mysqli_query($link, $sqlConteo);
 
 $filaConteo =
-mysqli_fetch_assoc($resultadoConteo);
+    mysqli_fetch_assoc($resultadoConteo);
 
 $totalRegistros =
-$filaConteo['total'];
+    $filaConteo['total'];
 
 $totalPaginas =
-ceil(
-$totalRegistros
-/
-$registrosPorPagina
-);
+    ceil(
+        $totalRegistros
+            /
+            $registrosPorPagina
+    );
 
 
-/*
-| Consulta principal
-*/
+
 
 $sql = "
 
@@ -68,11 +63,10 @@ $registrosPorPagina
 ";
 
 $resultado =
-mysqli_query($link,$sql);
+    mysqli_query($link, $sql);
 
-if(!$resultado)
-{
-    die("Error en la consulta: ".mysqli_error($link));
+if (!$resultado) {
+    die("Error en la consulta: " . mysqli_error($link));
 }
 ?>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -81,7 +75,7 @@ if(!$resultado)
 
     <div class="d-flex justify-content-between mb-4">
 
-        <h2>Gestión de Aerolíneas</h2>
+        <h2 id="titulo-listado">Gestión de Aerolíneas</h2>
         <a href="crear.php" class="btn btn-success">Nueva Aerolínea</a>
 
     </div>
@@ -90,131 +84,140 @@ if(!$resultado)
 
         <div class="card-body">
 
-            <?php if (mysqli_num_rows($resultado) === 0){ ?>
+            <?php if (mysqli_num_rows($resultado) === 0) { ?>
 
                 <p class="text-muted">No hay aerolíneas registradas.</p>
 
             <?php } else { ?>
 
-                <table class="table table-hover">
+                <table class="table table-hover" aria-labelledby="titulo-listado">
+
+                    <caption class="visually-hidden">
+                        Listado de aerolíneas registradas, página <?= $pagina ?> de <?= $totalPaginas ?>
+                    </caption>
 
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Nombre</th>
-                            <th>Descripción</th>
-                            <th>País</th>
-                            <th>Acciones</th>
+                            <th scope="col">ID</th>
+                            <th scope="col">Nombre</th>
+                            <th scope="col">Descripción</th>
+                            <th scope="col">País</th>
+                            <th scope="col">Acciones</th>
                         </tr>
                     </thead>
 
                     <tbody>
 
-                    <?php while($fila = mysqli_fetch_assoc($resultado)){ ?>
+                        <?php while ($fila = mysqli_fetch_assoc($resultado)) {
+                            $nombreEscapado = htmlspecialchars($fila['nombreAerolinea'], ENT_QUOTES, 'UTF-8');
+                        ?>
 
-                        <tr>
-                            <td><?= $fila['codAerolinea'] ?></td>
-                            <td><?= $fila['nombreAerolinea'] ?></td>
-                            <td><?= $fila['descripcionAerolinea'] ?></td>
-                            <td><?= $fila['codPais'] ?></td>
-                            <td>
-                                
-                                <a href="editar.php?id=<?= $fila['codAerolinea'] ?>"
-                                class="btn btn-warning btn-sm">
-                                    Editar
-                                </a>
+                            <tr>
+                                <td><?= htmlspecialchars($fila['codAerolinea'], ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= $nombreEscapado ?></td>
+                                <td><?= htmlspecialchars($fila['descripcionAerolinea'], ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= htmlspecialchars($fila['codPais'], ENT_QUOTES, 'UTF-8') ?></td>
+                                <td>
 
-                                <?php if($fila['activo'] == 1) {?>
-                                <a href="eliminar.php?id=<?= $fila['codAerolinea'] ?>&activo=<?= $fila['activo'] ?>"
-                                class="btn btn-danger btn-sm"
-                                onclick="confirmarEliminacion(event, this, '<?= $fila['nombreAerolinea'] ?>')">
-                                    Desactivar
-                                </a>
-                                <?php } else { ?>
-                                <a href="eliminar.php?id=<?= $fila['codAerolinea'] ?>&activo=<?= $fila['activo'] ?>"
-                                class="btn btn-success btn-sm"
-                                onclick="confirmarActivacion(event, this, '<?= $fila['nombreAerolinea'] ?>')">
-                                    Activar
-                                </a>
-                                <?php } ?>
-                            </td>
-                        </tr>
+                                    <a href="editar.php?id=<?= $fila['codAerolinea'] ?>"
+                                        class="btn btn-warning btn-sm"
+                                        aria-label="Editar aerolínea <?= $nombreEscapado ?>">
+                                        Editar
+                                    </a>
 
-                    <?php } ?>
+                                    <?php if ($fila['activo'] == 1) { ?>
+                                        <a href="eliminar.php?id=<?= $fila['codAerolinea'] ?>&activo=<?= $fila['activo'] ?>"
+                                            class="btn btn-danger btn-sm"
+                                            aria-label="Desactivar aerolínea <?= $nombreEscapado ?>"
+                                            data-nombre="<?= $nombreEscapado ?>"
+                                            onclick="confirmarEliminacion(event, this)">
+                                            Desactivar
+                                        </a>
+                                    <?php } else { ?>
+                                        <a href="eliminar.php?id=<?= $fila['codAerolinea'] ?>&activo=<?= $fila['activo'] ?>"
+                                            class="btn btn-success btn-sm"
+                                            aria-label="Activar aerolínea <?= $nombreEscapado ?>"
+                                            data-nombre="<?= $nombreEscapado ?>"
+                                            onclick="confirmarActivacion(event, this)">
+                                            Activar
+                                        </a>
+                                    <?php } ?>
+                                </td>
+                            </tr>
+
+                        <?php } ?>
 
                     </tbody>
 
                 </table>
                 <div class="d-flex justify-content-center mt-4">
 
-<nav>
+                    <nav aria-label="Paginación del listado de aerolíneas">
 
-<ul class="pagination">
+                        <ul class="pagination">
 
-<?php if($pagina > 1){ ?>
+                            <?php if ($pagina > 1) { ?>
 
-<li class="page-item">
+                                <li class="page-item">
 
-<a
-class="page-link"
-href="?pagina=<?= $pagina-1 ?>">
+                                    <a
+                                        class="page-link"
+                                        href="?pagina=<?= $pagina - 1 ?>"
+                                        aria-label="Ir a la página anterior">
 
-Anterior
+                                        Anterior
 
-</a>
+                                    </a>
 
-</li>
+                                </li>
 
-<?php } ?>
+                            <?php } ?>
 
-<?php
+                            <?php
 
-for(
-$i=1;
-$i<=$totalPaginas;
-$i++
-)
-{
+                            for ($i = 1;$i <= $totalPaginas;$i++) {
 
-?>
+                            ?>
 
-<li
-class="page-item
-<?= $i==$pagina ? 'active' : '' ?>">
+                                <li
+                                    class="page-item <?= $i == $pagina ? 'active' : '' ?>">
 
-<a
-class="page-link"
-href="?pagina=<?= $i ?>">
+                                    <a
+                                        class="page-link"
+                                        href="?pagina=<?= $i ?>"
+                                        aria-label="Ir a la página <?= $i ?>"
+                                        <?= $i == $pagina ? 'aria-current="page"' : '' ?>>
 
-<?= $i ?>
+                                        <?= $i ?>
 
-</a>
+                                    </a>
 
-</li>
+                                </li>
 
-<?php } ?>
+                            <?php } ?>
 
-<?php if($pagina < $totalPaginas){ ?>
+                            <?php if ($pagina < $totalPaginas) { ?>
 
-<li class="page-item">
+                                <li class="page-item">
 
-<a
-class="page-link"
-href="?pagina=<?= $pagina+1 ?>">
+                                    <a
+                                        class="page-link"
+                                        href="?pagina=<?= $pagina + 1 ?>"
+                                        aria-label="Ir a la página siguiente">
 
-Siguiente
+                                        Siguiente
 
-</a>
+                                    </a>
 
-</li>
+                                </li>
 
-<?php } ?>
+                            <?php } ?>
 
-</ul>
+                        </ul>
 
-</nav>
+                    </nav>
 
-</div>
+                </div>
 
             <?php } ?>
 
@@ -279,63 +282,62 @@ $alertas = [
     ]
 ];
 
-if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)){
+if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)) {
     $alerta = $alertas[$_GET['alerta']];
 ?>
 
-<script>
-    Swal.fire({
-        icon:              '<?= $alerta['icon'] ?>',
-        title:             '<?= $alerta['title'] ?>',
-        text:              '<?= $alerta['text'] ?>',
-        confirmButtonText: 'Aceptar'
-    }).then((result) => {
-        if (result.isConfirmed)
-        {
-            window.location.href = 'listar.php';
-        }
-    });
-</script>
+    <script>
+        Swal.fire({
+            icon: '<?= $alerta['icon'] ?>',
+            title: '<?= $alerta['title'] ?>',
+            text: '<?= $alerta['text'] ?>',
+            confirmButtonText: 'Aceptar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = 'listar.php';
+            }
+        });
+    </script>
 <?php }; ?>
 
 <script>
-    function confirmarEliminacion(event, elemento, nombre)
-    {
+    function confirmarEliminacion(event, elemento) {
         event.preventDefault();
 
+        const nombre = elemento.dataset.nombre;
+
         Swal.fire({
-            title:               '¿Estás seguro?',
-            text:                `¿Desea ocultar la aerolínea "${nombre}"?`,
-            icon:                'warning',
-            showCancelButton:    true,
-            confirmButtonColor:  '#d33',
-            cancelButtonColor:   '#6c757d',
-            confirmButtonText:   'Sí, ocultar',
-            cancelButtonText:    'Cancelar'
+            title: '¿Estás seguro?',
+            text: `¿Desea ocultar la aerolínea "${nombre}"?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, ocultar',
+            cancelButtonText: 'Cancelar'
         }).then((result) => {
-            if (result.isConfirmed)
-            {
+            if (result.isConfirmed) {
                 window.location.href = elemento.href;
             }
         });
     }
 
-    function confirmarActivacion(event, elemento, nombre)
-    {
+    function confirmarActivacion(event, elemento) {
         event.preventDefault();
 
+        const nombre = elemento.dataset.nombre;
+
         Swal.fire({
-            title:               '¿Estás seguro?',
-            text:                `¿Desea activar la aerolínea "${nombre}"?`,
-            icon:                'warning',
-            showCancelButton:    true,
-            confirmButtonColor:  '#198754',
-            cancelButtonColor:   '#6c757d',
-            confirmButtonText:   'Sí, activar',
-            cancelButtonText:    'Cancelar'
+            title: '¿Estás seguro?',
+            text: `¿Desea activar la aerolínea "${nombre}"?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, activar',
+            cancelButtonText: 'Cancelar'
         }).then((result) => {
-            if (result.isConfirmed)
-            {
+            if (result.isConfirmed) {
                 window.location.href = elemento.href;
             }
         });
