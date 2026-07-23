@@ -6,439 +6,262 @@ include("../../includes/conexion.php");
 $registrosPorPagina = 10;
 
 $pagina = isset($_GET['pagina'])
-? (int)$_GET['pagina']
-: 1;
+    ? (int)$_GET['pagina']
+    : 1;
 
-if($pagina < 1)
-{
+if ($pagina < 1) {
     $pagina = 1;
 }
 
 $inicio =
-($pagina - 1)
-*
-$registrosPorPagina;
+    ($pagina - 1)
+    *
+    $registrosPorPagina;
+
+$origenFiltro  = $_GET['origen'] ?? '';
+$destinoFiltro = $_GET['destino'] ?? '';
+$fechaFiltro   = $_GET['fecha'] ?? '';
+$promoFiltro   = $_GET['promo'] ?? '';
+
+$origenEsc  = mysqli_real_escape_string($link, addcslashes($origenFiltro, '%_'));
+$destinoEsc = mysqli_real_escape_string($link, addcslashes($destinoFiltro, '%_'));
+
+$fechaEsc = preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaFiltro) ? mysqli_real_escape_string($link, $fechaFiltro) : '';
+
+$promoId = (int) $promoFiltro;
+
+// Nota: cada fragmento arranca con un espacio explícito, para no depender
+// de saltos de línea u otros espacios "accidentales" al concatenar.
+function condicionesVuelos($promoId, $origenEsc, $destinoEsc, $fechaEsc, $incluirPromo = true, $incluirFecha = true)
+{
+    $cond = '';
+
+    if ($incluirPromo && $promoId > 0) {
+        $cond .= " AND v.codAerolinea = (SELECT codAerolinea FROM promociones WHERE codPromocion = $promoId)";
+    }
+
+    if ($origenEsc !== '') {
+        $cond .= " AND origenVuelo LIKE '%$origenEsc%'";
+    }
+
+    if ($destinoEsc !== '') {
+        $cond .= " AND destinoVuelo LIKE '%$destinoEsc%'";
+    }
+
+    if ($incluirFecha && $fechaEsc !== '') {
+        $cond .= " AND fechaVuelo = '$fechaEsc'";
+    }
+
+    return $cond;
+}
+
+function urlPaginaVuelos($n, $origen, $destino, $fecha, $promo)
+{
+    $params = ['pagina' => $n];
+
+    if ($origen !== '')  $params['origen'] = $origen;
+    if ($destino !== '') $params['destino'] = $destino;
+    if ($fecha !== '')   $params['fecha'] = $fecha;
+    if ($promo !== '')   $params['promo'] = $promo;
+
+    return '?' . htmlspecialchars(http_build_query($params), ENT_QUOTES, 'UTF-8');
+}
 
 
-/*
-| CONSULTA PRINCIPAL
-*/
-
-$sql = "
-
-SELECT
-v.*,
-a.nombreAerolinea,
-COALESCE(
-MAX(
-CASE
-WHEN p.estadoPromocion='APROBADA'
-AND p.fechaLimitePromocion >= CURDATE()
-THEN p.descuentoPromocion
-ELSE 0
-END
-),
-0
-) AS descuento
-
+$sql = "SELECT v.*, a.nombreAerolinea,
+COALESCE(MAX(CASE WHEN p.estadoPromocion='APROBADA' AND p.fechaLimitePromocion >= CURDATE() THEN p.descuentoPromocion ELSE 0 END),0) AS descuento
 FROM vuelos v
-
 INNER JOIN aerolineas a
 ON v.codAerolinea = a.codAerolinea
-
 LEFT JOIN promociones p
 ON v.codAerolinea = p.codAerolinea
+WHERE 1=1";
 
-WHERE 1=1
+$sql .= condicionesVuelos($promoId, $origenEsc, $destinoEsc, $fechaEsc);
 
-";
+$sqlConteo = "SELECT COUNT(*) AS total FROM vuelos v WHERE 1=1";
+$sqlConteo .= condicionesVuelos($promoId, $origenEsc, $destinoEsc, $fechaEsc);
 
-if(!empty($_GET['promo']))
-{
-$sql .= "
+$resultadoConteo = mysqli_query($link, $sqlConteo);
 
-AND v.codAerolinea =
-(
-    SELECT codAerolinea
+$filaConteo = mysqli_fetch_assoc($resultadoConteo);
+$totalRegistros = $filaConteo['total'];
+$totalPaginas = ceil($totalRegistros / $registrosPorPagina);
 
-    FROM promociones
-
-    WHERE codPromocion =
-    ".$_GET['promo']."
-)
-
-";
-}
-
-if(!empty($_GET['origen']))
-{
-$sql .= "
-AND origenVuelo
-LIKE '%".$_GET['origen']."%'
-";
-}
-
-if(!empty($_GET['destino']))
-{
-$sql .= "
-AND destinoVuelo
-LIKE '%".$_GET['destino']."%'
-";
-}
-
-if(!empty($_GET['fecha']))
-{
-$sql .= "
-AND fechaVuelo='".$_GET['fecha']."'
-";
-}
-
-
-/*
-| CONTEO PARA PAGINACIÓN
-*/
-
-$sqlConteo = "
-
-SELECT COUNT(*) AS total
-
-FROM vuelos v
-
-WHERE 1=1
-
-";
-
-if(!empty($_GET['promo']))
-{
-$sqlConteo .= "
-
-AND v.codAerolinea =
-(
-    SELECT codAerolinea
-
-    FROM promociones
-
-    WHERE codPromocion =
-    ".$_GET['promo']."
-)
-
-";
-}
-
-if(!empty($_GET['origen']))
-{
-$sqlConteo .= "
-AND origenVuelo
-LIKE '%".$_GET['origen']."%'
-";
-}
-
-if(!empty($_GET['destino']))
-{
-$sqlConteo .= "
-AND destinoVuelo
-LIKE '%".$_GET['destino']."%'
-";
-}
-
-if(!empty($_GET['fecha']))
-{
-    $fechaBuscada = $_GET['fecha'];
-
-    $sql .= "
-    AND fechaVuelo = '$fechaBuscada'
-    ";
-}
-
-$resultadoConteo =
-mysqli_query(
-$link,
-$sqlConteo
-);
-
-$filaConteo =
-mysqli_fetch_assoc(
-$resultadoConteo
-);
-
-$totalRegistros =
-$filaConteo['total'];
-
-$totalPaginas =
-ceil(
-$totalRegistros
-/
-$registrosPorPagina
-);
-
-
-/*
-| PAGINACIÓN
-*/
-
-
-
-$queryString = '';
-
-if(!empty($_GET['origen']))
-{
-    $queryString .= '&origen=' . $_GET['origen'];
-}
-
-if(!empty($_GET['destino']))
-{
-    $queryString .= '&destino=' . $_GET['destino'];
-}
-
-if(!empty($_GET['fecha']))
-{
-    $queryString .= '&fecha=' . $_GET['fecha'];
-}
-
-if(!empty($_GET['promo']))
-{
-    $queryString .= '&promo=' . $_GET['promo'];
-}
-
-
-
-
-$sql .= "
-
-GROUP BY v.codVuelo
-
-ORDER BY v.codVuelo DESC
-
-LIMIT $inicio,
-$registrosPorPagina
-
-";
+$sql .= " GROUP BY v.codVuelo ORDER BY v.codVuelo DESC LIMIT $inicio, $registrosPorPagina";
 
 $resultado = mysqli_query($link, $sql);
 
-if(!$resultado)
-{
+if (!$resultado) {
     die(mysqli_error($link));
 }
 
-/*
-| Si no encontró vuelos para la fecha,
-| mostramos los más cercanos.
-*/
 
-if(
-    mysqli_num_rows($resultado)==0
-    &&
-    !empty($_GET['fecha'])
-){
+if (mysqli_num_rows($resultado) == 0 && $fechaEsc !== '') {
 
-$sql = "
-
-SELECT
-v.*,
-a.nombreAerolinea,
-COALESCE(
-MAX(
-CASE
-WHEN p.estadoPromocion='APROBADA'
-AND p.fechaLimitePromocion >= CURDATE()
-THEN p.descuentoPromocion
-ELSE 0
-END
-),
-0
-) AS descuento
-
+    $sql = "SELECT v.*, a.nombreAerolinea, COALESCE(MAX(CASE WHEN p.estadoPromocion='APROBADA' AND p.fechaLimitePromocion >= CURDATE() THEN p.descuentoPromocion ELSE 0 END), 0)
+AS descuento
 FROM vuelos v
-
 INNER JOIN aerolineas a
 ON v.codAerolinea = a.codAerolinea
-
 LEFT JOIN promociones p
 ON v.codAerolinea = p.codAerolinea
+WHERE fechaVuelo >= CURDATE()";
 
-WHERE fechaVuelo >= CURDATE()
+    $sql .= condicionesVuelos($promoId, $origenEsc, $destinoEsc, $fechaEsc, false, false);
+    $sql .= " GROUP BY v.codVuelo ORDER BY ABS(DATEDIFF(fechaVuelo,'$fechaEsc')) LIMIT $inicio,$registrosPorPagina";
+    $resultado = mysqli_query($link, $sql);
+    $fechaFlexible = true;
+} else {
 
-";
-
-if(!empty($_GET['origen']))
-{
-$sql .= "
-AND origenVuelo LIKE '%".$_GET['origen']."%'
-";
-}
-
-if(!empty($_GET['destino']))
-{
-$sql .= "
-AND destinoVuelo LIKE '%".$_GET['destino']."%'
-";
-}
-
-$sql .= "
-
-GROUP BY v.codVuelo
-
-ORDER BY ABS(DATEDIFF(fechaVuelo,'".$fechaBuscada."'))
-
-LIMIT $inicio,$registrosPorPagina
-
-";
-
-$resultado = mysqli_query($link,$sql);
-
-$fechaFlexible = true;
-
-}
-else
-{
-
-$fechaFlexible = false;
-
+    $fechaFlexible = false;
 }
 ?>
 
 <div class="container mt-4">
-    
 
-<div class="row align-items-start mb-4">
 
-    <div class="col-md-4">
+    <div class="row align-items-start mb-4">
 
-        <h2>
+        <div class="col-md-4">
 
-            Vuelos disponibles
+            <h2>
 
-        </h2>
+                Vuelos disponibles
+
+            </h2>
         </div>
 
-        
-<form method="GET">
 
-<p class="text-muted mb-3">
+        <form method="GET" role="search" aria-label="Buscar vuelos">
 
-Ingrese la ciudad de origen y destino. Luego seleccione la fecha del viaje.
+            <p class="text-muted mb-3">
 
-</p>
+                Ingrese la ciudad de origen y destino. Luego seleccione la fecha del viaje.
 
-<div class="row g-3">
+            </p>
 
-<div class="col-md-4">
+            <div class="row g-3">
 
-<label class="form-label">
+                <div class="col-md-4">
 
-Origen
+                    <label for="origen" class="form-label">
 
-</label>
+                        Origen
 
-<input
-type="text"
-name="origen"
-class="form-control"
-placeholder="Ej.: Rosario o Buenos Aires"
-value="<?= $_GET['origen'] ?? '' ?>">
+                    </label>
 
-
-</div>
-
-<div class="col-md-4">
-
-<label class="form-label">
-
-Destino
-
-</label>
-
-<input
-type="text"
-name="destino"
-class="form-control"
-placeholder="Ej.: Madrid o Lima"
-value="<?= $_GET['destino'] ?? '' ?>">
+                    <input
+                        type="text"
+                        id="origen"
+                        name="origen"
+                        class="form-control"
+                        placeholder="Ej.: Rosario o Buenos Aires"
+                        value="<?= htmlspecialchars($origenFiltro, ENT_QUOTES, 'UTF-8') ?>">
 
 
-</div>
+                </div>
 
-<div class="col-md-2">
+                <div class="col-md-4">
 
-<label class="form-label">
+                    <label for="destino" class="form-label">
 
-Fecha
+                        Destino
 
-</label>
+                    </label>
 
-<input
-type="date"
-name="fecha"
-class="form-control"
-min="<?= date('Y-m-d') ?>"
-value="<?= $_GET['fecha'] ?? '' ?>">
+                    <input
+                        type="text"
+                        id="destino"
+                        name="destino"
+                        class="form-control"
+                        placeholder="Ej.: Madrid o Lima"
+                        value="<?= htmlspecialchars($destinoFiltro, ENT_QUOTES, 'UTF-8') ?>">
 
-</div>
 
-<div class="col-md-2 d-flex align-items-end">
+                </div>
 
-<button
-class="btn btn-primary w-100">
+                <div class="col-md-2">
 
-Buscar
+                    <label for="fecha" class="form-label">
 
-</button>
+                        Fecha
 
-</div>
+                    </label>
 
-</div>
+                    <input
+                        type="date"
+                        id="fecha"
+                        name="fecha"
+                        class="form-control"
+                        min="<?= date('Y-m-d') ?>"
+                        value="<?= htmlspecialchars($fechaFiltro, ENT_QUOTES, 'UTF-8') ?>">
 
-</form>
+                </div>
+
+                <div class="col-md-2 d-flex align-items-end">
+
+                    <button
+                        class="btn btn-primary w-100">
+
+                        Buscar
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </form>
 
     </div>
-<?php
-if(
-    !empty($_GET['promo']) ||
-    !empty($_GET['origen']) ||
-    !empty($_GET['destino']) ||
-    !empty($_GET['fecha'])
-){
-?>
+    <?php
+    if (
+        !empty($promoFiltro) ||
+        !empty($origenFiltro) ||
+        !empty($destinoFiltro) ||
+        !empty($fechaFiltro)
+    ) {
+    ?>
 
-<div class="alert alert-info d-flex justify-content-between align-items-center">
+        <div class="alert alert-info d-flex justify-content-between align-items-center" role="status">
 
-<span>
+            <span>
 
-Mostrando resultados según los filtros seleccionados.
+                Mostrando resultados según los filtros seleccionados.
 
 
-</span>
+            </span>
 
-<a
-href="listar.php"
-class="btn btn-sm btn-outline-primary">
+            <a
+                href="listar.php"
+                class="btn btn-sm btn-outline-primary">
 
-Limpiar filtros
+                Limpiar filtros
 
-</a>
+            </a>
 
-</div>
+        </div>
 
-<?php
-}
-?>
-<?php
+    <?php
+    }
+    ?>
+    <?php
 
-if(isset($fechaFlexible) && $fechaFlexible){
-?>
+    if (isset($fechaFlexible) && $fechaFlexible) {
+    ?>
 
-<div class="alert alert-warning">
+        <div class="alert alert-warning" role="status">
 
-No se encontraron vuelos para la fecha seleccionada.
+            No se encontraron vuelos para la fecha seleccionada.
 
-Se muestran los vuelos disponibles para las fechas más cercanas.
+            Se muestran los vuelos disponibles para las fechas más cercanas.
 
-</div>
+        </div>
 
-<?php
-}
-?>
+    <?php
+    }
+    ?>
 
     <div class="card card-custom">
 
@@ -446,354 +269,346 @@ Se muestran los vuelos disponibles para las fechas más cercanas.
 
             <table class="table table-hover">
 
-               <thead>
+                <caption class="visually-hidden">Listado de vuelos disponibles</caption>
 
-<tr>
+                <thead>
 
-<th>Imagen</th>
-<th>Aerolínea</th>
-<th>Origen</th>
-<th>Destino</th>
-<th>Fecha</th>
-<th>Precio</th>
-<th>Promoción</th>
-<th>Asientos</th>
-<th>Acción</th>
+                    <tr>
 
-</tr>
+                        <th scope="col">Imagen</th>
+                        <th scope="col">Aerolínea</th>
+                        <th scope="col">Origen</th>
+                        <th scope="col">Destino</th>
+                        <th scope="col">Fecha</th>
+                        <th scope="col">Precio</th>
+                        <th scope="col">Promoción</th>
+                        <th scope="col">Asientos</th>
+                        <th scope="col">Acción</th>
 
-</thead>
+                    </tr>
 
-<tbody>
+                </thead>
 
-<?php
+                <tbody>
 
-$hoy = new DateTime();
+                    <?php
 
-$cantidadResultados = mysqli_num_rows($resultado);
-while($fila = mysqli_fetch_assoc($resultado))
-{
-    $fechaVuelo = new DateTime($fila['fechaVuelo']);
+                    $hoy = new DateTime();
 
-    if(
-        $fila['asientosDisponibles'] > 0
-        &&
-        $fechaVuelo >= $hoy
-    )
-    {
+                    $cantidadResultados = mysqli_num_rows($resultado);
+                    while ($fila = mysqli_fetch_assoc($resultado)) {
+                        $fechaVuelo = new DateTime($fila['fechaVuelo']);
 
-        $precioFinal = $fila['precioVuelo'];
+                        if (
+                            $fila['asientosDisponibles'] > 0
+                            &&
+                            $fechaVuelo >= $hoy
+                        ) {
 
-        if($fila['descuento'] > 0)
-        {
-            $precioFinal =
-            $fila['precioVuelo']
-            -
-            (
-                $fila['precioVuelo']
-                *
-                $fila['descuento']
-                / 100
-            );
-        }
-?>
+                            $precioFinal = $fila['precioVuelo'];
 
-<tr>
+                            if ($fila['descuento'] > 0) {
+                                $precioFinal =
+                                    $fila['precioVuelo']
+                                    -
+                                    (
+                                        $fila['precioVuelo']
+                                        *
+                                        $fila['descuento']
+                                        / 100
+                                    );
+                            }
 
-    <td>
+                            $origenOut = htmlspecialchars($fila['origenVuelo'], ENT_QUOTES, 'UTF-8');
+                            $destinoOut = htmlspecialchars($fila['destinoVuelo'], ENT_QUOTES, 'UTF-8');
+                            $nombreAerolineaOut = htmlspecialchars($fila['nombreAerolinea'], ENT_QUOTES, 'UTF-8');
+                            $fechaVueloOut = htmlspecialchars($fila['fechaVuelo'], ENT_QUOTES, 'UTF-8');
+                            $imagenOut = htmlspecialchars($fila['imagenVuelo'], ENT_QUOTES, 'UTF-8');
+                    ?>
 
-        <img
-        src="<?= $fila['imagenVuelo'] ?>"
-        alt="Vuelo desde <?= $fila['origenVuelo'] ?> hacia <?= $fila['destinoVuelo'] ?>"
+                            <tr>
 
-        style="
-        width:12vw;
-        height:7vw;
-        object-fit:cover;
-        border-radius:7px;">
+                                <td>
 
-    </td>
+                                    <img
+                                        src="<?= $imagenOut ?>"
+                                        alt="Vuelo desde <?= $origenOut ?> hacia <?= $destinoOut ?>"
 
-    <td>
+                                        style="
+                                        width:12vw;
+                                        height:7vw;
+                                        object-fit:cover;
+                                        border-radius:7px;">
 
-<?= $fila['nombreAerolinea'] ?>
+                                </td>
 
-</td>
+                                <td>
 
-    <td>
+                                    <?= $nombreAerolineaOut ?>
 
-        <?= $fila['origenVuelo'] ?>
+                                </td>
 
-    </td>
+                                <td>
 
-    <td>
+                                    <?= $origenOut ?>
 
-        <?= $fila['destinoVuelo'] ?>
+                                </td>
 
-    </td>
+                                <td>
 
-    <td>
+                                    <?= $destinoOut ?>
 
-        <?= $fila['fechaVuelo'] ?>
+                                </td>
 
-    </td>
+                                <td>
 
-    <td>
+                                    <time datetime="<?= $fechaVueloOut ?>"><?= $fechaVueloOut ?></time>
 
-        <?php if($fila['descuento'] > 0){ ?>
+                                </td>
 
-            <span class="text-danger text-decoration-line-through">
+                                <td>
 
-                $<?= number_format(
-                    $fila['precioVuelo'],
-                    0,
-                    ',',
-                    '.'
-                ) ?>
+                                    <?php if ($fila['descuento'] > 0) { ?>
 
-            </span>
+                                        <span class="visually-hidden">Precio original: </span>
+                                        <del class="text-danger">
 
-            <br>
+                                            $<?= number_format(
+                                                    $fila['precioVuelo'],
+                                                    0,
+                                                    ',',
+                                                    '.'
+                                                ) ?>
 
-            <span class="fw-bold text-success">
+                                        </del>
 
-                $<?= number_format(
-                    $precioFinal,
-                    0,
-                    ',',
-                    '.'
-                ) ?>
+                                        <br>
 
-            </span>
+                                        <span class="visually-hidden">Precio con descuento: </span>
+                                        <span class="fw-bold text-success">
 
-        <?php } else { ?>
+                                            $<?= number_format(
+                                                    $precioFinal,
+                                                    0,
+                                                    ',',
+                                                    '.'
+                                                ) ?>
 
-            $<?= number_format(
-                $fila['precioVuelo'],
-                0,
-                ',',
-                '.'
-            ) ?>
+                                        </span>
 
-        <?php } ?>
+                                    <?php } else { ?>
 
-    </td>
+                                        $<?= number_format(
+                                                $fila['precioVuelo'],
+                                                0,
+                                                ',',
+                                                '.'
+                                            ) ?>
 
-    <td>
+                                    <?php } ?>
 
-        <?php if($fila['descuento'] > 0){ ?>
+                                </td>
 
-            <span class="badge bg-danger">
+                                <td>
 
-                🔥 <?= $fila['descuento'] ?>% OFF
+                                    <?php if ($fila['descuento'] > 0) { ?>
 
-            </span>
+                                        <span class="badge bg-danger">
 
-        <?php } else { ?>
+                                            <span aria-hidden="true">🔥</span> <?= (int) $fila['descuento'] ?>% OFF
 
-            <span class="badge bg-secondary">
+                                        </span>
 
-                Sin promo
+                                    <?php } else { ?>
 
-            </span>
+                                        <span class="badge bg-secondary">
 
-        <?php } ?>
+                                            Sin promo
 
-    </td>
+                                        </span>
 
-    <td>
+                                    <?php } ?>
 
-        <?= $fila['asientosDisponibles'] ?>
+                                </td>
 
-    </td>
+                                <td>
 
-    <td>
+                                    <?= (int) $fila['asientosDisponibles'] ?>
 
-        <?php
+                                </td>
 
-if(
-    isset($_SESSION['tipo'])
-    &&
-    $_SESSION['tipo'] == 'CLIENTE'
-)
-{
+                                <td>
 
-$idUsuario = $_SESSION['id'];
+                                    <?php
 
-$sqlReserva = "
+                                    if (
+                                        isset($_SESSION['tipo'])
+                                        &&
+                                        $_SESSION['tipo'] == 'CLIENTE'
+                                    ) {
 
-SELECT *
+                                        $idUsuario = (int) $_SESSION['id'];
+                                        $codVueloInt = (int) $fila['codVuelo'];
 
-FROM reservas
+                                        $sqlReserva = "SELECT * FROM reservas
+                                        WHERE codUsuario = $idUsuario
+                                        AND codVuelo = $codVueloInt
+                                        AND estadoReserva != 'CANCELADA'
+                                        LIMIT 1";
 
-WHERE codUsuario = $idUsuario
+                                        $resultadoReserva =
+                                            mysqli_query(
+                                                $link,
+                                                $sqlReserva
+                                            );
 
-AND codVuelo = {$fila['codVuelo']}
+                                        if (
+                                            mysqli_num_rows(
+                                                $resultadoReserva
+                                            ) > 0
+                                        ) {
+                                    ?>
 
-AND estadoReserva != 'CANCELADA'
+                                            <a
+                                                href="../reservas/listar.php"
+                                                class="btn btn-primary btn-sm">
 
-LIMIT 1
+                                                Ver reservas
+                                                <span class="visually-hidden"> del vuelo <?= $origenOut ?> a <?= $destinoOut ?></span>
 
-";
+                                            </a>
 
-$resultadoReserva =
-mysqli_query(
-$link,
-$sqlReserva
-);
+                                        <?php
+                                        } else {
+                                        ?>
 
-if(
-mysqli_num_rows(
-$resultadoReserva
-) > 0
-)
-{
-?>
+                                            <a
+                                                href="../reservas/reservar.php?codVuelo=<?= $codVueloInt ?>"
+                                                class="btn btn-success btn-sm">
 
-<a
-href="../reservas/listar.php"
-class="btn btn-primary btn-sm">
+                                                Reservar
+                                                <span class="visually-hidden"> vuelo <?= $origenOut ?> a <?= $destinoOut ?></span>
 
-Ver reservas
+                                            </a>
 
-</a>
+                                        <?php
+                                        }
+                                    } else {
 
-<?php
-}
-else
-{
-?>
+                                        if (!isset($_SESSION['id'])) {
+                                        ?>
 
-<a
-href="../reservas/reservar.php?codVuelo=<?= $fila['codVuelo'] ?>"
-class="btn btn-success btn-sm">
+                                            <a
+                                                href="/entornosGraficos-SitioWeb/auth/login.php"
+                                                class="btn btn-warning btn-sm">
 
-Reservar
+                                                Iniciar sesión
+                                                <span class="visually-hidden"> para ver el vuelo <?= $origenOut ?> a <?= $destinoOut ?></span>
 
-</a>
+                                            </a>
 
-<?php
-}
+                                        <?php
+                                        } else {
+                                        ?>
 
-}
-else
-{
+                                            <button
+                                                class="btn btn-secondary btn-sm"
+                                                disabled>
 
-if(!isset($_SESSION['id']))
-{
-?>
+                                                Cuenta de cliente requerida
 
-<a
-href="/entornosGraficos-SitioWeb/auth/login.php"
-class="btn btn-warning btn-sm">
+                                            </button>
 
-Iniciar sesión
+                                    <?php
+                                        }
+                                    }
+                                    ?>
 
-</a>
+                                </td>
 
-<?php
-}
-else
-{
-?>
+                            </tr>
 
-<button
-class="btn btn-secondary btn-sm"
-disabled>
+                    <?php
+                        }
+                    }
+                    ?>
 
-Cuenta de cliente requerida
-
-</button>
-
-<?php
-}
-
-}
-?>
-
-    </td>
-
-</tr>
-
-<?php
-    }
-}
-?>
-
-</tbody>
+                </tbody>
 
 
             </table>
 
             <div class="d-flex justify-content-center mt-4">
 
-<nav>
+                <nav aria-label="Paginación de vuelos">
 
-<ul class="pagination">
+                    <ul class="pagination">
 
-<?php if($pagina > 1){ ?>
+                        <?php if ($pagina > 1) { ?>
 
-<li class="page-item">
+                            <li class="page-item">
 
-<a
-class="page-link"
-href="?pagina=<?= $pagina-1 ?>">
+                                <a
+                                    class="page-link"
+                                    href="<?= urlPaginaVuelos($pagina - 1, $origenFiltro, $destinoFiltro, $fechaFiltro, $promoFiltro) ?>">
 
-Anterior
+                                    Anterior
 
-</a>
+                                </a>
 
-</li>
+                            </li>
 
-<?php } ?>
+                        <?php } ?>
 
-<?php
+                        <?php
 
-for(
-$i=1;
-$i<=$totalPaginas;
-$i++
-)
-{
-?>
+                        for (
+                            $i = 1;
+                            $i <= $totalPaginas;
+                            $i++
+                        ) {
+                        ?>
 
-<li
-class="page-item
-<?= $i==$pagina ? 'active' : '' ?>">
+                            <li
+                                class="page-item <?= $i == $pagina ? 'active' : '' ?>">
 
-<a
-class="page-link"
-href="?pagina=<?= $i ?><?= $queryString ?>">
-<?= $i ?>
+                                <a
+                                    class="page-link"
+                                    href="<?= urlPaginaVuelos($i, $origenFiltro, $destinoFiltro, $fechaFiltro, $promoFiltro) ?>"
+                                    <?= $i == $pagina ? 'aria-current="page"' : '' ?>>
+                                    <?= $i ?>
+                                    <?php if ($i == $pagina) { ?>
+                                        <span class="visually-hidden"> (página actual)</span>
+                                    <?php } ?>
 
-</a>
+                                </a>
 
-</li>
+                            </li>
 
-<?php
-}
-?>
+                        <?php
+                        }
+                        ?>
 
-<?php if($pagina < $totalPaginas){ ?>
+                        <?php if ($pagina < $totalPaginas) { ?>
 
-<li class="page-item">
+                            <li class="page-item">
 
-<a
-class="page-link"
-href="?pagina=<?= $pagina+1 ?><?= $queryString ?>">
-Siguiente
+                                <a
+                                    class="page-link"
+                                    href="<?= urlPaginaVuelos($pagina + 1, $origenFiltro, $destinoFiltro, $fechaFiltro, $promoFiltro) ?>">
+                                    Siguiente
 
-</a>
+                                </a>
 
-</li>
+                            </li>
 
-<?php } ?>
+                        <?php } ?>
 
-</ul>
+                    </ul>
 
-</nav>
+                </nav>
 
-</div>
+            </div>
 
         </div>
 
@@ -801,4 +616,3 @@ Siguiente
 
 </div>
 <?php include("../../includes/footer.php"); ?>
-

@@ -2,45 +2,102 @@
 
 include("../../includes/verificarSession.php");
 include("../../includes/header.php");
+include("../../includes/conexion.php");
 
-$codReserva = $_GET['codReserva'];
+$codReserva = (int) ($_GET['codReserva'] ?? 0);
+$idUsuario = (int) $_SESSION['id'];
 
+$reserva = null;
 
-$idUsuario =
-$_SESSION['id'];
+if ($codReserva > 0) {
 
-$sql = "
+    $sql = "SELECT * FROM reservas WHERE codReserva = $codReserva AND codUsuario = $idUsuario";
+    $resultado = mysqli_query($link, $sql);
+    if ($resultado) {
+        $reserva = mysqli_fetch_assoc($resultado);
+    }
+}
 
-SELECT *
+if (!$reserva) {
+?>
 
-FROM reservas
+<div class="container mt-5">
 
-WHERE codReserva = $codReserva
+    <div class="row justify-content-center">
 
-AND codUsuario = $idUsuario
+        <div class="col-md-8">
 
-";
-$resultado = mysqli_query(
-    $link, 
-    $sql);
+            <div class="card card-custom">
 
-$reserva = mysqli_fetch_assoc($resultado);
+                <div class="card-body p-5 text-center" role="alert">
 
-$codVuelo= $reserva['codVuelo'];
+                    <h2 class="text-danger">
 
-$sqlvuelos = "
-SELECT *
+                        Reserva no encontrada
 
-FROM vuelos
+                    </h2>
 
-WHERE codVuelo = $codVuelo
+                    <p>
 
-";
-$resultadoVuelo= mysqli_query(
-    $link,
-    $sqlvuelos);
+                        La reserva que buscás no existe o no te pertenece.
 
-$vuelo= mysqli_fetch_assoc($resultadoVuelo);
+                    </p>
+
+                    <a href="listar.php" class="btn btn-secondary">
+
+                        <span aria-hidden="true"></span>Volver
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<?php
+
+    include("../../includes/footer.php");
+    exit();
+}
+
+$codVuelo = (int) $reserva['codVuelo'];
+
+$vuelo = null;
+
+if ($codVuelo > 0) {
+
+    $sqlVuelo = "
+
+    SELECT *
+
+    FROM vuelos
+
+    WHERE codVuelo = $codVuelo
+
+    ";
+
+    $resultadoVuelo = mysqli_query($link, $sqlVuelo);
+
+    if ($resultadoVuelo) {
+        $vuelo = mysqli_fetch_assoc($resultadoVuelo);
+    }
+}
+
+$origenOut = $vuelo ? htmlspecialchars($vuelo['origenVuelo'], ENT_QUOTES, 'UTF-8') : 'No disponible';
+$destinoOut = $vuelo ? htmlspecialchars($vuelo['destinoVuelo'], ENT_QUOTES, 'UTF-8') : 'No disponible';
+$fechaVueloOut = $vuelo ? htmlspecialchars($vuelo['fechaVuelo'], ENT_QUOTES, 'UTF-8') : '';
+$horaSalidaOut = $vuelo ? htmlspecialchars($vuelo['horaSalida'], ENT_QUOTES, 'UTF-8') : '';
+
+$estadoOut = htmlspecialchars($reserva['estadoReserva'], ENT_QUOTES, 'UTF-8');
+$codReservaInt = $codReserva;
+
+$error = isset($_GET['error']) ? htmlspecialchars($_GET['error'], ENT_QUOTES, 'UTF-8') : null;
+
 ?>
 
 
@@ -56,11 +113,11 @@ $vuelo= mysqli_fetch_assoc($resultadoVuelo);
 
 <h2>Datos reserva</h2>
 
-<?php if(isset($_GET['error'])){ ?>
+<?php if ($error !== null) { ?>
 
-<div class="alert alert-danger">
+<div class="alert alert-danger" role="alert">
 
-    <?= $_GET['error'] ?>
+    <?= $error ?>
 
 </div>
 
@@ -69,45 +126,54 @@ $vuelo= mysqli_fetch_assoc($resultadoVuelo);
 
 
 <div class="mb-3">
-    Fecha de vuelo: <?= $vuelo['fechaVuelo'] ?>
-    
+    Fecha de vuelo:
+    <?php if ($fechaVueloOut !== '') { ?>
+        <time datetime="<?= $fechaVueloOut ?>"><?= $fechaVueloOut ?></time>
+    <?php } else { ?>
+        No disponible
+    <?php } ?>
 </div>
 <div class="mb-3">
-    Horario del vuelo: <?= $vuelo['horaSalida'] ?>
+    Horario del vuelo:
+    <?php if ($horaSalidaOut !== '') { ?>
+        <time datetime="<?= $horaSalidaOut ?>"><?= $horaSalidaOut ?></time>
+    <?php } else { ?>
+        No disponible
+    <?php } ?>
 </div>
 <div class="mb-3">
-    Origen: <?= $vuelo['origenVuelo'] ?>
+    Origen: <?= $origenOut ?>
 </div>
 <div class="mb-3">
-    Destino: <?= $vuelo['destinoVuelo'] ?>
+    Destino: <?= $destinoOut ?>
 </div>
 <div class="mb-3">
-    Precio: <?= $vuelo['precioVuelo'] ?>
+    Precio: <?= $vuelo ? '$' . number_format($vuelo['precioVuelo'], 0, ',', '.') : 'No disponible' ?>
 </div>
 <div class="mb-3">
-    Asientos disponibles: <?= $vuelo['asientosDisponibles'] ?>
-</div>
-<div class="mb-3 d-flex">
-    Asientos reservados: <?= $reserva['cantAsientos'] ?>
+    Asientos disponibles: <?= $vuelo ? (int) $vuelo['asientosDisponibles'] : 'No disponible' ?>
 </div>
 <div class="mb-3">
-    Estado: <?= $reserva['estadoReserva'] ?>
+    Asientos reservados: <?= (int) $reserva['cantAsientos'] ?>
+</div>
+<div class="mb-3">
+    Estado: <?= $estadoOut ?>
 </div>
 <div>
 <?php if ($reserva['estadoReserva']=='PENDIENTE'){ ?>
-<a href="pagar.php?codReserva=<?= $codReserva ?>" class="btn btn-primary">
+<a href="pagar.php?codReserva=<?= $codReservaInt ?>" class="btn btn-primary">
 
 Pagar reserva
 
 </a>
 
-<a href="modificar.php?codReserva=<?= $codReserva ?>" class="btn btn-secondary">
+<a href="modificar.php?codReserva=<?= $codReservaInt ?>" class="btn btn-secondary">
 
 Modificar reserva
 
 </a>
 
-<a href="cancelarReserva.php?codReserva=<?= $codReserva ?>" class="btn btn-danger" onclick="return confirm('¿Está seguro que desea cancelar la reserva?')">
+<a href="cancelarReserva.php?codReserva=<?= $codReservaInt ?>" class="btn btn-danger" id="btnCancelarReserva">
 
 Cancelar Reserva
 
@@ -117,7 +183,7 @@ Cancelar Reserva
 
 <a href="listar.php" class="btn btn-danger">
 
-Volver atras
+<span aria-hidden="true"></span>Volver atrás
 
 </a>
 
@@ -125,7 +191,7 @@ Volver atras
 
 <a href="listar.php" class="btn btn-danger">
 
-Volver atras
+<span aria-hidden="true"></span>Volver atrás
 
 </a>
 
@@ -142,7 +208,45 @@ Volver atras
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    (function () {
+        var btnCancelar = document.getElementById('btnCancelarReserva');
+
+        if (!btnCancelar) {
+            return;
+        }
+
+        btnCancelar.addEventListener('click', function (evento) {
+
+            // Si por algún motivo SweetAlert no cargó (CDN caído, bloqueado, etc.),
+            // usamos el confirm() nativo como respaldo en vez de dejar el botón roto.
+            if (typeof Swal === 'undefined') {
+                return confirm('¿Está seguro que desea cancelar la reserva?');
+            }
+
+            evento.preventDefault();
+
+            var destino = btnCancelar.getAttribute('href');
+
+            Swal.fire({
+                icon: 'warning',
+                title: '¿Cancelar reserva?',
+                text: 'Esta acción no se puede deshacer.',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, cancelar',
+                cancelButtonText: 'No',
+                confirmButtonColor: '#dc3545'
+            }).then(function (resultado) {
+                if (resultado.isConfirmed) {
+                    window.location.href = destino;
+                }
+            });
+        });
+    })();
+</script>
+
 <?php
 include("../../includes/footer.php");
 ?>
-

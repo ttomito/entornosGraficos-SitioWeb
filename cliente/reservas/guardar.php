@@ -3,66 +3,198 @@
 include("../../includes/verificarSession.php");
 include("../../includes/conexion.php");
 
-$idUsuario= $_SESSION ['id'];
-$codVuelo= $_POST['codVuelo'];
-$fecha= date("Y-m-d");
-$cantAsientos= $_POST['cantAsientos'];
-$precio= $_POST['precio'];
+$idUsuario = (int) $_SESSION['id'];
+$codVuelo = (int) ($_POST['codVuelo'] ?? 0);
+$cantAsientos = (int) ($_POST['cantAsientos'] ?? 0);
+$fecha = date("Y-m-d");
 
-$sqlVuelo = "SELECT asientosDisponibles FROM vuelos WHERE codVuelo = $codVuelo";
+$destino = '../vuelos/listar.php';
+$tipoAlerta = 'error';
+$mensaje = '';
 
-$resultadoVuelo = mysqli_query($link, $sqlVuelo);
+if ($codVuelo <= 0) {
 
-$vuelo = mysqli_fetch_assoc($resultadoVuelo);
+    $mensaje = 'El vuelo indicado no es válido.';
 
-$asientosDisponibles = $vuelo['asientosDisponibles'];
+} elseif ($cantAsientos <= 0) {
 
-$precioFinal= $precio*$cantAsientos;
+    $destino = "reservar.php?codVuelo=$codVuelo";
+    $mensaje = 'La cantidad de asientos debe ser mayor a cero.';
 
-if($cantAsientos > $asientosDisponibles)
-{
-    header(
-        "Location: reservar.php?codVuelo=$codVuelo&error=No hay suficientes asientos disponibles"
-    );
-    exit();
+} else {
+
+    $sqlVuelo = "SELECT * FROM vuelos WHERE codVuelo = $codVuelo";
+    $resultadoVuelo = mysqli_query($link, $sqlVuelo);
+    $vuelo = $resultadoVuelo ? mysqli_fetch_assoc($resultadoVuelo) : null;
+
+    if (!$vuelo) {
+
+        $mensaje = 'No encontramos ese vuelo.';
+
+    } else {
+
+
+        $codAerolinea = (int) $vuelo['codAerolinea'];
+
+        $sqlProm = "
+
+        SELECT *
+
+        FROM promociones
+
+        WHERE codAerolinea = $codAerolinea
+
+        AND estadoPromocion = 'APROBADA'
+
+        ";
+
+        $resultado_prom = mysqli_query($link, $sqlProm);
+
+        $descuentoMaximo = 0;
+        $hoy = date("Y-m-d");
+
+        if ($resultado_prom) {
+            while ($promocion = mysqli_fetch_assoc($resultado_prom)) {
+                if (
+                    $promocion['descuentoPromocion'] > $descuentoMaximo
+                    &&
+                    $promocion['fechaLimitePromocion'] >= $hoy
+                ) {
+                    $descuentoMaximo = $promocion['descuentoPromocion'];
+                }
+            }
+        }
+
+        $precioPorAsiento = $vuelo['precioVuelo'] - ($vuelo['precioVuelo'] * $descuentoMaximo / 100);
+        $precioFinal = $precioPorAsiento * $cantAsientos;
+
+        $sql = "
+
+        SELECT *
+
+        FROM reservas
+
+        WHERE codUsuario = $idUsuario
+
+        AND codVuelo = $codVuelo
+
+        AND estadoReserva != 'CANCELADA'
+
+        ";
+
+        $resultado = mysqli_query($link, $sql);
+
+        if ($resultado && mysqli_num_rows($resultado) > 0) {
+
+            $destino = "reservar.php?codVuelo=$codVuelo";
+            $mensaje = 'Ya tenés una reserva activa para este vuelo.';
+
+        } else {
+
+            mysqli_begin_transaction($link);
+
+            $sqlUpdateAsientos = "
+
+            UPDATE vuelos
+
+            SET asientosDisponibles = asientosDisponibles - $cantAsientos
+
+            WHERE codVuelo = $codVuelo
+
+            AND asientosDisponibles >= $cantAsientos
+
+            ";
+
+            $okAsientos = mysqli_query($link, $sqlUpdateAsientos);
+
+            if (!$okAsientos || mysqli_affected_rows($link) === 0) {
+
+                mysqli_rollback($link);
+                $destino = "reservar.php?codVuelo=$codVuelo";
+                $mensaje = 'No hay suficientes asientos disponibles.';
+
+            } else {
+
+                $sqlInsert = "
+
+                INSERT INTO reservas (codUsuario, codVuelo, fechaReserva, estadoReserva, precioFinal, cantAsientos)
+
+                VALUES ($idUsuario, $codVuelo, '$fecha', 'PENDIENTE', $precioFinal, $cantAsientos)
+
+                ";
+
+                $okInsert = mysqli_query($link, $sqlInsert);
+
+                if (!$okInsert) {
+
+                    mysqli_rollback($link);
+                    $destino = "reservar.php?codVuelo=$codVuelo";
+                    $mensaje = 'Ocurrió un error al crear la reserva. Intentá nuevamente.';
+
+                } else {
+
+                    mysqli_commit($link);
+                    $tipoAlerta = 'success';
+                    $mensaje = 'Tu reserva fue creada correctamente. Quedó pendiente de pago.';
+                }
+            }
+        }
+    }
 }
 
-if($cantAsientos <= 0)
-{
-    header(
-        "Location: reservar.php?codVuelo=$codVuelo&error=La cantidad de asientos debe ser mayor a cero"
-    );
-    exit();
-}
+$tituloAlerta = $tipoAlerta === 'success' ? 'Listo' : 'No se pudo reservar';
 
-$sql = "SELECT * FROM reservas WHERE codUsuario = $idUsuario
-AND codVuelo = $codVuelo
-AND estadoReserva != 'CANCELADA'
-AND estadoReserva != 'CONFIRMADA'";
+include("../../includes/header.php");
 
-$resultado = mysqli_query($link, $sql);
+?>
 
-if(mysqli_num_rows($resultado) > 0)
-{
-    header(
-        "Location: reservar.php?codVuelo=$codVuelo&error=Ya tienes una reserva para este vuelo"
-    );
-    exit();
-}
+<div class="container mt-5">
 
-$sql = "INSERT INTO reservas (codUsuario, codVuelo, fechaReserva, estadoReserva, precioFinal, cantAsientos)
-VALUES ($idUsuario, $codVuelo, '$fecha', 'PENDIENTE', $precioFinal, $cantAsientos)";
+    <div class="row justify-content-center">
 
-mysqli_query($link, $sql);
+        <div class="col-md-6">
 
-$nuevosAsientos = $asientosDisponibles - $cantAsientos;
+            <div class="card card-custom">
 
-$sql = "UPDATE vuelos SET asientosDisponibles = $nuevosAsientos WHERE codVuelo = $codVuelo";
+                <div class="card-body p-5 text-center">
 
-mysqli_query($link, $sql);
+                    <div
+                        class="alert <?= $tipoAlerta === 'success' ? 'alert-success' : 'alert-danger' ?>"
+                        role="alert">
 
-header(
-    "Location: ../vuelos/listar.php"
-);
+                        <?= htmlspecialchars($mensaje, ENT_QUOTES, 'UTF-8') ?>
 
-exit();
+                    </div>
+
+                    <a href="<?= htmlspecialchars($destino, ENT_QUOTES, 'UTF-8') ?>" class="btn btn-primary" id="btnContinuar">
+
+                        Continuar
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            icon: <?= json_encode($tipoAlerta) ?>,
+            title: <?= json_encode($tituloAlerta, JSON_UNESCAPED_UNICODE) ?>,
+            text: <?= json_encode($mensaje, JSON_UNESCAPED_UNICODE) ?>,
+            confirmButtonText: 'Aceptar'
+        }).then(function () {
+            window.location.href = <?= json_encode($destino) ?>;
+        });
+    }
+</script>
+
+<?php include("../../includes/footer.php"); ?>

@@ -3,19 +3,11 @@
 include("../../includes/header.php");
 include("../../includes/conexion.php");
 
-$idCliente = $_SESSION['id'];
+$idCliente = (int) $_SESSION['id'];
 
-$sql = "
-
-SELECT *
-
-FROM reservas
-
+$sql = "SELECT * FROM reservas
 WHERE codUsuario = $idCliente
-
-ORDER BY codReserva DESC
-
-";
+ORDER BY codReserva DESC";
 
 $resultado = mysqli_query(
     $link,
@@ -36,25 +28,35 @@ $resultado = mysqli_query(
 
     </div>
 
+    <?php if (mysqli_num_rows($resultado) === 0) { ?>
+
+        <div class="alert alert-info" role="status">
+            Todavía no tenés reservas.
+        </div>
+
+    <?php } else { ?>
+
     <div class="card card-custom">
 
         <div class="card-body">
 
             <table class="table table-hover">
 
+                <caption class="visually-hidden">Historial de reservas del usuario</caption>
+
                 <thead>
 
                     <tr>
 
-                        <th>Imagen</th>
-                        <th>Asientos</th>
-                        <th>Origen</th>
-                        <th>Destino</th>
-                        <th>Fecha vuelo</th>
-                        <th>Fecha reserva</th>
-                        <th>Precio Final</th>
-                        <th>Estado</th>
-                        <th>Acción</th>
+                        <th scope="col">Imagen</th>
+                        <th scope="col">Asientos</th>
+                        <th scope="col">Origen</th>
+                        <th scope="col">Destino</th>
+                        <th scope="col">Fecha vuelo</th>
+                        <th scope="col">Fecha reserva</th>
+                        <th scope="col">Precio Final</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col">Acción</th>
 
                     </tr>
 
@@ -66,13 +68,15 @@ $resultado = mysqli_query(
 
                 <?php
 
+                $codVueloInt = (int) $fila['codVuelo'];
+
                 $sqlVuelo = "
 
                 SELECT *
 
                 FROM vuelos
 
-                WHERE codVuelo = {$fila['codVuelo']}
+                WHERE codVuelo = $codVueloInt
 
                 ";
 
@@ -85,50 +89,64 @@ $resultado = mysqli_query(
                     $resultadoVuelo
                 );
 
+                // Por si el vuelo fue eliminado pero la reserva sigue existiendo
+                $origenOut = $vuelo ? htmlspecialchars($vuelo['origenVuelo'], ENT_QUOTES, 'UTF-8') : 'No disponible';
+                $destinoOut = $vuelo ? htmlspecialchars($vuelo['destinoVuelo'], ENT_QUOTES, 'UTF-8') : 'No disponible';
+                $fechaVueloOut = $vuelo ? htmlspecialchars($vuelo['fechaVuelo'], ENT_QUOTES, 'UTF-8') : '';
+                $imagenOut = $vuelo ? htmlspecialchars($vuelo['imagenVuelo'], ENT_QUOTES, 'UTF-8') : '';
+
+                $fechaReservaOut = htmlspecialchars($fila['fechaReserva'], ENT_QUOTES, 'UTF-8');
+                $codReservaInt = (int) $fila['codReserva'];
+
                 ?>
 
                 <tr>
 
                     <td>
 
-                        <img
-                        src="<?= $vuelo['imagenVuelo'] ?>"
-                        style="
-                        width:12vw;
-                        height:7vw;
-                        border-radius:7px;
-                        object-fit:cover;
-                        ">
+                        <?php if ($vuelo) { ?>
+                            <img
+                            src="<?= $imagenOut ?>"
+                            alt="Vuelo de <?= $origenOut ?> a <?= $destinoOut ?>"
+                            style="
+                            width:12vw;
+                            height:7vw;
+                            border-radius:7px;
+                            object-fit:cover;
+                            ">
+                        <?php } ?>
 
                     </td>
 
                     <td>
 
-                        <?= $fila['cantAsientos'] ?>
+                        <?= (int) $fila['cantAsientos'] ?>
 
                     </td>
 
                     <td>
 
-                        <?= $vuelo['origenVuelo'] ?>
+                        <?= $origenOut ?>
 
                     </td>
 
                     <td>
 
-                        <?= $vuelo['destinoVuelo'] ?>
+                        <?= $destinoOut ?>
 
                     </td>
 
                     <td>
 
-                        <?= $vuelo['fechaVuelo'] ?>
+                        <?php if ($fechaVueloOut !== '') { ?>
+                            <time datetime="<?= $fechaVueloOut ?>"><?= $fechaVueloOut ?></time>
+                        <?php } ?>
 
                     </td>
 
                     <td>
 
-                        <?= $fila['fechaReserva'] ?>
+                        <time datetime="<?= $fechaReservaOut ?>"><?= $fechaReservaOut ?></time>
 
                     </td>
 
@@ -178,10 +196,11 @@ $resultado = mysqli_query(
                     <td>
 
                         <a
-                        href="verReserva.php?codReserva=<?= $fila['codReserva'] ?>"
+                        href="verReserva.php?codReserva=<?= $codReservaInt ?>"
                         class="btn btn-primary btn-sm">
 
                             Seguir solicitud
+                            <span class="visually-hidden"> del vuelo <?= $origenOut ?> a <?= $destinoOut ?>, reservado el <?= $fechaReservaOut ?></span>
 
                         </a>
 
@@ -198,6 +217,8 @@ $resultado = mysqli_query(
         </div>
 
     </div>
+
+    <?php } ?>
 
 </div>
 
