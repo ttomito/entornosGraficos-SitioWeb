@@ -7,26 +7,21 @@ require '../vendor/autoload.php';
 
 include("../includes/conexion.php");
 
-$email = $_POST['email'];
+$email = trim($_POST['email'] ?? '');
 
-$sql = "
+if (mb_strlen($email) > 100 || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    header("Location: recuperar.php?invalido=1");
+    exit();
+}
 
-SELECT *
+$emailEsc = mysqli_real_escape_string($link, $email);
 
-FROM usuarios
+$sql = "SELECT * FROM usuarios WHERE emailUsuario = '$emailEsc'";
 
-WHERE emailUsuario = '$email'
+$resultado = mysqli_query($link, $sql);
 
-";
-
-$resultado = mysqli_query(
-    $link,
-    $sql
-);
-
-if(mysqli_num_rows($resultado) == 0)
-{
-    header("Location: recuperar.php?error=1");
+if (mysqli_num_rows($resultado) == 0) {
+    header("Location: recuperar.php?ok=1");
     exit();
 }
 
@@ -34,30 +29,21 @@ $usuario = mysqli_fetch_assoc(
     $resultado
 );
 
-$token = md5(
-    uniqid(rand(),true)
-);
 
-$sqlUpdate = "
+$token = bin2hex(random_bytes(32));
 
-UPDATE usuarios
+$codUsuario = (int) $usuario['codUsuario'];
 
-SET tokenRecuperacion = '$token'
+$sqlUpdate = "UPDATE usuarios SET tokenRecuperacion = '$token', tokenRecuperacionExpira = NOW() + INTERVAL 60 MINUTE WHERE codUsuario = $codUsuario";
 
-WHERE codUsuario = ".$usuario['codUsuario'];
-
-mysqli_query(
-    $link,
-    $sqlUpdate
-);
+mysqli_query($link, $sqlUpdate);
 
 $linkRecuperacion =
-"http://localhost/EntornosGraficos-SitioWeb/entornosGraficos-SitioWeb/auth/restablecer.php?token=".$token;
+    "http://localhost/entornosGraficos-SitioWeb/auth/restablecer.php?token=".$token;
 
 $mail = new PHPMailer(true);
 
-try
-{
+try {
     $mail->isSMTP();
 
     $mail->Host = 'smtp.gmail.com';
@@ -65,13 +51,13 @@ try
     $mail->SMTPAuth = true;
 
     $mail->Username =
-    'sistemavuelos@gmail.com';
+        'sistemavuelos@gmail.com';
 
     $mail->Password =
-    'wgfw hmjr hpge bjtm';
+        'wgfw hmjr hpge bjtm';
 
     $mail->SMTPSecure =
-    PHPMailer::ENCRYPTION_STARTTLS;
+        PHPMailer::ENCRYPTION_STARTTLS;
 
     $mail->Port = 587;
 
@@ -87,7 +73,7 @@ try
     $mail->isHTML(true);
 
     $mail->Subject =
-    'Recuperación de contraseña';
+        'Recuperación de contraseña';
 
     $mail->Body = "
 
@@ -99,7 +85,8 @@ try
 
     <p>
 
-        Hacé clic en el siguiente enlace para cambiar tu contraseña:
+        Hacé clic en el siguiente enlace para cambiar tu contraseña. Va a estar
+        disponible durante 60 minutos:
 
     </p>
 
@@ -116,8 +103,6 @@ try
     header("Location: recuperar.php?ok=1");
 
     exit();
-}
-catch(Exception $e)
-{
+} catch (Exception $e) {
     echo $mail->ErrorInfo;
 }
