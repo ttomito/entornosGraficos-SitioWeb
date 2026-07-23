@@ -3,34 +3,8 @@
 include("../../includes/header.php");
 include("../../includes/conexion.php");
 
-$sql = "
-
-SELECT
-p.*,
-a.nombreAerolinea
-
-FROM promociones p
-
-INNER JOIN aerolineas a
-ON p.codAerolinea = a.codAerolinea
-
-ORDER BY p.codPromocion DESC
-
-";
-
-$resultado = mysqli_query(
-    $link,
-    $sql
-);
-?>
-
-<?php
-
-$filtroDescripcion =
-$_GET['descripcion'] ?? '';
-
-$filtroAerolinea =
-$_GET['aerolinea'] ?? '';
+$filtroDescripcion = $_GET['descripcion'] ?? '';
+$filtroAerolinea   = $_GET['aerolinea'] ?? '';
 
 $sql = "
 
@@ -43,7 +17,9 @@ FROM promociones p
 INNER JOIN aerolineas a
 ON p.codAerolinea = a.codAerolinea
 
-WHERE 1=1
+WHERE p.estadoPromocion = 'APROBADA'
+
+AND p.fechaLimitePromocion >= CURDATE()
 
 ";
 
@@ -68,139 +44,207 @@ $sql .= "
 ORDER BY p.codPromocion DESC
 
 ";
+$resultado = mysqli_query($link, $sql);
 
-$resultado =
-mysqli_query($link,$sql);
+if(!$resultado)
+{
+    die("Error en la consulta: " . mysqli_error($link));
+}
+
 
 ?>
 
 
+
+
 <div class="container mt-4">
+<div class="row align-items-start mb-4">
+    <div class="col-md-4">
 
-    <div class="d-flex justify-content-between mb-4">
+    <h2>
 
-        <h2>
+        Promociones disponibles
 
-            Promociones disponibles
+    </h2>
 
-        </h2>
+</div>
 
-        <form method="GET" class="row mb-4">
+    <div>
 
-    <div class="col-md-5">
+        <p class="text-muted mb-3">
 
-        <input
-        type="text"
-        name="descripcion"
-        class="form-control"
-        placeholder="Buscar descripción"
-        value="<?= $filtroDescripcion ?>">
+            Busque promociones por descripción o por nombre de la aerolínea.
+
+        </p>
+
+        <form method="GET">
+
+            <div class="row g-3">
+
+                <div class="col-md-5">
+
+                    <label class="form-label">
+
+                        Descripción
+
+                    </label>
+
+                    <input
+                    type="text"
+                    name="descripcion"
+                    class="form-control"
+                    placeholder="Ej.: Europa, Dubái, Bariloche..."
+                    value="<?= $filtroDescripcion ?>">
+
+                </div>
+
+                <div class="col-md-5">
+
+                    <label class="form-label">
+
+                        Aerolínea
+
+                    </label>
+
+                    <input
+                    type="text"
+                    name="aerolinea"
+                    class="form-control"
+                    placeholder="Ej.: Emirates, LATAM, Iberia..."
+                    value="<?= $filtroAerolinea ?>">
+
+                </div>
+
+                <div class="col-md-2 d-flex align-items-end">
+
+                    <button
+                    class="btn btn-primary w-100">
+
+                        Buscar
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </form>
+
+
+</div>
+
+        
 
     </div>
 
-    <div class="col-md-5">
+    <?php
+if(
+    !empty($filtroDescripcion)
+    ||
+    !empty($filtroAerolinea)
+){
+?>
 
-        <input
-        type="text"
-        name="aerolinea"
-        class="form-control"
-        placeholder="Buscar aerolínea"
-        value="<?= $filtroAerolinea ?>">
+<div class="alert alert-info d-flex justify-content-between align-items-center">
 
-    </div>
+<span>
 
-    <div class="col-md-2">
+Mostrando promociones según los filtros seleccionados.
 
-        <button
-        class="btn btn-primary w-100">
-
-            Buscar
-
-        </button>
-
-    </div>
-
-</form>
-
-    </div>
-
-    <div class="card card-custom">
-
-        <div class="card-body">
-
-            <table class="table table-hover">
-
-                <thead>
-
-                    <tr>
-                        <th>Promocion</th>
-                        <th>Descripcion</th>
-                        <th>Fecha limite</th>
-                        <th>Aerolinea</th>
-                        <th>Acción</th>
-                    </tr>
-
-                </thead>
-
-                <tbody>
-                <?php $hoy = new DateTime() ?>
-                <?php while($fila = mysqli_fetch_assoc($resultado)){ ?>
-                    <?php 
-                    $fechaLimite = new DateTime($fila['fechaLimitePromocion']);
-                    if ($fila['estadoPromocion'] =="APROBADA" && $fechaLimite >= $hoy){
-
-                    ?>
-                    
-                        
-                        <tr>
-
-                            <td>
-
-                                <?= $fila['descuentoPromocion']?>%
-
-                            </td>
-
-                            <td>
-
-                                <?= $fila['descripcionPromocion'] ?>
-
-                            </td>
-
-                            <td>
-
-                                <?= $fila['fechaLimitePromocion'] ?>
-                                
-                            </td>
-                            
-                            <td>
-
-                                <?= $fila['nombreAerolinea'] ?>
-
-                            </td>
-                            <td>
+</span>
 
 <a
-href="../vuelos/listar.php?promo=<?= $fila['codPromocion'] ?>"
-class="btn btn-primary btn-sm">
+href="listar.php"
+class="btn btn-sm btn-outline-primary">
 
-Ver vuelos
+Limpiar filtros
 
 </a>
 
-</td>
+</div>
 
+<?php
+}
+?>
+
+    <?php
+    if(mysqli_num_rows($resultado) > 0){ ?>
+        <div class="card card-custom">
+
+            <div class="card-body">
+
+                <table class="table table-hover">
+
+                    <thead>
+
+                        <tr>
+                            <th>Promocion</th>
+                            <th>Descripcion</th>
+                            <th>Fecha limite</th>
+                            <th>Aerolinea</th>
+                            <th>Acción</th>
                         </tr>
-                        
+
+                    </thead>
+
+                    <tbody>
+                    <?php $hoy = new DateTime() ?>
+                    <?php while($fila = mysqli_fetch_assoc($resultado)){ ?>
+                        <?php 
+                        $fechaLimite = new DateTime($fila['fechaLimitePromocion']);
+                        if ($fila['estadoPromocion'] =="APROBADA" && $fechaLimite >= $hoy){
+
+                        ?>
+                    
+                            <tr>
+                                <td>
+                                    <?= $fila['descuentoPromocion']?>%
+                                </td>
+                                <td>
+                                    <?= $fila['descripcionPromocion'] ?>
+                                </td>
+                                <td>
+                                    <?= $fila['fechaLimitePromocion'] ?>
+                                </td>
+                                
+                                <td>
+
+                                    <?= $fila['nombreAerolinea'] ?>
+
+                                </td>
+                                <td>
+
+                                    <a
+                                    href="../vuelos/listar.php?promo=<?= $fila['codPromocion'] ?>"
+                                    class="btn btn-primary btn-sm">
+
+                                    Ver vuelos
+
+                                    </a>
+
+                                </td>
+
+                            </tr>
+                            
+                        <?php } ?>
                     <?php } ?>
-                <?php } ?>
 
-                </tbody>
+                    </tbody>
 
-            </table>
+                </table>
+
+            </div>
 
         </div>
+    <?php } else { ?>
 
-    </div>
+        <div class="alert alert-info">
+            No hay promociones disponibles<?= ($filtroDescripcion || $filtroAerolinea) ? ' para los filtros aplicados' : '' ?>.
+        </div>
+
+    <?php } ?>
+
+    
 
 </div>
 <?php include("../../includes/footer.php"); ?>

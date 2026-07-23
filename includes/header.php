@@ -4,6 +4,8 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+$rutaActual = $_SERVER['PHP_SELF'];
+
 ?>
 
 <!DOCTYPE html>
@@ -26,6 +28,10 @@ if (session_status() == PHP_SESSION_NONE) {
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
         rel="stylesheet">
 
+        <link
+rel="stylesheet"
+href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
     <link
         rel="stylesheet"
         href="/entornosGraficos-SitioWeb/assets/css/estilos.css">
@@ -34,7 +40,11 @@ if (session_status() == PHP_SESSION_NONE) {
 
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm">
+    <a href="#contenido-principal" class="visually-hidden-focusable">
+        Saltar al contenido principal
+    </a>
+
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm" aria-label="Navegación principal">
 
         <div class="container">
 
@@ -51,7 +61,10 @@ if (session_status() == PHP_SESSION_NONE) {
                 class="navbar-toggler"
                 type="button"
                 data-bs-toggle="collapse"
-                data-bs-target="#menuNavbar">
+                data-bs-target="#menuNavbar"
+                aria-controls="menuNavbar"
+                aria-expanded="false"
+                aria-label="Abrir menú de navegación">
 
                 <span class="navbar-toggler-icon"></span>
 
@@ -70,8 +83,23 @@ if (session_status() == PHP_SESSION_NONE) {
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/index.php">
+                            <a class="nav-link<?= $paginaActual == 'pagina.php' ? ' active' : '' ?>"
+                                href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php"
+                                <?= $paginaActual == 'pagina.php' ? ' aria-current="page"' : '' ?>>
+
+                                Sobre Nosotros
+
+                            </a>
+
+                        </li>
+
+
+
+                        <li class="nav-item">
+
+                            <a class="nav-link<?= $paginaActual == 'index.php' ? ' active' : '' ?>"
+                                href="/entornosGraficos-SitioWeb/index.php"
+                                <?= $paginaActual == 'index.php' ? ' aria-current="page"' : '' ?>>
 
                                 Inicio
 
@@ -91,7 +119,7 @@ if (session_status() == PHP_SESSION_NONE) {
 
                         <li class="nav-item">
 
-                            <a class="nav-link" href="/entornosGraficos-SitioWeb/cliente/promociones/listar.php"">
+                            <a class="nav-link" href="/entornosGraficos-SitioWeb/cliente/promociones/listar.php">
 
                                 Promociones
 
@@ -101,7 +129,7 @@ if (session_status() == PHP_SESSION_NONE) {
 
                         <li class="nav-item">
 
-                            <a class="nav-link" href="/entornosGraficos-SitioWeb/cliente/novedades/listar.php"">
+                            <a class="nav-link" href="/entornosGraficos-SitioWeb/cliente/novedades/listar.php">
 
                                 Novedades
 
@@ -112,6 +140,17 @@ if (session_status() == PHP_SESSION_NONE) {
                     <?php
                     } elseif ($_SESSION['tipo'] == 'CLIENTE') {
                     ?>
+
+                        <li class="nav-item">
+
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php">
+
+                                Sobre Nosotros
+
+                            </a>
+
+                        </li>
 
                         <li class="nav-item">
 
@@ -186,6 +225,17 @@ if (session_status() == PHP_SESSION_NONE) {
                         <li class="nav-item">
 
                             <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php">
+
+                                Sobre Nosotros
+
+                            </a>
+
+                        </li>
+
+                        <li class="nav-item">
+
+                            <a class="nav-link"
                                 href="/entornosGraficos-SitioWeb/ceo/dashboard.php">
 
                                 Dashboard
@@ -230,6 +280,17 @@ if (session_status() == PHP_SESSION_NONE) {
                     <?php
                     } elseif ($_SESSION['tipo'] == 'ADMIN') {
                     ?>
+
+                        <li class="nav-item">
+
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php">
+
+                                Sobre Nosotros
+
+                            </a>
+
+                        </li>
 
                         <li class="nav-item">
 
@@ -314,15 +375,17 @@ if (session_status() == PHP_SESSION_NONE) {
 
                             Hola,
 
-                            <?php echo $_SESSION['nombre']; ?>
+                            <?= htmlspecialchars($_SESSION['nombre'], ENT_QUOTES, 'UTF-8') ?>
 
                         </span>
 
+                        
                         <a
                             href="/entornosGraficos-SitioWeb/auth/logout.php"
                             class="btn btn-danger">
 
                             Salir
+                            <span class="visually-hidden"> de la cuenta de <?= htmlspecialchars($_SESSION['nombre'], ENT_QUOTES, 'UTF-8') ?></span>
 
                         </a>
 

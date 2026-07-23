@@ -5,59 +5,56 @@ session_start();
 include("../../includes/conexion.php");
 
 $idCEO = $_SESSION['id'];
-
 $idVuelo = $_GET['id'];
+$activo = $_GET['activo'];
 
-$sqlValidacion = "
+if($idCEO <= 0){
+    header("Location: listar.php");
+    die("Acceso denegado");
+    exit();
+}
 
-SELECT
-v.*
+$nuevoActivo = 0;
+if($activo == 1){
+    $nuevoActivo = 0;
+} else {
+    $nuevoActivo = 1;
+}
 
+$sqlValidacion = "SELECT v.*
 FROM vuelos v
-
 INNER JOIN usuarios u
 ON v.codAerolinea = u.codAerolinea
-
 WHERE v.codVuelo = $idVuelo
+AND u.codUsuario = $idCEO";
 
-AND u.codUsuario = $idCEO
+$validacion = mysqli_query($link, $sqlValidacion);
 
-";
-
-$validacion = mysqli_query(
-    $link,
-    $sqlValidacion
-);
-
-if(mysqli_num_rows($validacion) == 0)
-{
+if (mysqli_num_rows($validacion) == 0) {
     die("Acceso denegado");
 }
 
-$sql = "
+$sqlVuelos = "UPDATE vuelos SET activo = $nuevoActivo WHERE codVuelo = $idVuelo";
+$resultadoVuelos = mysqli_query($link, $sqlVuelos);
 
-UPDATE vuelos
+if(!$resultadoVuelos){
 
-SET
-origenVuelo = '{$_POST['origen']}',
-destinoVuelo = '{$_POST['destino']}',
-fechaVuelo = '{$_POST['fecha']}',
-horaSalida = '{$_POST['hora']}',
-precioVuelo = '{$_POST['precio']}',
-asientosDisponibles = '{$_POST['asientos']}',
-imagenVuelo = '{$_POST['imagen']}'
+    header("Location: listar.php?alerta=error_servidor");
+    die("Error en la consulta: " . mysqli_error($link));
 
-WHERE codVuelo = $idVuelo
+} else {
 
-";
+    $sqlReservas = "UPDATE reservas SET activo = $nuevoActivo WHERE codVuelo = $idVuelo";
+    $resultadoReservas = mysqli_query($link, $sqlReservas);
 
-mysqli_query(
-    $link,
-    $sql
-);
-
-header("Location: listar.php");
+    if(!$resultadoReservas){
+        header("Location: listar.php?alerta=error_servidor");
+        die("Error en la consulta: " . mysqli_error($link));
+    } else {
+        header("Location: listar.php?alerta=eliminado");
+        exit();
+    }
+    
+}
 
 exit();
-
-?>

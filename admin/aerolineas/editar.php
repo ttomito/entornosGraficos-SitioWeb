@@ -89,7 +89,7 @@ if (!$aerolinea) {
         text:                `¿Desea modificar la aerolínea "${nombre}"?`,
         icon:                'warning',
         showCancelButton:    true,
-        confirmButtonColor:  'rgb(5, 153, 0)',
+        confirmButtonColor:  '#198754',
         cancelButtonColor:   '#6c757d',
         confirmButtonText:   'Sí, modificar',
         cancelButtonText:    'Cancelar'

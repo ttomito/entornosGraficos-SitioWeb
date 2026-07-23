@@ -30,6 +30,12 @@ if(!isset($_SESSION['tipo']))
 {
 ?>
 
+ <li>
+                    <a href="Sobrenosotros/pagina.php">
+                        Sobre nosotros
+                    </a>
+                </li>
+
                 <li>
                     <a href="index.php">
                         Inicio
@@ -72,6 +78,12 @@ if(!isset($_SESSION['tipo']))
 elseif($_SESSION['tipo'] == 'CLIENTE')
 {
 ?>
+
+ <li>
+                    <a href="Sobrenosotros/pagina.php">
+                        Sobre nosotros
+                    </a>
+                </li>
 
 
                 <li>
@@ -116,6 +128,11 @@ elseif($_SESSION['tipo'] == 'CEO')
 {
 ?>
 
+ <li>
+                    <a href="Sobrenosotros/pagina.php">
+                        Sobre nosotros
+                    </a>
+                </li>
                 <li>
                     <a href="ceo/dashboard.php">
                         Dashboard
@@ -157,10 +174,15 @@ elseif($_SESSION['tipo'] == 'CEO')
 elseif($_SESSION['tipo'] == 'ADMIN')
 {
 ?>
+ <li>
+                    <a href="Sobrenosotros/pagina.php">
+                        Sobre nosotros
+                    </a>
+                </li>
 
                 <li>
                     <a href="admin/dashboard.php">
-                        Dashboard
+                        Inicio
                     </a>
                 </li>
 

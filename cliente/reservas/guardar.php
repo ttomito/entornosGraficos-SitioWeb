@@ -9,24 +9,11 @@ $fecha= date("Y-m-d");
 $cantAsientos= $_POST['cantAsientos'];
 $precio= $_POST['precio'];
 
-$sqlVuelo = "
+$sqlVuelo = "SELECT asientosDisponibles FROM vuelos WHERE codVuelo = $codVuelo";
 
-SELECT asientosDisponibles
+$resultadoVuelo = mysqli_query($link, $sqlVuelo);
 
-FROM vuelos
-
-WHERE codVuelo = $codVuelo
-
-";
-
-$resultadoVuelo = mysqli_query(
-    $link,
-    $sqlVuelo
-);
-
-$vuelo = mysqli_fetch_assoc(
-    $resultadoVuelo
-);
+$vuelo = mysqli_fetch_assoc($resultadoVuelo);
 
 $asientosDisponibles = $vuelo['asientosDisponibles'];
 
@@ -47,26 +34,13 @@ if($cantAsientos <= 0)
     );
     exit();
 }
-$sql = "
 
-SELECT *
-
-FROM reservas
-
-WHERE codUsuario = $idUsuario
-
+$sql = "SELECT * FROM reservas WHERE codUsuario = $idUsuario
 AND codVuelo = $codVuelo
-
 AND estadoReserva != 'CANCELADA'
+AND estadoReserva != 'CONFIRMADA'";
 
-AND estadoReserva != 'CONFIRMADA'
-
-";
-
-$resultado = mysqli_query(
-    $link,
-    $sql
-);
+$resultado = mysqli_query($link, $sql);
 
 if(mysqli_num_rows($resultado) > 0)
 {
@@ -75,51 +49,17 @@ if(mysqli_num_rows($resultado) > 0)
     );
     exit();
 }
-$sql = "
 
-INSERT INTO reservas
-(
-    codUsuario,
-    codVuelo,
-    fechaReserva,
-    estadoReserva,
-    precioFinal,
-    cantAsientos
-)
-VALUES
-(
-    $idUsuario,
-    $codVuelo,
-    '$fecha',
-    'PENDIENTE',    
-    $precioFinal,
-    $cantAsientos
+$sql = "INSERT INTO reservas (codUsuario, codVuelo, fechaReserva, estadoReserva, precioFinal, cantAsientos)
+VALUES ($idUsuario, $codVuelo, '$fecha', 'PENDIENTE', $precioFinal, $cantAsientos)";
 
-)
-
-";
-
-mysqli_query(
-    $link,
-    $sql
-);
+mysqli_query($link, $sql);
 
 $nuevosAsientos = $asientosDisponibles - $cantAsientos;
 
-$sql = "
+$sql = "UPDATE vuelos SET asientosDisponibles = $nuevosAsientos WHERE codVuelo = $codVuelo";
 
-UPDATE vuelos
-
-SET asientosDisponibles = $nuevosAsientos
-
-WHERE codVuelo = $codVuelo
-
-";
-
-mysqli_query(
-    $link,
-    $sql
-);
+mysqli_query($link, $sql);
 
 header(
     "Location: ../vuelos/listar.php"
