@@ -18,7 +18,7 @@ if($pagina < 1)
 $inicio = ($pagina - 1) * $registrosPorPagina;
 
 
-$idCEO = $_SESSION['id'];
+$idCEO = (int) ($_SESSION['id'] ?? 0);
 
 if($idCEO <= 0){
     die("Acceso denegado");
@@ -37,15 +37,65 @@ if (!$resultadoCEO) {
 
 $ceo = mysqli_fetch_assoc($resultadoCEO);
 
-$codAerolinea = $ceo['codAerolinea'];
+if (!$ceo || $ceo['codAerolinea'] === null) {
+?>
+
+<main id="contenido-principal">
+
+    <div class="container mt-5">
+
+        <div class="row justify-content-center">
+
+            <div class="col-md-8">
+
+                <div class="card card-custom">
+
+                    <div class="card-body p-5 text-center" role="alert">
+
+                        <h2 class="text-danger">
+
+                            Tu cuenta todavía no está vinculada a una aerolínea
+
+                        </h2>
+
+                        <p>
+
+                            Un administrador tiene que asociar tu cuenta a una aerolínea antes de que puedas gestionar promociones.
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</main>
+
+<?php
+
+    include("../../includes/footer.php");
+    exit();
+}
+
+$codAerolinea = (int) $ceo['codAerolinea'];
 
 $sqlConteo = " 
 SELECT COUNT(*) AS total 
 FROM promociones 
-WHERE codAerolinea =$codAerolinea
+WHERE codAerolinea = $codAerolinea
 "; 
 
 $resultadoConteo = mysqli_query($link,$sqlConteo); 
+
+if (!$resultadoConteo) {
+    die(mysqli_error($link));
+}
+
 $filaConteo = mysqli_fetch_assoc($resultadoConteo); 
 $totalRegistros = $filaConteo['total']; 
 $totalPaginas = ceil( $totalRegistros / $registrosPorPagina);
@@ -102,26 +152,33 @@ if (!$resultado) {
 
                 <tbody>
 
-                <?php while($fila = mysqli_fetch_assoc($resultado)) { ?>
+                <?php while($fila = mysqli_fetch_assoc($resultado)) {
+
+                    $codPromocionInt = (int) $fila['codPromocion'];
+                    $descripcionOut = htmlspecialchars($fila['descripcionPromocion'], ENT_QUOTES, 'UTF-8');
+                    $fechaLimiteOut = htmlspecialchars($fila['fechaLimitePromocion'], ENT_QUOTES, 'UTF-8');
+                    $estadoOut = htmlspecialchars($fila['estadoPromocion'], ENT_QUOTES, 'UTF-8');
+
+                ?>
 
                     <tr>
-                        <td><?= $fila['codPromocion'] ?></td>
-                        <td><?= $fila['descripcionPromocion'] ?></td>
-                        <td><?= $fila['descuentoPromocion'] ?>%</td>
-                        <td><?= $fila['fechaLimitePromocion'] ?></td>
-                        <td><?= $fila['estadoPromocion'] ?></td>
+                        <td><?= $codPromocionInt ?></td>
+                        <td><?= $descripcionOut ?></td>
+                        <td><?= (int) $fila['descuentoPromocion'] ?>%</td>
+                        <td><time datetime="<?= $fechaLimiteOut ?>"><?= $fechaLimiteOut ?></time></td>
+                        <td><?= $estadoOut ?></td>
 
                         <td>
-                            <a href="editar.php?id=<?= $fila['codPromocion'] ?>" class="btn btn-warning btn-sm">
+                            <a href="editar.php?id=<?= $codPromocionInt ?>" class="btn btn-warning btn-sm">
                                 Editar
-                                <span class="visually-hidden"> promoción "<?= $fila['descripcionPromocion'] ?>"</span>
+                                <span class="visually-hidden"> promoción "<?= $descripcionOut ?>"</span>
                             </a>
 
-                            <a href="eliminar.php?id=<?= $fila['codPromocion'] ?>"
-                            class="btn btn-danger btn-sm"
-                            onclick="return confirm('¿Eliminar la promoción &quot;<?= $fila['descripcionPromocion'] ?>&quot;?')">
+                            <a href="eliminar.php?id=<?= $codPromocionInt ?>"
+                            class="btn btn-danger btn-sm eliminar-promocion"
+                            data-descripcion="<?= $descripcionOut ?>">
                                 Eliminar
-                                <span class="visually-hidden"> promoción "<?= $fila['descripcionPromocion'] ?>"</span>
+                                <span class="visually-hidden"> promoción "<?= $descripcionOut ?>"</span>
                             </a>
                         </td>
                     </tr>
@@ -133,7 +190,7 @@ if (!$resultado) {
             </table>
             <div class="d-flex justify-content-center mt-4">
 
-            <nav>
+            <nav aria-label="Paginación de promociones">
 
             <ul class="pagination">
 
@@ -152,8 +209,9 @@ if (!$resultado) {
             ?>
 
             <li class="page-item <?= $i==$pagina ? 'active' : '' ?>">
-            <a class="page-link" href="?pagina=<?= $i ?>">
+            <a class="page-link" href="?pagina=<?= $i ?>" <?= $i==$pagina ? 'aria-current="page"' : '' ?>>
             <?= $i ?>
+            <?php if ($i == $pagina) { ?><span class="visually-hidden"> (página actual)</span><?php } ?>
             </a>
             </li>
 
@@ -180,7 +238,7 @@ if (!$resultado) {
 
     <?php } else { ?>
 
-        <div class="alert alert-info">
+        <div class="alert alert-info" role="status">
             No hay promociones registradas.
         </div>
 
@@ -245,6 +303,32 @@ if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)){
 <?php }; ?>
 
 <script>
+    document.querySelectorAll('.eliminar-promocion').forEach(function (enlace) {
+        enlace.addEventListener('click', function (evento) {
+
+            if (typeof Swal === 'undefined') {
+                return confirm('¿Eliminar la promoción "' + enlace.dataset.descripcion + '"?');
+            }
+
+            evento.preventDefault();
+
+            Swal.fire({
+                title:               '¿Eliminar promoción?',
+                text:                '¿Desea eliminar la promoción "' + enlace.dataset.descripcion + '"? Esta acción no se puede deshacer.',
+                icon:                'warning',
+                showCancelButton:    true,
+                confirmButtonColor:  '#dc3545',
+                cancelButtonColor:   '#6c757d',
+                confirmButtonText:   'Sí, eliminar',
+                cancelButtonText:    'Cancelar'
+            }).then((resultado) => {
+                if (resultado.isConfirmed) {
+                    window.location.href = enlace.href;
+                }
+            });
+        });
+    });
+
     function ocultarVuelo(event, elemento)
     {
         event.preventDefault();
