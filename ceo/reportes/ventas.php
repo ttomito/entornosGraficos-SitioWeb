@@ -4,7 +4,44 @@ include("../../includes/verificarSession.php");
 include("../../includes/conexion.php");
 include("../../includes/header.php");
 
+$registrosPorPagina = 10;
+
+$pagina = isset($_GET['pagina'])
+? (int)$_GET['pagina']
+: 1;
+
+if($pagina < 1){
+    $pagina = 1;
+}
+
+$inicio = ($pagina - 1) * $registrosPorPagina;
+
 $idCEO = $_SESSION['id'];
+
+$sqlConteo = "
+SELECT COUNT(*) AS total
+
+FROM reservas r
+
+INNER JOIN vuelos v
+ON r.codVuelo = v.codVuelo
+
+WHERE r.estadoReserva = 'CONFIRMADA'
+
+AND v.codAerolinea = (
+    SELECT codAerolinea
+    FROM usuarios
+    WHERE codUsuario = $idCEO
+)
+";
+
+$resultadoConteo = mysqli_query($link, $sqlConteo);
+
+$filaConteo = mysqli_fetch_assoc($resultadoConteo);
+
+$totalRegistros = $filaConteo['total'];
+
+$totalPaginas = ceil($totalRegistros / $registrosPorPagina);
 
 $sql = "
 
@@ -36,6 +73,7 @@ AND v.codAerolinea =
 
 ORDER BY r.fechaReserva DESC
 
+LIMIT $inicio, $registrosPorPagina
 ";
 
 $resultado = mysqli_query(
@@ -120,7 +158,49 @@ mysqli_query($link,$sqlTotal)
                 </tbody>
 
             </table>
+            <div class="d-flex justify-content-center mt-4">
 
+            <nav>
+
+            <ul class="pagination">
+
+            <?php if($pagina > 1){ ?>
+
+            <li class="page-item">
+            <a class="page-link" href="?pagina=<?= $pagina-1 ?>">
+            Anterior
+            </a>
+            </li>
+
+            <?php } ?>
+
+            <?php
+            for($i=1;$i<=$totalPaginas;$i++){
+            ?>
+
+            <li class="page-item <?= $i==$pagina ? 'active' : '' ?>">
+            <a class="page-link" href="?pagina=<?= $i ?>">
+            <?= $i ?>
+            </a>
+            </li>
+
+            <?php } ?>
+
+            <?php if($pagina < $totalPaginas){ ?>
+
+            <li class="page-item">
+            <a class="page-link" href="?pagina=<?= $pagina+1 ?>">
+            Siguiente
+            </a>
+            </li>
+
+            <?php } ?>
+
+            </ul>
+
+            </nav>
+
+            </div>
         </div>
 
     </div>
