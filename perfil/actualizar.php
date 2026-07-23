@@ -48,6 +48,11 @@ if ($clave !== '' && $clave !== $claveConfirmacion) {
     exit();
 }
 
+if ($clave !== '' && !preg_match('/^[A-Za-z\d!@#$%^&*()_+\-=\[\]{};:\'",.<>\/?`~\\\\]{8,}$/', $clave)) {
+    header("Location: index.php?alerta=clave_invalida");
+    exit();
+}
+
 $sqlVerificar = "SELECT * FROM usuarios WHERE dniUsuario = '$dni'
 AND codUsuario <> $id";
 

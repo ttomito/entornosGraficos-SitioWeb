@@ -38,114 +38,210 @@ if (!$usuario) {
 
                 <div class="card-body p-5">
 
-                    <h2> Mi Perfil</h2>
+                    <h2>Mi Perfil</h2>
+
+                    <p class="text-body-secondary">
+                        Los campos marcados con
+                        <span aria-hidden="true">*</span>
+                        <span class="visually-hidden">(obligatorio)</span>
+                        son obligatorios.
+                    </p>
 
                     <hr>
 
-                    <form action="actualizar.php" method="post">
+                    <form action="actualizar.php" method="post" novalidate>
 
                         <div class="mb-3">
 
-                            <label>Nombre</label>
-                            <input type="text" name="nombre" class="form-control" value="<?= htmlspecialchars($usuario['nombreUsuario'], ENT_QUOTES, 'UTF-8') ?>" maxlength="60" required>
-
-                        </div>
-                        <div class="mb-3">
-
-                            <label>
-
-                                Apellido
-
+                            <label for="nombre">
+                                Nombre
+                                <span aria-hidden="true">*</span>
                             </label>
 
                             <input
                                 type="text"
+                                id="nombre"
+                                name="nombre"
+                                class="form-control"
+                                value="<?= htmlspecialchars($usuario['nombreUsuario'], ENT_QUOTES, 'UTF-8') ?>"
+                                maxlength="60"
+                                autocomplete="given-name"
+                                required
+                                aria-required="true">
+
+                        </div>
+
+                        <div class="mb-3">
+
+                            <label for="apellido">
+                                Apellido
+                                <span aria-hidden="true">*</span>
+                            </label>
+
+                            <input
+                                type="text"
+                                id="apellido"
                                 name="apellido"
                                 class="form-control"
                                 value="<?= htmlspecialchars($usuario['apellidoUsuario'], ENT_QUOTES, 'UTF-8') ?>"
                                 maxlength="60"
-                                required>
+                                autocomplete="family-name"
+                                required
+                                aria-required="true">
 
                         </div>
 
                         <div class="mb-3">
 
-                            <label>Email</label>
-                            <input type="email" class="form-control" value="<?= htmlspecialchars($usuario['emailUsuario'], ENT_QUOTES, 'UTF-8') ?>" disabled>
+                            <label for="email">Email</label>
+
+                            <input
+                                type="email"
+                                id="email"
+                                class="form-control"
+                                value="<?= htmlspecialchars($usuario['emailUsuario'], ENT_QUOTES, 'UTF-8') ?>"
+                                autocomplete="email"
+                                disabled
+                                aria-describedby="ayudaEmail">
+
+                            <div id="ayudaEmail" class="form-text">
+                                El email no se puede modificar desde aquí.
+                            </div>
 
                         </div>
+
                         <div class="mb-3">
 
-                            <label>
-
+                            <label for="dni">
                                 DNI
-
+                                <span aria-hidden="true">*</span>
                             </label>
 
                             <input
                                 type="text"
+                                id="dni"
                                 name="dni"
                                 class="form-control"
                                 value="<?= htmlspecialchars($usuario['dniUsuario'], ENT_QUOTES, 'UTF-8') ?>"
                                 maxlength="8"
                                 pattern="\d{7,8}"
-                                required>
+                                inputmode="numeric"
+                                autocomplete="off"
+                                required
+                                aria-required="true"
+                                aria-describedby="ayudaDni">
+
+                            <div id="ayudaDni" class="form-text">
+                                Solo números, sin puntos (7 u 8 dígitos).
+                            </div>
 
                         </div>
 
                         <div class="mb-3">
 
-                            <label>
-
+                            <label for="telefono">
                                 Teléfono
-
+                                <span aria-hidden="true">*</span>
                             </label>
 
                             <input
-                                type="text"
+                                type="tel"
+                                id="telefono"
                                 name="telefono"
                                 class="form-control"
                                 value="<?= htmlspecialchars($usuario['telefonoUsuario'], ENT_QUOTES, 'UTF-8') ?>"
                                 maxlength="20"
-                                required>
+                                autocomplete="tel"
+                                required
+                                aria-required="true">
 
                         </div>
 
                         <div class="mb-3">
 
-                            <label>
-
+                            <label for="claveNueva">
                                 Nueva Contraseña
-
                             </label>
 
-                            <input
-                                type="password"
-                                name="clave"
-                                class="form-control"
-                                minlength="8"
-                                placeholder="Dejar vacío para mantener la actual">
+                            <div class="input-group">
+
+                                <input
+                                    type="password"
+                                    id="claveNueva"
+                                    name="clave"
+                                    class="form-control"
+                                    minlength="8"
+                                    autocomplete="new-password"
+                                    placeholder="Dejar vacío para mantener la actual"
+                                    aria-describedby="ayudaClave">
+
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-secondary"
+                                    onclick="togglePassword('claveNueva', this)"
+                                    aria-label="Mostrar contraseña"
+                                    aria-pressed="false">
+
+                                    <i class="bi bi-eye" aria-hidden="true"></i>
+
+                                </button>
+
+                            </div>
+
+                            <div id="ayudaClave" class="form-text">
+                                Mínimo 8 caracteres. Solo puede contener letras, números y caracteres especiales.
+                            </div>
 
                         </div>
 
                         <div class="mb-3">
-                            <label>Confirmar Nueva Contraseña</label>
-                            <input
-                                type="password"
-                                name="clave_confirmacion"
-                                class="form-control"
-                                minlength="8"
-                                placeholder="Repetir la nueva contraseña">
+
+                            <label for="claveConfirmacion">
+                                Confirmar Nueva Contraseña
+                            </label>
+
+                            <div class="input-group">
+
+                                <input
+                                    type="password"
+                                    id="claveConfirmacion"
+                                    name="clave_confirmacion"
+                                    class="form-control"
+                                    minlength="8"
+                                    autocomplete="new-password"
+                                    placeholder="Repetir la nueva contraseña">
+
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-secondary"
+                                    onclick="togglePassword('claveConfirmacion', this)"
+                                    aria-label="Mostrar contraseña"
+                                    aria-pressed="false">
+
+                                    <i class="bi bi-eye" aria-hidden="true"></i>
+
+                                </button>
+
+                            </div>
+
                         </div>
 
                         <div class="mb-3">
 
-                            <label>Tipo Usuario</label>
-                            <input type="text" class="form-control" value="<?= htmlspecialchars($usuario['tipoUsuario'], ENT_QUOTES, 'UTF-8') ?>" disabled>
+                            <label for="tipoUsuario">Tipo Usuario</label>
+
+                            <input
+                                type="text"
+                                id="tipoUsuario"
+                                class="form-control"
+                                value="<?= htmlspecialchars($usuario['tipoUsuario'], ENT_QUOTES, 'UTF-8') ?>"
+                                disabled>
 
                         </div>
 
-                        <button class="btn btn-primary" onclick="guardarCambios(event, this)">Guardar Cambios</button>
+                        <button type="submit" class="btn btn-primary" onclick="guardarCambios(event, this)">
+                            Guardar Cambios
+                        </button>
 
                     </form>
 
@@ -198,10 +294,15 @@ $alertas = [
         'text'  => 'Revisá que todos los campos estén completos correctamente.'
     ],
     'clave_no_coincide' => [
+        'icon'  => 'warning',
+        'title' => 'Las contraseñas no coinciden',
+        'text'  => 'La nueva contraseña y su confirmación deben ser iguales.'
+    ],
+    'clave_invalida' => [
     'icon'  => 'warning',
-    'title' => 'Las contraseñas no coinciden',
-    'text'  => 'La nueva contraseña y su confirmación deben ser iguales.'
-    ]
+    'title' => 'Contraseña inválida',
+    'text'  => 'La contraseña solo puede contener letras, números y caracteres especiales.'
+],
 ];
 
 if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)) {
@@ -223,6 +324,23 @@ if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)) {
 <?php }; ?>
 
 <script>
+    function togglePassword(inputId, boton) {
+        const input = document.getElementById(inputId);
+        const icono = boton.querySelector('i');
+        const mostrando = input.type === 'text';
+
+        input.type = mostrando ? 'password' : 'text';
+
+        icono.classList.toggle('bi-eye', mostrando);
+        icono.classList.toggle('bi-eye-slash', !mostrando);
+
+        boton.setAttribute('aria-pressed', String(!mostrando));
+        boton.setAttribute(
+            'aria-label',
+            mostrando ? 'Mostrar contraseña' : 'Ocultar contraseña'
+        );
+    }
+
     function guardarCambios(event, elemento) {
         event.preventDefault();
         const formulario = elemento.closest('form');

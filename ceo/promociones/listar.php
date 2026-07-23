@@ -66,6 +66,8 @@ if (!$resultado) {
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+<main id="contenido-principal">
+
 <div class="container mt-4">
 
     <div class="d-flex justify-content-between mb-4">
@@ -83,14 +85,18 @@ if (!$resultado) {
 
             <table class="table table-hover">
 
+                <caption class="visually-hidden">
+                    Listado de promociones de la aerolínea
+                </caption>
+
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Descripción</th>
-                        <th>Descuento</th>
-                        <th>Fecha limite</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
+                        <th scope="col">ID</th>
+                        <th scope="col">Descripción</th>
+                        <th scope="col">Descuento</th>
+                        <th scope="col">Fecha límite</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col">Acciones</th>
                     </tr>
                 </thead>
 
@@ -108,12 +114,14 @@ if (!$resultado) {
                         <td>
                             <a href="editar.php?id=<?= $fila['codPromocion'] ?>" class="btn btn-warning btn-sm">
                                 Editar
+                                <span class="visually-hidden"> promoción "<?= $fila['descripcionPromocion'] ?>"</span>
                             </a>
 
                             <a href="eliminar.php?id=<?= $fila['codPromocion'] ?>"
                             class="btn btn-danger btn-sm"
-                            onclick="return confirm('¿Eliminar promoción?')">
+                            onclick="return confirm('¿Eliminar la promoción &quot;<?= $fila['descripcionPromocion'] ?>&quot;?')">
                                 Eliminar
+                                <span class="visually-hidden"> promoción "<?= $fila['descripcionPromocion'] ?>"</span>
                             </a>
                         </td>
                     </tr>
@@ -179,6 +187,8 @@ if (!$resultado) {
     <?php } ?>
 
 </div>
+
+</main>
 
 <?php
 

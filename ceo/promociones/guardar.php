@@ -9,30 +9,36 @@ if($idCEO <= 0){
     die("Acceso denegado");
 }
 
-$descripcion = $_POST['descripcion'];
-$descuento = $_POST['descuento'];
-$fechaLimite = $_POST['fechaLimite'];
+$descripcion = $_POST['descripcion'] ?? '';
+$descuento   = $_POST['descuento'] ?? '';
+$fechaLimite = $_POST['fechaLimite'] ?? '';
 
-if(empty($descripcion) || empty($descuento) || empty($fechaLimite)){
-    header("Location: listar.php?alerta=campos_vacios");
-    die("Acceso denegado");
+if(trim($descripcion) === '' || $descuento === '' || trim($fechaLimite) === ''){
+    header("Location: crear.php?alerta=campos_vacios");
+    exit();
 }
 
-if ($descuento < 1 || $descuento > 100) {
-    header("Location: listar.php?alerta=descuento_invalido");
-    die("El descuento debe estar entre 1% y 100%");
+if (!preg_match('/^[\p{L}\p{N}\s.,;:¡!¿?%\-\(\)]{1,200}$/u', $descripcion)) {
+    header("Location: crear.php?alerta=descripcion_invalida");
+    exit();
 }
 
-if ($fechaLimite <= date('Y-m-d')) {
-    header("Location: listar.php?alerta=fecha_invalida");
-    die("La fecha límite debe ser posterior a hoy");
+if (!is_numeric($descuento) || $descuento < 1 || $descuento > 100) {
+    header("Location: crear.php?alerta=descuento_invalido");
+    exit();
+}
+
+if (strtotime($fechaLimite) === false || $fechaLimite <= date('Y-m-d')) {
+    header("Location: crear.php?alerta=fecha_invalida");
+    exit();
 }
 
 $sqlCEO = "SELECT codAerolinea FROM usuarios WHERE codUsuario = $idCEO";
 $resultadoCEO = mysqli_query($link, $sqlCEO);
 
 if (!$resultadoCEO) {
-    die(mysqli_error($link));
+    header("Location: crear.php?alerta=error_servidor");
+    exit();
 }
 
 $ceo = mysqli_fetch_assoc($resultadoCEO);
@@ -44,9 +50,11 @@ VALUES ($codAerolinea, '$descripcion', $descuento, 'PENDIENTE', '$fechaLimite')"
 $respuesta = mysqli_query($link, $sql);
 
 if(!$respuesta){
-    die("Error SQL: " . mysqli_error($link));
-} else {
-    header("Location: listar.php?alerta=creada");
+    header("Location: crear.php?alerta=error_servidor");
     exit();
 }
 
+header("Location: listar.php?alerta=creada");
+exit();
+
+?>
