@@ -1,5 +1,3 @@
-
-
 <?php
 
 include("../../includes/verificarSession.php");
@@ -26,7 +24,7 @@ if(!$codAerolinea){ ?>
 
 <div class="container mt-4">
 
-    <div class="alert alert-warning">
+    <div class="alert alert-warning" role="alert">
 
         <h4>Aerolínea no asignada</h4>
         <p>Un administrador todavía no le asignó una aerolínea. No puede gestionar vuelos hasta que eso ocurra.</p>
@@ -53,11 +51,36 @@ if (!$resultado) {
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+<style>
+    /* Contraste corregido para SC 1.4.3 (AA) */
+    .texto-secundario-accesible {
+        color: #495057;
+    }
+    /* Utilidad estándar de Bootstrap por si el proyecto no la incluye */
+    .visually-hidden {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        padding: 0 !important;
+        margin: -1px !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+        white-space: nowrap !important;
+        border: 0 !important;
+    }
+    /* Foco visible reforzado para SC 2.4.7 */
+    a.btn:focus-visible,
+    button:focus-visible {
+        outline: 3px solid #0d6efd;
+        outline-offset: 2px;
+    }
+</style>
+
 <div class="container mt-4">
 
     <div class="d-flex justify-content-between mb-4">
 
-        <h2>Gestión de Vuelos</h2>
+        <h2 id="main-heading" tabindex="-1">Gestión de Vuelos</h2>
         <a href="crear.php" class="btn btn-success">Nuevo Vuelo</a>
 
     </div>
@@ -68,30 +91,34 @@ if (!$resultado) {
 
         <?php if (mysqli_num_rows($resultado) === 0){ ?>
 
-            <p class="text-muted">No hay vuelos registrados para esta aerolínea.</p>
+            <p class="texto-secundario-accesible">No hay vuelos registrados para esta aerolínea.</p>
 
         <?php } else { ?>
 
             <table class="table table-hover">
 
+                <caption class="visually-hidden">Listado de vuelos de la aerolínea, ordenados por fecha</caption>
+
                 <thead>
 
                     <tr>
-                        <th>ID</th>
-                        <th>Origen</th>
-                        <th>Destino</th>
-                        <th>Fecha</th>
-                        <th>Hora</th>
-                        <th>Precio</th>
-                        <th>Asientos</th>
-                        <th>Acciones</th>
+                        <th scope="col">ID</th>
+                        <th scope="col">Origen</th>
+                        <th scope="col">Destino</th>
+                        <th scope="col">Fecha</th>
+                        <th scope="col">Hora</th>
+                        <th scope="col">Precio</th>
+                        <th scope="col">Asientos</th>
+                        <th scope="col">Acciones</th>
                     </tr>
 
                 </thead>
 
                 <tbody>
 
-                <?php while($fila = mysqli_fetch_assoc($resultado)){ ?>
+                <?php while($fila = mysqli_fetch_assoc($resultado)){
+
+                ?>
 
                     <tr>
                         <td><?= $fila['codVuelo'] ?></td>
@@ -102,17 +129,24 @@ if (!$resultado) {
                         <td>$<?= $fila['precioVuelo'] ?></td>
                         <td><?= $fila['asientosDisponibles'] ?></td>
                         <td>
-                            <a href="editar.php?id=<?= $fila['codVuelo'] ?>" class="btn btn-warning btn-sm">Editar</a>
-
+                            <a href="editar.php?id=<?= $fila['codVuelo'] ?>"
+                               class="btn btn-warning btn-sm"
+                               role="button">
+                                Editar
+                            </a>
 
                             <?php if($fila['activo'] == 1) {?>
-                            <a href="eliminar.php?id=<?= $fila['codVuelo'] ?>&activo=<?= $fila["activo"] ?>" class="btn btn-danger btn-sm"
-                            onclick="ocultarVuelo(event, this)">
+                            <a href="eliminar.php?id=<?= $fila['codVuelo'] ?>&activo=<?= $fila["activo"] ?>"
+                               class="btn btn-danger btn-sm"
+                               role="button"
+                               onclick="ocultarVuelo(event, this)">
                                 Ocultar
                             </a>
                             <?php } else { ?>
-                            <a href="eliminar.php?id=<?= $fila['codVuelo'] ?>&activo=<?= $fila["activo"] ?>" class="btn btn-success btn-sm"
-                            onclick="activarVuelo(event, this)">
+                            <a href="eliminar.php?id=<?= $fila['codVuelo'] ?>&activo=<?= $fila["activo"] ?>"
+                               class="btn btn-success btn-sm"
+                               role="button"
+                               onclick="activarVuelo(event, this)">
                                 Activar
                             </a>
                             <?php } ?>
@@ -175,12 +209,12 @@ $alertas = [
     'precio_invalido' => [
         'icon'  => 'error',
         'title' => '¡Error!',
-        'text'  => 'El precio no tiene un formato válido.'
+        'text'  => 'El precio debe estar entre 50 y 5.000.000.'
     ],
     'asientos_invalidos' => [
         'icon'  => 'error',
         'title' => '¡Error!',
-        'text'  => 'Cantidad de asientos inválida.'
+        'text'  => 'Los asientos deben ser un número de 0 a 500.'
     ],
     'imagen_invalida' => [
         'icon'  => 'error',
@@ -231,7 +265,8 @@ if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)){
             confirmButtonColor:  '#dc3545',
             cancelButtonColor:   '#6c757d',
             confirmButtonText:   'Sí, ocultar',
-            cancelButtonText:    'Cancelar'
+            cancelButtonText:    'Cancelar',
+            focusCancel:         true
         }).then((result) => {
             if (result.isConfirmed){
                 window.location.href = elemento.href;
@@ -251,7 +286,8 @@ if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)){
             confirmButtonColor:  '#198754',
             cancelButtonColor:   '#6c757d',
             confirmButtonText:   'Sí, activar',
-            cancelButtonText:    'Cancelar'
+            cancelButtonText:    'Cancelar',
+            focusCancel:         true
         }).then((result) => {
             if (result.isConfirmed)
             {

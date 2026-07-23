@@ -55,7 +55,7 @@ if (!preg_match('/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/', $hora)) {
 }
 
 // precio (0 a 5.000.000)
-if (!is_numeric($precio) || $precio < 0 || $precio > 5000000) {
+if (!is_numeric($precio) || $precio < 50 || $precio > 5000000) {
     header("Location: listar.php?alerta=precio_invalido");
     exit();
 }

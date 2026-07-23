@@ -29,8 +29,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
         rel="stylesheet">
 
         <link
-rel="stylesheet"
-href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <link
         rel="stylesheet"
@@ -83,9 +83,8 @@ href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.m
 
                         <li class="nav-item">
 
-                            <a class="nav-link<?= $paginaActual == 'pagina.php' ? ' active' : '' ?>"
-                                href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php"
-                                <?= $paginaActual == 'pagina.php' ? ' aria-current="page"' : '' ?>>
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php">
 
                                 Sobre Nosotros
 
@@ -97,9 +96,8 @@ href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.m
 
                         <li class="nav-item">
 
-                            <a class="nav-link<?= $paginaActual == 'index.php' ? ' active' : '' ?>"
-                                href="/entornosGraficos-SitioWeb/index.php"
-                                <?= $paginaActual == 'index.php' ? ' aria-current="page"' : '' ?>>
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/index.php">
 
                                 Inicio
 
