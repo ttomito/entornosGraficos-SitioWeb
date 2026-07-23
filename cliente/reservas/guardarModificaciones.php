@@ -3,153 +3,207 @@
 include("../../includes/verificarSession.php");
 include("../../includes/conexion.php");
 
-$asientos= $_POST['cantAsientos'];
+$asientos = (int) ($_POST['cantAsientos'] ?? 0);
+$codReserva = (int) ($_POST['codReserva'] ?? 0);
+$idUsuario = (int) $_SESSION['id'];
 
-$codReserva = $_POST['codReserva'];
+$destino = 'listar.php';
+$tipoAlerta = 'error';
+$mensaje = '';
 
-$sql = "
+if ($codReserva <= 0) {
 
-SELECT *
+    $mensaje = 'La reserva indicada no es válida.';
 
-FROM reservas
+} elseif ($asientos < 1) {
 
-WHERE codReserva = $codReserva
+    $destino = "modificar.php?codReserva=$codReserva";
+    $mensaje = 'La cantidad de asientos debe ser al menos 1.';
 
-";
+} else {
 
+    $sql = "
 
-$idUsuario =
-$_SESSION['id'];
+    SELECT *
 
-$sql = "
+    FROM reservas
 
-SELECT *
+    WHERE codReserva = $codReserva
 
-FROM reservas
+    AND codUsuario = $idUsuario
 
-WHERE codReserva = $codReserva
+    ";
 
-AND codUsuario = $idUsuario
+    $resultado = mysqli_query($link, $sql);
+    $reserva = ($resultado) ? mysqli_fetch_assoc($resultado) : null;
 
-";
+    if (!$reserva) {
 
-$resultado = mysqli_query(
-    $link,
-    $sql
-);
+        $mensaje = 'No encontramos esa reserva.';
 
+    } elseif ($reserva['estadoReserva'] !== 'PENDIENTE') {
 
-$reserva = mysqli_fetch_assoc(
-    $resultado
-);
+        $mensaje = 'Esta reserva ya no se puede modificar (su estado actual es "' . $reserva['estadoReserva'] . '").';
 
-$codVuelo = $reserva['codVuelo'];
-$cantAsientos = $reserva['cantAsientos'];
+    } else {
 
-if($reserva['estadoReserva'] == 'CANCELADA')
-{
-    header("Location: listar.php");
-    exit();
-}
+        $codVuelo = (int) $reserva['codVuelo'];
+        $cantAsientos = (int) $reserva['cantAsientos'];
 
-$sql = "
+        $sqlVueloSelect = "
 
-SELECT *
+        SELECT *
 
-FROM vuelos
+        FROM vuelos
 
-WHERE codVuelo = $codVuelo
+        WHERE codVuelo = $codVuelo
 
-";
+        ";
 
-$resultadoVuelo = mysqli_query(
-    $link,
-    $sql
-);
+        $resultadoVuelo = mysqli_query($link, $sqlVueloSelect);
+        $vuelo = ($resultadoVuelo) ? mysqli_fetch_assoc($resultadoVuelo) : null;
 
-$vuelo = mysqli_fetch_assoc(
-    $resultadoVuelo
-);
+        if (!$vuelo) {
 
-$nuevosDisponibles =
-    $vuelo['asientosDisponibles']
-    + $cantAsientos
-    - $asientos;
+            $mensaje = 'No encontramos el vuelo asociado a esta reserva.';
 
-if($nuevosDisponibles < 0)
-{
-    header(
-        "Location: modificar.php?codReserva=$codReserva&error=No hay suficientes asientos disponibles"
-    );
-    exit();
-}
-$codAerolinea=$vuelo['codAerolinea'];
+        } else {
 
-$sqlProm = "
+            $nuevosDisponibles =
+                $vuelo['asientosDisponibles']
+                + $cantAsientos
+                - $asientos;
 
-SELECT *
+            if ($nuevosDisponibles < 0) {
 
-FROM promociones
+                $destino = "modificar.php?codReserva=$codReserva";
+                $mensaje = 'No hay suficientes asientos disponibles.';
 
-WHERE codAerolinea = $codAerolinea
+            } else {
 
-AND estadoPromocion = 'APROBADA'
+                $codAerolinea = (int) $vuelo['codAerolinea'];
 
-";
+                $sqlProm = "
 
-$resultado_prom = mysqli_query(
-    $link,
-    $sqlProm);
+                SELECT *
 
-$descuentoMaximo = 0;
-$hoy = date("Y-m-d");
-while($promocion=mysqli_fetch_assoc($resultado_prom))
-    {
-        if(
-            $promocion['descuentoPromocion']>$descuentoMaximo 
-            && 
-            $promocion['fechaLimitePromocion']>=$hoy)
-            {
-                $descuentoMaximo = $promocion['descuentoPromocion'];
+                FROM promociones
+
+                WHERE codAerolinea = $codAerolinea
+
+                AND estadoPromocion = 'APROBADA'
+
+                ";
+
+                $resultado_prom = mysqli_query($link, $sqlProm);
+
+                $descuentoMaximo = 0;
+                $hoy = date("Y-m-d");
+
+                if ($resultado_prom) {
+                    while ($promocion = mysqli_fetch_assoc($resultado_prom)) {
+                        if (
+                            $promocion['descuentoPromocion'] > $descuentoMaximo
+                            &&
+                            $promocion['fechaLimitePromocion'] >= $hoy
+                        ) {
+                            $descuentoMaximo = $promocion['descuentoPromocion'];
+                        }
+                    }
+                }
+
+                $precioFinal = ($vuelo['precioVuelo'] - ($vuelo['precioVuelo'] * $descuentoMaximo / 100)) * $asientos;
+
+                $sqlVueloUpdate = "
+
+                UPDATE vuelos
+
+                SET asientosDisponibles = asientosDisponibles + $cantAsientos - $asientos
+
+                WHERE codVuelo = $codVuelo
+
+                ";
+
+                $okVuelo = mysqli_query($link, $sqlVueloUpdate);
+
+                $sqlact = "
+
+                UPDATE reservas
+
+                SET cantAsientos = $asientos,
+                precioFinal = $precioFinal
+
+                WHERE codReserva = $codReserva
+
+                ";
+
+                $okReserva = mysqli_query($link, $sqlact);
+
+                if ($okVuelo && $okReserva) {
+                    $tipoAlerta = 'success';
+                    $mensaje = 'Tu reserva fue modificada correctamente.';
+                } else {
+                    $destino = "modificar.php?codReserva=$codReserva";
+                    $mensaje = 'Ocurrió un error al guardar los cambios. Intentá nuevamente.';
+                }
             }
-    };
-$precioFinal = ($vuelo['precioVuelo']-($vuelo['precioVuelo']*$descuentoMaximo/100)) * $asientos;
+        }
+    }
+}
 
+$tituloAlerta = $tipoAlerta === 'success' ? 'Listo' : 'No se pudo guardar';
 
-$sqlVuelo = "
-
-
-UPDATE vuelos
-
-SET asientosDisponibles = asientosDisponibles + $cantAsientos - $asientos
-
-WHERE codVuelo = $codVuelo
-
-";
-
-mysqli_query(
-    $link,
-    $sqlVuelo
-);
-$sqlact="
-
-UPDATE reservas
-
-SET cantAsientos = $asientos,
-precioFinal = $precioFinal
-
-WHERE codReserva = $codReserva
-
-";
-
-mysqli_query(
-    $link,
-    $sqlact
-);
-
-
-
-header("Location: listar.php");
-exit();
+include("../../includes/header.php");
 
 ?>
+
+<div class="container mt-5">
+
+    <div class="row justify-content-center">
+
+        <div class="col-md-6">
+
+            <div class="card card-custom">
+
+                <div class="card-body p-5 text-center">
+
+                    <div
+                        class="alert <?= $tipoAlerta === 'success' ? 'alert-success' : 'alert-danger' ?>"
+                        role="alert">
+
+                        <?= htmlspecialchars($mensaje, ENT_QUOTES, 'UTF-8') ?>
+
+                    </div>
+
+                    <a href="<?= htmlspecialchars($destino, ENT_QUOTES, 'UTF-8') ?>" class="btn btn-primary" id="btnContinuar">
+
+                        Continuar
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            icon: <?= json_encode($tipoAlerta) ?>,
+            title: <?= json_encode($tituloAlerta, JSON_UNESCAPED_UNICODE) ?>,
+            text: <?= json_encode($mensaje, JSON_UNESCAPED_UNICODE) ?>,
+            confirmButtonText: 'Aceptar'
+        }).then(function () {
+            window.location.href = <?= json_encode($destino) ?>;
+        });
+    }
+</script>
+
+<?php include("../../includes/footer.php"); ?>

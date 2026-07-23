@@ -4,52 +4,21 @@ include("includes/conexion.php");
 
 
 
-/*Destinos populares*/
 $destinosPopulares = mysqli_query(
-    $link,
-    "
-
-SELECT
-v.destinoVuelo,
+    $link, "SELECT v.destinoVuelo,
 COUNT(r.codReserva) AS cantidad,
 MAX(v.imagenVuelo) AS imagenVuelo
-
 FROM reservas r
-
 INNER JOIN vuelos v
 ON r.codVuelo = v.codVuelo
-
 WHERE r.fechaReserva >= DATE_SUB(CURDATE(), INTERVAL 3 YEAR)
-
 GROUP BY v.destinoVuelo
-
 ORDER BY cantidad DESC
-
-LIMIT 8
-
-"
-);
-
-
-
-
+LIMIT 8");
 
 $vuelosHome = mysqli_query(
-    $link,
-    "
+    $link, "SELECT * FROM vuelos WHERE fechaVuelo >= CURDATE() ORDER BY fechaVuelo ASC LIMIT 15");
 
-SELECT *
-
-FROM vuelos
-
-WHERE fechaVuelo >= CURDATE()
-
-ORDER BY fechaVuelo ASC
-
-LIMIT 15
-
-"
-);
 $totalAerolineas = mysqli_fetch_assoc(
     mysqli_query(
         $link,
@@ -71,37 +40,12 @@ $totalUsuarios = mysqli_fetch_assoc(
     )
 );
 
-
-
-
-/*
-    Promociones
-*/
-
 $promociones = mysqli_query(
-    $link,
-    "
-    SELECT *
-    FROM promociones
-    WHERE estadoPromocion='APROBADA'
-    LIMIT 3
-    "
+    $link, "SELECT * FROM promociones WHERE estadoPromocion='APROBADA' LIMIT 3"
 );
 
-/*
-    Novedades
-*/
-
 $novedades = mysqli_query(
-    $link,
-    "
-    SELECT *
-    FROM novedades
-    WHERE CURDATE()
-    BETWEEN fechaPublicacion
-    AND fechaExpiracion
-    LIMIT 3
-    "
+    $link, "SELECT * FROM novedades WHERE CURDATE() BETWEEN fechaPublicacion AND fechaExpiracion LIMIT 3"
 );
 ?>
 
@@ -517,7 +461,7 @@ include("includes/header.php");
 
             <div
                 id="vuelosScroll"
-                class="netflix-scroll"
+                class="d-flex netflix-scroll pb-3"
                 role="region"
                 aria-label="Lista de próximos vuelos"
                 tabindex="0">
@@ -581,69 +525,54 @@ include("includes/header.php");
 
                             <?php
 
-                            if (isset($_SESSION['id'])) {
+                            if (
+                                isset($_SESSION['id'])
+                                &&
+                                isset($_SESSION['tipo'])
+                                &&
+                                $_SESSION['tipo'] == 'CLIENTE'
+                            ) {
                             ?>
 
                                 <a
                                     href="cliente/reservas/reservar.php?codVuelo=<?= (int) $vuelo['codVuelo'] ?>"
                                     class="btn btn-warning">
 
+                                    Ver disponibilidad
+                                    <span class="visually-hidden"> del vuelo <?= $origen ?> a <?= $destinoV ?></span>
 
+                                </a>
 
+                            <?php
+                            } elseif (!isset($_SESSION['id'])) {
+                            ?>
 
-if(
-    isset($_SESSION['tipo'])
-    &&
-    $_SESSION['tipo'] == 'CLIENTE'
-)
-{
-?>
+                                <a
+                                    href="auth/login.php"
+                                    class="btn btn-primary">
 
+                                    Iniciar sesión
+                                    <span class="visually-hidden"> para ver el vuelo <?= $origen ?> a <?= $destinoV ?></span>
 
-              
-     <a
-        href="cliente/reservas/reservar.php?codVuelo=<?= (int) $vuelo['codVuelo'] ?>"
-        class="btn btn-warning">
+                                </a>
 
-        Ver disponibilidad
-        <span class="visually-hidden"> del vuelo <?= $origen ?> a <?= $destinoV ?></span>
+                            <?php
+                            } else {
+                            ?>
 
-     </a>
+                                <button
+                                    class="btn btn-secondary"
+                                    disabled>
 
-<?php
-}
-elseif(!isset($_SESSION['id']))
-{
-?>
+                                    Cuenta de cliente requerida
 
-              
-    <a
-      href="auth/login.php"
-      class="btn btn-primary">
+                                </button>
 
-      Iniciar sesión
-      <span class="visually-hidden"> para ver el vuelo <?= $origen ?> a <?= $destinoV ?></span>
+                            <?php
+                            }
+                            ?>
 
-    </a>
-
-<?php
-}
-else
-{
-?>
-
-    <button
-        class="btn btn-secondary"
-        disabled>
-
-        Cuenta de cliente requerida
-
-    </button>
-
-<?php
-}
-?>
-
+                        </div>
 
                     </div>
 

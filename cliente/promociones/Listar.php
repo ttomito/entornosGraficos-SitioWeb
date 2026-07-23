@@ -22,35 +22,36 @@ $inicio =
 * 
 $registrosPorPagina; 
 
-$sqlConteo = "
+$filtroDescripcionEsc = mysqli_real_escape_string($link, addcslashes($filtroDescripcion, '%_'));
+$filtroAerolineaEsc   = mysqli_real_escape_string($link, addcslashes($filtroAerolinea, '%_'));
 
-SELECT COUNT(*) AS total
+// Construye la URL de una página de resultados, ya escapada para HTML
+function urlPagina($n, $filtroDescripcion, $filtroAerolinea)
+{
+    $query = http_build_query([
+        'pagina'      => $n,
+        'descripcion' => $filtroDescripcion,
+        'aerolinea'   => $filtroAerolinea,
+    ]);
 
+    return '?' . htmlspecialchars($query, ENT_QUOTES, 'UTF-8');
+}
+
+$sqlConteo = "SELECT COUNT(*) AS total
 FROM promociones p
-
 INNER JOIN aerolineas a
 ON p.codAerolinea = a.codAerolinea
-
 WHERE p.estadoPromocion = 'APROBADA'
-
-AND p.fechaLimitePromocion >= CURDATE()
-
-";
+AND p.fechaLimitePromocion >= CURDATE()";
 
 if($filtroDescripcion != '')
 {
-    $sqlConteo .= "
-    AND p.descripcionPromocion
-    LIKE '%$filtroDescripcion%'
-    ";
+    $sqlConteo .= "AND p.descripcionPromocion LIKE '%$filtroDescripcionEsc%'";
 }
 
 if($filtroAerolinea != '')
 {
-    $sqlConteo .= "
-    AND a.nombreAerolinea
-    LIKE '%$filtroAerolinea%'
-    ";
+    $sqlConteo .= "AND a.nombreAerolinea LIKE '%$filtroAerolineaEsc%'";
 }
 
 $resultadoConteo = mysqli_query($link,$sqlConteo); 
@@ -59,44 +60,24 @@ $totalRegistros = $filaConteo['total'];
 $totalPaginas = ceil( $totalRegistros / $registrosPorPagina );
 
 
-$sql = "
-
-SELECT
-p.*,
-a.nombreAerolinea
-
+$sql = "SELECT p.*, a.nombreAerolinea
 FROM promociones p
-
 INNER JOIN aerolineas a
 ON p.codAerolinea = a.codAerolinea
-
 WHERE p.estadoPromocion = 'APROBADA'
-
-AND p.fechaLimitePromocion >= CURDATE()
-
-";
+AND p.fechaLimitePromocion >= CURDATE()";
 
 if($filtroDescripcion != '')
 {
-    $sql .= "
-    AND p.descripcionPromocion
-    LIKE '%$filtroDescripcion%'
-    ";
+    $sql .= "AND p.descripcionPromocion LIKE '%$filtroDescripcionEsc%'";
 }
 
 if($filtroAerolinea != '')
 {
-    $sql .= "
-    AND a.nombreAerolinea
-    LIKE '%$filtroAerolinea%'
-    ";
+    $sql .= "AND a.nombreAerolinea LIKE '%$filtroAerolineaEsc%'";
 }
 
-$sql .= "
-
-ORDER BY p.codPromocion DESC
-LIMIT $inicio, $registrosPorPagina;
-";
+$sql .= "ORDER BY p.codPromocion DESC LIMIT $inicio, $registrosPorPagina;";
 $resultado = mysqli_query($link, $sql);
 
 if(!$resultado)
@@ -106,8 +87,6 @@ if(!$resultado)
 
 
 ?>
-
-
 
 
 <div class="container mt-4">
@@ -130,13 +109,13 @@ if(!$resultado)
 
         </p>
 
-        <form method="GET">
+        <form method="GET" role="search" aria-label="Buscar promociones">
 
             <div class="row g-3">
 
                 <div class="col-md-5">
 
-                    <label class="form-label">
+                    <label for="descripcion" class="form-label">
 
                         Descripción
 
@@ -144,16 +123,17 @@ if(!$resultado)
 
                     <input
                     type="text"
+                    id="descripcion"
                     name="descripcion"
                     class="form-control"
                     placeholder="Ej.: Europa, Dubái, Bariloche..."
-                    value="<?= $filtroDescripcion ?>">
+                    value="<?= htmlspecialchars($filtroDescripcion, ENT_QUOTES, 'UTF-8') ?>">
 
                 </div>
 
                 <div class="col-md-5">
 
-                    <label class="form-label">
+                    <label for="aerolinea" class="form-label">
 
                         Aerolínea
 
@@ -161,10 +141,11 @@ if(!$resultado)
 
                     <input
                     type="text"
+                    id="aerolinea"
                     name="aerolinea"
                     class="form-control"
                     placeholder="Ej.: Emirates, LATAM, Iberia..."
-                    value="<?= $filtroAerolinea ?>">
+                    value="<?= htmlspecialchars($filtroAerolinea, ENT_QUOTES, 'UTF-8') ?>">
 
                 </div>
 
@@ -198,7 +179,7 @@ if(
 ){
 ?>
 
-<div class="alert alert-info d-flex justify-content-between align-items-center">
+<div class="alert alert-info d-flex justify-content-between align-items-center" role="status">
 
 <span>
 
@@ -228,14 +209,16 @@ Limpiar filtros
 
                 <table class="table table-hover">
 
+                    <caption class="visually-hidden">Listado de promociones disponibles</caption>
+
                     <thead>
 
                         <tr>
-                            <th>Promocion</th>
-                            <th>Descripcion</th>
-                            <th>Fecha limite</th>
-                            <th>Aerolinea</th>
-                            <th>Acción</th>
+                            <th scope="col">Promocion</th>
+                            <th scope="col">Descripcion</th>
+                            <th scope="col">Fecha limite</th>
+                            <th scope="col">Aerolinea</th>
+                            <th scope="col">Acción</th>
                         </tr>
 
                     </thead>
@@ -246,32 +229,35 @@ Limpiar filtros
                         <?php 
                         $fechaLimite = new DateTime($fila['fechaLimitePromocion']);
                         if ($fila['estadoPromocion'] =="APROBADA" && $fechaLimite >= $hoy){
-
+                            $descripcion = htmlspecialchars($fila['descripcionPromocion'], ENT_QUOTES, 'UTF-8');
+                            $nombreAerolinea = htmlspecialchars($fila['nombreAerolinea'], ENT_QUOTES, 'UTF-8');
+                            $fechaLimiteTexto = htmlspecialchars($fila['fechaLimitePromocion'], ENT_QUOTES, 'UTF-8');
                         ?>
                     
                             <tr>
                                 <td>
-                                    <?= $fila['descuentoPromocion']?>%
+                                    <?= (int) $fila['descuentoPromocion']?>%
                                 </td>
                                 <td>
-                                    <?= $fila['descripcionPromocion'] ?>
+                                    <?= $descripcion ?>
                                 </td>
                                 <td>
-                                    <?= $fila['fechaLimitePromocion'] ?>
+                                    <time datetime="<?= $fechaLimiteTexto ?>"><?= $fechaLimiteTexto ?></time>
                                 </td>
                                 
                                 <td>
 
-                                    <?= $fila['nombreAerolinea'] ?>
+                                    <?= $nombreAerolinea ?>
 
                                 </td>
                                 <td>
 
                                     <a
-                                    href="../vuelos/listar.php?promo=<?= $fila['codPromocion'] ?>"
+                                    href="../vuelos/listar.php?promo=<?= (int) $fila['codPromocion'] ?>"
                                     class="btn btn-primary btn-sm">
 
                                     Ver vuelos
+                                    <span class="visually-hidden"> con la promoción "<?= $descripcion ?>" de <?= $nombreAerolinea ?></span>
 
                                     </a>
 
@@ -287,14 +273,14 @@ Limpiar filtros
                 </table>
                 <div class="d-flex justify-content-center mt-4">
 
-                <nav>
+                <nav aria-label="Paginación de promociones">
 
                 <ul class="pagination">
 
                 <?php if($pagina > 1){ ?>
 
                 <li class="page-item">
-                <a class="page-link" href="?pagina=<?= $pagina-1 ?>&descripcion=<?= urlencode($filtroDescripcion) ?>&aerolinea=<?= urlencode($filtroAerolinea) ?>">
+                <a class="page-link" href="<?= urlPagina($pagina-1, $filtroDescripcion, $filtroAerolinea) ?>">
                 Anterior
                 </a>
                 </li>
@@ -306,8 +292,12 @@ Limpiar filtros
                 ?>
 
                 <li class="page-item <?= $i==$pagina ? 'active' : '' ?>">
-                <a class="page-link" href="?pagina=<?= $i ?>&descripcion=<?= urlencode($filtroDescripcion) ?>&aerolinea=<?= urlencode($filtroAerolinea) ?>">
+                <a class="page-link" href="<?= urlPagina($i, $filtroDescripcion, $filtroAerolinea) ?>"
+                <?= $i==$pagina ? 'aria-current="page"' : '' ?>>
                 <?= $i ?>
+                <?php if ($i == $pagina) { ?>
+                    <span class="visually-hidden"> (página actual)</span>
+                <?php } ?>
                 </a>
                 </li>
 
@@ -316,7 +306,7 @@ Limpiar filtros
                 <?php if($pagina < $totalPaginas){ ?>
 
                 <li class="page-item">
-                <a class="page-link" href="?pagina=<?= $pagina+1 ?>&descripcion=<?= urlencode($filtroDescripcion) ?>&aerolinea=<?= urlencode($filtroAerolinea) ?>">
+                <a class="page-link" href="<?= urlPagina($pagina+1, $filtroDescripcion, $filtroAerolinea) ?>">
                 Siguiente
                 </a>
                 </li>
@@ -333,7 +323,7 @@ Limpiar filtros
         </div>
     <?php } else { ?>
 
-        <div class="alert alert-info">
+        <div class="alert alert-info" role="status">
             No hay promociones disponibles<?= ($filtroDescripcion || $filtroAerolinea) ? ' para los filtros aplicados' : '' ?>.
         </div>
 
