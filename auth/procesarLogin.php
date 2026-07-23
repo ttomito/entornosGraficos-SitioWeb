@@ -4,77 +4,68 @@ session_start();
 
 include("../includes/conexion.php");
 
+$email = trim($_POST['email'] ?? '');
+$clave = $_POST['clave'] ?? '';
 
-$email = $_POST['email'];
+$emailValido = (mb_strlen($email) <= 100) && filter_var($email, FILTER_VALIDATE_EMAIL);
 
-$clave = $_POST['clave'];
+$claveValida = $clave !== '';
 
-$vSql = "
+if (!$emailValido || !$claveValida) {
+    header("Location: login.php?error=1");
+    exit();
+}
 
-SELECT *
 
-FROM usuarios
+$emailEsc = mysqli_real_escape_string($link, $email);
 
-WHERE emailUsuario='$email'
+$vSql = "SELECT * FROM usuarios WHERE emailUsuario='$emailEsc'";
 
-AND claveUsuario='$clave'
+$vResultado = mysqli_query($link, $vSql);
 
-";
-
-$vResultado = mysqli_query(
-    $link,
-    $vSql
-);
-
-if(mysqli_num_rows($vResultado) == 0)
-{
+if (mysqli_num_rows($vResultado) == 0) {
     header("Location: login.php?error=1");
     exit();
 }
 
 $usuario = mysqli_fetch_assoc($vResultado);
 
-if(
+if (!password_verify($clave, $usuario['claveUsuario'])) {
+    header("Location: login.php?error=1");
+    exit();
+}
+
+if (
     $usuario['tipoUsuario'] == 'CEO'
     &&
     $usuario['aprobadoAdmin'] == 'NO'
-)
-{
+) {
     header("Location: login.php?esperando=1");
     exit();
 }
 
-if(
+if (
     $usuario['tipoUsuario'] == 'CLIENTE'
     &&
     $usuario['estadoCuenta'] != 'ACTIVA'
-)
-{
+) {
     header("Location: login.php?pendiente=1");
     exit();
 }
 
-
-
 $_SESSION['id'] = $usuario['codUsuario'];
 
 $_SESSION['nombre'] =
-$usuario['nombreUsuario']." ".$usuario['apellidoUsuario'];
+    $usuario['nombreUsuario'] . " " . $usuario['apellidoUsuario'];
 
 $_SESSION['tipo'] = $usuario['tipoUsuario'];
 
-if($usuario['tipoUsuario'] == 'ADMIN')
-{
+if ($usuario['tipoUsuario'] == 'ADMIN') {
     header("Location: ../admin/dashboard.php");
-}
-elseif($usuario['tipoUsuario'] == 'CEO')
-{
+} elseif ($usuario['tipoUsuario'] == 'CEO') {
     header("Location: ../ceo/dashboard.php");
-}
-else
-{
+} else {
     header("Location: ../cliente/dashboard.php");
 }
 
 exit();
-
