@@ -156,32 +156,43 @@ No hay CEOs registrados.
                         </td>
 
                         <td>
+<?php
 
-                        <?php
-                        if($fila['estadoCuenta'] == 'PENDIENTE')
-                        {
-                        ?>
+if($fila['estadoCuenta'] == 'PENDIENTE')
+{
+?>
 
-                            <a
-                            href="aprobar.php?id=<?= $fila['codUsuario'] ?>"
-                            class="btn btn-success btn-sm">
+<a
+href="aprobar.php?id=<?= $fila['codUsuario'] ?>"
+class="btn btn-success btn-sm">
 
-                                Aprobar
+    Aprobar
 
-                            </a>
+</a>
 
-                            <a
-                            href="rechazar.php?id=<?= $fila['codUsuario'] ?>"
-                            class="btn btn-danger btn-sm">
+<a
+href="rechazar.php?id=<?= $fila['codUsuario'] ?>"
+class="btn btn-danger btn-sm">
 
-                                Rechazar
+    Rechazar
 
-                            </a>
+</a>
 
-                        <?php
-                        }
-                        ?>
+<?php
+}
+else
+{
+?>
 
+<span class="text-muted">
+
+Sin acciones
+
+</span>
+
+<?php
+}
+?>
                         </td>
 
                     </tr>
