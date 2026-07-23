@@ -312,7 +312,6 @@ Ver vuelos
 
 </div>
 
-</div>
 
 <button
 class="btn btn-dark netflix-next"
@@ -321,8 +320,8 @@ onclick="moverDestinos(1)">
 ❯
 
 </button>
-
 </div>
+
 </section>
     <section class="container my-5">
 
