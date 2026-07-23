@@ -4,13 +4,29 @@ include("../../includes/verificarSession.php");
 include("../../includes/conexion.php");
 include("../../includes/header.php");
 
+$registrosPorPagina = 10;
+
+$pagina = isset($_GET['pagina']) 
+? (int)$_GET['pagina'] 
+: 1; 
+
+if($pagina < 1) 
+{ 
+    $pagina = 1; 
+} 
+
+$inicio = ($pagina - 1) * $registrosPorPagina;
+
 $idCEO = $_SESSION['id'];
 
 if($idCEO <= 0){
     die("Acceso denegado");
 }
 
-$sqlCEO = "SELECT codAerolinea FROM usuarios WHERE codUsuario = $idCEO";
+$sqlCEO = "
+SELECT codAerolinea 
+FROM usuarios 
+WHERE codUsuario = $idCEO";
 $resultadoCEO = mysqli_query($link, $sqlCEO);
 
 if (!$resultadoCEO) {
@@ -40,8 +56,23 @@ include("../../includes/footer.php");
 exit();
 
 }
+$sqlConteo = " 
+SELECT COUNT(*) AS total 
+FROM vuelos
+WHERE codAerolinea =$codAerolinea
+"; 
 
-$sql = "SELECT * FROM vuelos WHERE codAerolinea = $codAerolinea ORDER BY fechaVuelo ";
+$resultadoConteo = mysqli_query($link,$sqlConteo); 
+$filaConteo = mysqli_fetch_assoc($resultadoConteo); 
+$totalRegistros = $filaConteo['total']; 
+$totalPaginas = ceil( $totalRegistros / $registrosPorPagina);
+
+$sql = "
+SELECT * 
+FROM vuelos 
+WHERE codAerolinea = $codAerolinea 
+ORDER BY fechaVuelo 
+LIMIT $inicio, $registrosPorPagina";
 
 $resultado = mysqli_query($link, $sql);
 if (!$resultado) {
@@ -159,6 +190,49 @@ if (!$resultado) {
                 </tbody>
 
             </table>
+            <div class="d-flex justify-content-center mt-4">
+
+            <nav>
+
+            <ul class="pagination">
+
+            <?php if($pagina > 1){ ?>
+
+            <li class="page-item">
+            <a class="page-link" href="?pagina=<?= $pagina-1 ?>">
+            Anterior
+            </a>
+            </li>
+
+            <?php } ?>
+
+            <?php
+            for($i=1;$i<=$totalPaginas;$i++){
+            ?>
+
+            <li class="page-item <?= $i==$pagina ? 'active' : '' ?>">
+            <a class="page-link" href="?pagina=<?= $i ?>">
+            <?= $i ?>
+            </a>
+            </li>
+
+            <?php } ?>
+
+            <?php if($pagina < $totalPaginas){ ?>
+
+            <li class="page-item">
+            <a class="page-link" href="?pagina=<?= $pagina+1 ?>">
+            Siguiente
+            </a>
+            </li>
+
+            <?php } ?>
+
+            </ul>
+
+            </nav>
+
+            </div>
 
         <?php } ?>
 

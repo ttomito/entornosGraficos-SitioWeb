@@ -3,7 +3,7 @@
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
-
+$paginaActual = basename($_SERVER['PHP_SELF']);
 $rutaActual = $_SERVER['PHP_SELF'];
 
 ?>

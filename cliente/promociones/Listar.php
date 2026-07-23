@@ -3,8 +3,61 @@
 include("../../includes/header.php");
 include("../../includes/conexion.php");
 
+$registrosPorPagina = 10;
+
 $filtroDescripcion = $_GET['descripcion'] ?? '';
 $filtroAerolinea   = $_GET['aerolinea'] ?? '';
+
+$pagina = isset($_GET['pagina']) 
+? (int)$_GET['pagina'] : 
+1; 
+
+if($pagina < 1) 
+{ 
+    $pagina = 1; 
+} 
+
+$inicio = 
+($pagina - 1) 
+* 
+$registrosPorPagina; 
+
+$sqlConteo = "
+
+SELECT COUNT(*) AS total
+
+FROM promociones p
+
+INNER JOIN aerolineas a
+ON p.codAerolinea = a.codAerolinea
+
+WHERE p.estadoPromocion = 'APROBADA'
+
+AND p.fechaLimitePromocion >= CURDATE()
+
+";
+
+if($filtroDescripcion != '')
+{
+    $sqlConteo .= "
+    AND p.descripcionPromocion
+    LIKE '%$filtroDescripcion%'
+    ";
+}
+
+if($filtroAerolinea != '')
+{
+    $sqlConteo .= "
+    AND a.nombreAerolinea
+    LIKE '%$filtroAerolinea%'
+    ";
+}
+
+$resultadoConteo = mysqli_query($link,$sqlConteo); 
+$filaConteo = mysqli_fetch_assoc($resultadoConteo); 
+$totalRegistros = $filaConteo['total']; 
+$totalPaginas = ceil( $totalRegistros / $registrosPorPagina );
+
 
 $sql = "
 
@@ -42,7 +95,7 @@ if($filtroAerolinea != '')
 $sql .= "
 
 ORDER BY p.codPromocion DESC
-
+LIMIT $inicio, $registrosPorPagina;
 ";
 $resultado = mysqli_query($link, $sql);
 
@@ -232,7 +285,49 @@ Limpiar filtros
                     </tbody>
 
                 </table>
+                <div class="d-flex justify-content-center mt-4">
 
+                <nav>
+
+                <ul class="pagination">
+
+                <?php if($pagina > 1){ ?>
+
+                <li class="page-item">
+                <a class="page-link" href="?pagina=<?= $pagina-1 ?>&descripcion=<?= urlencode($filtroDescripcion) ?>&aerolinea=<?= urlencode($filtroAerolinea) ?>">
+                Anterior
+                </a>
+                </li>
+
+                <?php } ?>
+
+                <?php
+                for($i=1;$i<=$totalPaginas;$i++){
+                ?>
+
+                <li class="page-item <?= $i==$pagina ? 'active' : '' ?>">
+                <a class="page-link" href="?pagina=<?= $i ?>&descripcion=<?= urlencode($filtroDescripcion) ?>&aerolinea=<?= urlencode($filtroAerolinea) ?>">
+                <?= $i ?>
+                </a>
+                </li>
+
+                <?php } ?>
+
+                <?php if($pagina < $totalPaginas){ ?>
+
+                <li class="page-item">
+                <a class="page-link" href="?pagina=<?= $pagina+1 ?>&descripcion=<?= urlencode($filtroDescripcion) ?>&aerolinea=<?= urlencode($filtroAerolinea) ?>">
+                Siguiente
+                </a>
+                </li>
+
+                <?php } ?>
+
+                </ul>
+
+                </nav>
+
+                </div>
             </div>
 
         </div>
