@@ -322,6 +322,16 @@ $rutaActual = $_SERVER['PHP_SELF'];
                             </a>
 
                         </li>
+                          <li class="nav-item">
+
+                            <a class="nav-link"
+                                href="/entornosGraficos-SitioWeb/admin/asignaciones/listar.php">
+
+                                Asignaciones
+
+                            </a>
+
+                        </li>
 
                         <li class="nav-item">
 

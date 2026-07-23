@@ -4,6 +4,59 @@ include("../../includes/verificarSession.php");
 include("../../includes/conexion.php");
 include("../../includes/header.php");
 
+$registrosPorPagina = 10;
+
+$pagina = isset($_GET['pagina'])
+? (int)$_GET['pagina']
+: 1;
+
+if($pagina < 1)
+{
+    $pagina = 1;
+}
+$inicio =
+($pagina - 1)
+*
+$registrosPorPagina;
+
+
+/*
+| Conteo
+*/
+
+$sqlConteo = "
+
+SELECT COUNT(*) AS total
+
+FROM usuarios
+
+WHERE tipoUsuario = 'CEO'
+
+AND aprobadoAdmin = 'SI'
+
+";
+
+$resultadoConteo =
+mysqli_query($link,$sqlConteo);
+
+$filaConteo =
+mysqli_fetch_assoc($resultadoConteo);
+
+$totalRegistros =
+$filaConteo['total'];
+
+$totalPaginas =
+ceil(
+$totalRegistros
+/
+$registrosPorPagina
+);
+
+
+/*
+| Consulta principal
+*/
+
 $sql = "
 
 SELECT
@@ -19,26 +72,47 @@ WHERE u.tipoUsuario = 'CEO'
 
 AND u.aprobadoAdmin = 'SI'
 
-ORDER BY u.nombreUsuario
+ORDER BY
+u.nombreUsuario
+
+LIMIT $inicio,
+$registrosPorPagina
 
 ";
 
-$resultado = mysqli_query($link,$sql);
+$resultado =
+mysqli_query($link,$sql);
 
+if(!$resultado)
+{
+    die("Error en la consulta: ".mysqli_error($link));
+}
 ?>
 
 <div class="container mt-4">
 
-    <div class="card card-custom">
+<div class="d-flex justify-content-between mb-4">
 
-        <div class="card-body">
-
-            <h2>
+        <h2>
 
                 Asignación de Aerolíneas
 
             </h2>
+</div>
+    <div class="card card-custom">
 
+        <div class="card-body">
+
+    
+<?php if(mysqli_num_rows($resultado)==0){ ?>
+
+<p class="text-muted">
+
+No hay CEOs aprobados.
+
+</p>
+
+<?php } else { ?>
             <table class="table table-hover">
 
                 <thead>
@@ -88,11 +162,83 @@ $resultado = mysqli_query($link,$sql);
 
                 </tbody>
 
-            </table>
+            </table><div class="d-flex justify-content-center mt-4">
 
-        </div>
+<nav>
 
-    </div>
+<ul class="pagination">
+
+<?php if($pagina > 1){ ?>
+
+<li class="page-item">
+
+<a
+class="page-link"
+href="?pagina=<?= $pagina-1 ?>">
+
+Anterior
+
+</a>
+
+</li>
+
+<?php } ?>
+
+<?php
+
+for(
+$i=1;
+$i<=$totalPaginas;
+$i++
+)
+{
+
+?>
+
+<li
+class="page-item
+<?= $i==$pagina ? 'active' : '' ?>">
+
+<a
+class="page-link"
+href="?pagina=<?= $i ?>">
+
+<?= $i ?>
+
+</a>
+
+</li>
+
+<?php } ?>
+
+<?php if($pagina < $totalPaginas){ ?>
+
+<li class="page-item">
+
+<a
+class="page-link"
+href="?pagina=<?= $pagina+1 ?>">
+
+Siguiente
+
+</a>
+
+</li>
+
+<?php } ?>
+
+</ul>
+
+</nav>
+
+</div>
+
+<?php } ?>
+
+</div>
+
+</div>
+
 
 </div>
 
