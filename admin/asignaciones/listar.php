@@ -7,22 +7,19 @@ include("../../includes/header.php");
 $registrosPorPagina = 10;
 
 $pagina = isset($_GET['pagina'])
-? (int)$_GET['pagina']
-: 1;
+    ? (int)$_GET['pagina']
+    : 1;
 
-if($pagina < 1)
-{
+if ($pagina < 1) {
     $pagina = 1;
 }
 $inicio =
-($pagina - 1)
-*
-$registrosPorPagina;
+    ($pagina - 1)
+    *
+    $registrosPorPagina;
 
 
-/*
-| Conteo
-*/
+
 
 $sqlConteo = "
 
@@ -37,25 +34,23 @@ AND aprobadoAdmin = 'SI'
 ";
 
 $resultadoConteo =
-mysqli_query($link,$sqlConteo);
+    mysqli_query($link, $sqlConteo);
 
 $filaConteo =
-mysqli_fetch_assoc($resultadoConteo);
+    mysqli_fetch_assoc($resultadoConteo);
 
 $totalRegistros =
-$filaConteo['total'];
+    $filaConteo['total'];
 
 $totalPaginas =
-ceil(
-$totalRegistros
-/
-$registrosPorPagina
-);
+    ceil(
+        $totalRegistros
+            /
+            $registrosPorPagina
+    );
 
 
-/*
-| Consulta principal
-*/
+
 
 $sql = "
 
@@ -81,166 +76,205 @@ $registrosPorPagina
 ";
 
 $resultado =
-mysqli_query($link,$sql);
+    mysqli_query($link, $sql);
 
-if(!$resultado)
-{
-    die("Error en la consulta: ".mysqli_error($link));
+if (!$resultado) {
+    die("Error en la consulta: " . mysqli_error($link));
 }
 ?>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <div class="container mt-4">
 
-<div class="d-flex justify-content-between mb-4">
+    <div class="d-flex justify-content-between mb-4">
 
-        <h2>
+        <h2 id="titulo-asignacion">
 
-                Asignación de Aerolíneas
+            Asignación de Aerolíneas
 
-            </h2>
-</div>
+        </h2>
+    </div>
     <div class="card card-custom">
 
         <div class="card-body">
 
-    
-<?php if(mysqli_num_rows($resultado)==0){ ?>
 
-<p class="text-muted">
+            <?php if (mysqli_num_rows($resultado) == 0) { ?>
 
-No hay CEOs aprobados.
+                <p class="text-muted">
 
-</p>
+                    No hay CEOs aprobados.
 
-<?php } else { ?>
-            <table class="table table-hover">
+                </p>
 
-                <thead>
+            <?php } else { ?>
+                <table class="table table-hover" aria-labelledby="titulo-asignacion">
 
-                    <tr>
+                    <caption class="visually-hidden">
+                        Listado de CEOs aprobados y su aerolínea asignada, página <?= $pagina ?> de <?= $totalPaginas ?>
+                    </caption>
 
-                        <th>CEO</th>
-                        <th>Email</th>
-                        <th>Aerolínea</th>
-                        <th>Acción</th>
+                    <thead>
 
-                    </tr>
+                        <tr>
 
-                </thead>
+                            <th scope="col">CEO</th>
+                            <th scope="col">Email</th>
+                            <th scope="col">Aerolínea</th>
+                            <th scope="col">Acción</th>
 
-                <tbody>
+                        </tr>
 
-                <?php while($fila = mysqli_fetch_assoc($resultado)){ ?>
+                    </thead>
 
-                    <tr>
+                    <tbody>
 
-                        <td><?= $fila['nombreUsuario'] ?></td>
+                        <?php while ($fila = mysqli_fetch_assoc($resultado)) {
+                            $nombreEscapado = htmlspecialchars($fila['nombreUsuario'], ENT_QUOTES, 'UTF-8');
+                            $aerolineaEscapada = htmlspecialchars($fila['nombreAerolinea'] ?? 'Sin asignar', ENT_QUOTES, 'UTF-8');
+                        ?>
 
-                        <td><?= $fila['emailUsuario'] ?></td>
+                            <tr>
 
-                        <td>
+                                <td><?= $nombreEscapado ?></td>
 
-                            <?= $fila['nombreAerolinea'] ?? 'Sin asignar' ?>
+                                <td><?= htmlspecialchars($fila['emailUsuario'], ENT_QUOTES, 'UTF-8') ?></td>
 
-                        </td>
+                                <td>
 
-                        <td>
+                                    <?= $aerolineaEscapada ?>
 
-                            <a
-                            href="asignar.php?id=<?= $fila['codUsuario'] ?>"
-                            class="btn btn-primary btn-sm">
+                                </td>
 
-                                Asignar
+                                <td>
 
-                            </a>
+                                    <a
+                                        href="asignar.php?id=<?= $fila['codUsuario'] ?>"
+                                        class="btn btn-primary btn-sm"
+                                        aria-label="Asignar aerolínea a <?= $nombreEscapado ?>">
 
-                        </td>
+                                        Asignar
 
-                    </tr>
+                                    </a>
 
-                <?php } ?>
+                                </td>
 
-                </tbody>
+                            </tr>
 
-            </table><div class="d-flex justify-content-center mt-4">
+                        <?php } ?>
 
-<nav>
+                    </tbody>
 
-<ul class="pagination">
+                </table>
+                <div class="d-flex justify-content-center mt-4">
 
-<?php if($pagina > 1){ ?>
+                    <nav aria-label="Paginación de CEOs aprobados">
 
-<li class="page-item">
+                        <ul class="pagination">
 
-<a
-class="page-link"
-href="?pagina=<?= $pagina-1 ?>">
+                            <?php if ($pagina > 1) { ?>
 
-Anterior
+                                <li class="page-item">
 
-</a>
+                                    <a
+                                        class="page-link"
+                                        href="?pagina=<?= $pagina - 1 ?>"
+                                        aria-label="Ir a la página anterior">
 
-</li>
+                                        Anterior
 
-<?php } ?>
+                                    </a>
+
+                                </li>
+
+                            <?php } ?>
+
+                            <?php
+
+                            for (
+                                $i = 1;
+                                $i <= $totalPaginas;
+                                $i++
+                            ) {
+
+                            ?>
+
+                                <li
+                                    class="page-item <?= $i == $pagina ? 'active' : '' ?>">
+
+                                    <a
+                                        class="page-link"
+                                        href="?pagina=<?= $i ?>"
+                                        aria-label="Ir a la página <?= $i ?>"
+                                        <?= $i == $pagina ? 'aria-current="page"' : '' ?>>
+
+                                        <?= $i ?>
+
+                                    </a>
+
+                                </li>
+
+                            <?php } ?>
+
+                            <?php if ($pagina < $totalPaginas) { ?>
+
+                                <li class="page-item">
+
+                                    <a
+                                        class="page-link"
+                                        href="?pagina=<?= $pagina + 1 ?>"
+                                        aria-label="Ir a la página siguiente">
+
+                                        Siguiente
+
+                                    </a>
+
+                                </li>
+
+                            <?php } ?>
+
+                        </ul>
+
+                    </nav>
+
+                </div>
+
+            <?php } ?>
+
+        </div>
+
+    </div>
+
+
+</div>
 
 <?php
+$alertasAsignacion = [
+    'asignada' => [
+        'icon'  => 'success',
+        'title' => '¡Asignada!',
+        'text'  => 'La aerolínea fue asignada correctamente.'
+    ],
+    'error_servidor' => [
+        'icon'  => 'error',
+        'title' => 'Error',
+        'text'  => 'Ocurrió un error al guardar la asignación. Intente nuevamente.'
+    ]
+];
 
-for(
-$i=1;
-$i<=$totalPaginas;
-$i++
-)
-{
-
+if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertasAsignacion)) {
+    $alertaAsignacion = $alertasAsignacion[$_GET['alerta']];
 ?>
 
-<li
-class="page-item
-<?= $i==$pagina ? 'active' : '' ?>">
-
-<a
-class="page-link"
-href="?pagina=<?= $i ?>">
-
-<?= $i ?>
-
-</a>
-
-</li>
-
+    <script>
+        Swal.fire({
+            icon: '<?= $alertaAsignacion['icon'] ?>',
+            title: '<?= $alertaAsignacion['title'] ?>',
+            text: '<?= $alertaAsignacion['text'] ?>',
+            confirmButtonText: 'Aceptar'
+        });
+    </script>
 <?php } ?>
-
-<?php if($pagina < $totalPaginas){ ?>
-
-<li class="page-item">
-
-<a
-class="page-link"
-href="?pagina=<?= $pagina+1 ?>">
-
-Siguiente
-
-</a>
-
-</li>
-
-<?php } ?>
-
-</ul>
-
-</nav>
-
-</div>
-
-<?php } ?>
-
-</div>
-
-</div>
-
-
-</div>
 
 <?php
 include("../../includes/footer.php");

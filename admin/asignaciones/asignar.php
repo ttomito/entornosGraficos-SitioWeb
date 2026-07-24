@@ -4,26 +4,35 @@ include("../../includes/verificarSession.php");
 include("../../includes/conexion.php");
 include("../../includes/header.php");
 
-$id = $_GET['id'];
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-$sqlCEO = "
+if ($id <= 0) {
+    header("Location: listar.php");
+    exit();
+}
 
-SELECT *
+$sqlCEO = "SELECT * FROM usuarios WHERE codUsuario = ?";
+$stmtCEO = mysqli_prepare($link, $sqlCEO);
 
-FROM usuarios
+if (!$stmtCEO) {
+    error_log("Error al preparar la consulta: " . mysqli_error($link));
+    header("Location: listar.php?alerta=error_servidor");
+    exit();
+}
 
-WHERE codUsuario = $id
+mysqli_stmt_bind_param($stmtCEO, "i", $id);
+mysqli_stmt_execute($stmtCEO);
 
-";
+$resultadoCEO = mysqli_stmt_get_result($stmtCEO);
+$ceo = $resultadoCEO ? mysqli_fetch_assoc($resultadoCEO) : null;
+mysqli_stmt_close($stmtCEO);
 
-$resultadoCEO = mysqli_query(
-    $link,
-    $sqlCEO
-);
+if (!$ceo) {
+    header("Location: listar.php?alerta=no_encontrada");
+    exit();
+}
 
-$ceo = mysqli_fetch_assoc(
-    $resultadoCEO
-);
+$nombreCeoEscapado = htmlspecialchars($ceo['nombreUsuario'], ENT_QUOTES, 'UTF-8');
 
 $sqlAerolineas = "
 
@@ -41,6 +50,7 @@ $aerolineas = mysqli_query(
 );
 
 ?>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <div class="container mt-5">
 
@@ -52,7 +62,7 @@ $aerolineas = mysqli_query(
 
                 <div class="card-body p-5">
 
-                    <h2>
+                    <h2 id="titulo-asignar">
 
                         Asignar Aerolínea
 
@@ -66,68 +76,72 @@ $aerolineas = mysqli_query(
 
                         <strong>
 
-                            <?= $ceo['nombreUsuario'] ?>
+                            <?= $nombreCeoEscapado ?>
 
                         </strong>
 
                     </p>
 
                     <form
-                    action="guardarAsignacion.php"
-                    method="post">
+                        action="guardarAsignacion.php"
+                        method="post"
+                        aria-labelledby="titulo-asignar">
 
                         <input
-                        type="hidden"
-                        name="idCEO"
-                        value="<?= $ceo['codUsuario'] ?>">
+                            type="hidden"
+                            name="idCEO"
+                            value="<?= (int)$ceo['codUsuario'] ?>">
 
                         <div class="mb-3">
 
-                            <label>
+                            <label for="codAerolinea">
 
                                 Aerolínea
 
                             </label>
 
                             <select
-                            name="codAerolinea"
-                            class="form-select"
-                            required>
+                                id="codAerolinea"
+                                name="codAerolinea"
+                                class="form-select"
+                                required
+                                aria-describedby="codAerolinea-error">
 
                                 <option value="">
 
                                     Seleccione una aerolínea
 
                                 </option>
-<option value="0">
+                                <option value="0">
 
-    Sin asignar
+                                    Sin asignar
 
-</option>
+                                </option>
                                 <?php
-                                while($a = mysqli_fetch_assoc($aerolineas))
-                                {
+                                while ($a = mysqli_fetch_assoc($aerolineas)) {
                                 ?>
-                                
+
 
                                     <option
-                                    value="<?= $a['codAerolinea'] ?>">
+                                        value="<?= (int)$a['codAerolinea'] ?>">
 
-                                        <?= $a['nombreAerolinea'] ?>
+                                        <?= htmlspecialchars($a['nombreAerolinea'], ENT_QUOTES, 'UTF-8') ?>
 
                                     </option>
-                                    
+
 
                                 <?php
                                 }
                                 ?>
 
                             </select>
+                            <div id="codAerolinea-error" class="invalid-feedback" role="alert"></div>
 
                         </div>
 
                         <button
-                        class="btn btn-success">
+                            type="submit"
+                            class="btn btn-success">
 
                             Guardar Asignación
 
@@ -144,6 +158,34 @@ $aerolineas = mysqli_query(
     </div>
 
 </div>
+
+<?php
+$alertasAsignar = [
+    'campos_vacios' => [
+        'icon'  => 'error',
+        'title' => 'Seleccioná una aerolínea',
+        'text'  => 'Debés seleccionar una opción antes de guardar.'
+    ],
+    'aerolinea_invalida' => [
+        'icon'  => 'error',
+        'title' => 'Aerolínea inválida',
+        'text'  => 'La aerolínea seleccionada no existe. Volvé a intentarlo.'
+    ]
+];
+
+if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertasAsignar)) {
+    $alertaAsignar = $alertasAsignar[$_GET['alerta']];
+?>
+
+    <script>
+        Swal.fire({
+            icon: '<?= $alertaAsignar['icon'] ?>',
+            title: '<?= $alertaAsignar['title'] ?>',
+            text: '<?= $alertaAsignar['text'] ?>',
+            confirmButtonText: 'Aceptar'
+        });
+    </script>
+<?php } ?>
 
 <?php
 include("../../includes/footer.php");
