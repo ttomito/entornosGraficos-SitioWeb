@@ -33,7 +33,7 @@ $totalRegistros =
     $filaConteo['total'];
 
 $totalPaginas =
-    ceil($totalRegistros/$registrosPorPagina);
+    ceil($totalRegistros / $registrosPorPagina);
 
 $sql = "SELECT * FROM novedades ORDER BY codNovedad DESC LIMIT $inicio, $registrosPorPagina";
 
@@ -187,7 +187,7 @@ $hoy = new DateTime();
 
         <nav aria-label="Paginación de novedades">
 
-            <ul class="pagination">
+            <ul class="pagination flex-wrap justify-content-center">
 
                 <?php if ($pagina > 1) { ?>
 
@@ -215,8 +215,7 @@ $hoy = new DateTime();
                 ?>
 
                     <li
-                        class="page-item
-<?= $i == $pagina ? 'active' : '' ?>">
+                        class="page-item <?= $i == $pagina ? 'active' : '' ?>">
 
                         <a
                             class="page-link"
