@@ -3,13 +3,71 @@
 include("../../includes/header.php");
 include("../../includes/conexion.php");
 
-$idCliente = (int) $_SESSION['id'];
+$idCliente = $_SESSION['id'];
+
+$registrosPorPagina = 10;
+
+$pagina = isset($_GET['pagina'])
+? (int)$_GET['pagina']
+: 1;
+
+if($pagina < 1)
+{
+    $pagina = 1;
+}
+
+$inicio =
+($pagina - 1)
+*
+$registrosPorPagina;
+/*
+| Conteo
+*/
+
+$sqlConteo = "
+
+SELECT COUNT(*) AS total
+
+FROM reservas
+
+WHERE codUsuario = $idCliente
+
+";
+
+$resultadoConteo =
+mysqli_query($link,$sqlConteo);
+
+$filaConteo =
+mysqli_fetch_assoc($resultadoConteo);
+
+$totalRegistros =
+$filaConteo['total'];
+
+$totalPaginas =
+ceil(
+$totalRegistros
+/
+$registrosPorPagina
+);
+
+$sql = "
+
+SELECT *
+
+FROM reservas
 
 $sql = "SELECT * FROM reservas
 WHERE codUsuario = $idCliente
-ORDER BY codReserva DESC";
 
-$resultado = mysqli_query(
+ORDER BY codReserva DESC
+
+LIMIT $inicio,
+$registrosPorPagina
+
+";
+
+$resultado =
+mysqli_query(
     $link,
     $sql
 );
@@ -40,7 +98,17 @@ $resultado = mysqli_query(
 
             <div class="card-body">
 
-                <div class="table-responsive">
+           <?php if(mysqli_num_rows($resultado) == 0){ ?>
+
+    <p class="text-muted">
+
+        No posee reservas registradas.
+
+    </p>
+
+<?php } else { ?>
+
+    <table class="table table-hover">
 
                     <table class="table table-hover">
 
@@ -136,19 +204,23 @@ $resultado = mysqli_query(
 
                                         <?= $destinoOut ?>
 
-                                    </td>
+                   <td>
 
-                                    <td>
+<?= date(
+"d/m/Y",
+strtotime($vuelo['fechaVuelo'])
+) ?>
 
-                                        <?php if ($fechaVueloOut !== '') { ?>
-                                            <time datetime="<?= $fechaVueloOut ?>"><?= $fechaVueloOut ?></time>
-                                        <?php } ?>
+</td>
 
-                                    </td>
+<td>
 
-                                    <td>
+<?= date(
+"d/m/Y",
+strtotime($fila['fechaReserva'])
+) ?>
 
-                                        <time datetime="<?= $fechaReservaOut ?>"><?= $fechaReservaOut ?></time>
+</td>
 
                                     </td>
 
@@ -214,6 +286,78 @@ $resultado = mysqli_query(
                 </div>
 
             </div>
+
+            <div class="d-flex justify-content-center mt-4">
+
+<nav>
+
+<ul class="pagination">
+
+<?php if($pagina > 1){ ?>
+
+<li class="page-item">
+
+<a
+class="page-link"
+href="?pagina=<?= $pagina-1 ?>">
+
+Anterior
+
+</a>
+
+</li>
+
+<?php } ?>
+
+<?php
+
+for(
+$i=1;
+$i<=$totalPaginas;
+$i++
+)
+{
+
+?>
+
+<li
+class="page-item
+<?= $i==$pagina ? 'active' : '' ?>">
+
+<a
+class="page-link"
+href="?pagina=<?= $i ?>">
+
+<?= $i ?>
+
+</a>
+
+</li>
+
+<?php } ?>
+
+<?php if($pagina < $totalPaginas){ ?>
+
+<li class="page-item">
+
+<a
+class="page-link"
+href="?pagina=<?= $pagina+1 ?>">
+
+Siguiente
+
+</a>
+
+</li>
+
+<?php } ?>
+
+</ul>
+
+</nav>
+
+</div>
+            <?php } ?>
 
         </div>
 
