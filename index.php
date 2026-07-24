@@ -5,7 +5,8 @@ include("includes/conexion.php");
 
 
 $destinosPopulares = mysqli_query(
-    $link, "SELECT v.destinoVuelo,
+    $link,
+    "SELECT v.destinoVuelo,
 COUNT(r.codReserva) AS cantidad,
 MAX(v.imagenVuelo) AS imagenVuelo
 FROM reservas r
@@ -14,10 +15,13 @@ ON r.codVuelo = v.codVuelo
 WHERE r.fechaReserva >= DATE_SUB(CURDATE(), INTERVAL 3 YEAR)
 GROUP BY v.destinoVuelo
 ORDER BY cantidad DESC
-LIMIT 8");
+LIMIT 8"
+);
 
 $vuelosHome = mysqli_query(
-    $link, "SELECT * FROM vuelos WHERE fechaVuelo >= CURDATE() ORDER BY fechaVuelo ASC LIMIT 15");
+    $link,
+    "SELECT * FROM vuelos WHERE fechaVuelo >= CURDATE() ORDER BY fechaVuelo ASC LIMIT 15"
+);
 
 $totalAerolineas = mysqli_fetch_assoc(
     mysqli_query(
@@ -41,11 +45,13 @@ $totalUsuarios = mysqli_fetch_assoc(
 );
 
 $promociones = mysqli_query(
-    $link, "SELECT * FROM promociones WHERE estadoPromocion='APROBADA' LIMIT 3"
+    $link,
+    "SELECT * FROM promociones WHERE estadoPromocion='APROBADA' LIMIT 3"
 );
 
 $novedades = mysqli_query(
-    $link, "SELECT * FROM novedades WHERE CURDATE() BETWEEN fechaPublicacion AND fechaExpiracion LIMIT 3"
+    $link,
+    "SELECT * FROM novedades WHERE CURDATE() BETWEEN fechaPublicacion AND fechaExpiracion LIMIT 3"
 );
 ?>
 
@@ -71,7 +77,7 @@ include("includes/header.php");
         display:flex;
         align-items:center;
         ">
-       
+
 
         <div class="container">
 
@@ -87,11 +93,11 @@ include("includes/header.php");
                 de forma rápida, segura y sencilla.
 
             </p>
-            <div class="mt-4">
+            <div class="mt-4 d-grid gap-2 d-sm-flex justify-content-sm-center">
 
                 <a
                     href="cliente/vuelos/listar.php"
-                    class="btn btn-warning btn-lg me-2">
+                    class="btn btn-warning btn-lg">
 
                     Buscar vuelos
 
@@ -225,6 +231,7 @@ include("includes/header.php");
                         <img
                             src="<?= htmlspecialchars($destino['imagenVuelo'], ENT_QUOTES, 'UTF-8') ?>"
                             alt="Vista del destino <?= $nombreDestino ?>"
+                            class="card-img-top"
                             style="
                         height:180px;
                         object-fit:cover;
@@ -279,62 +286,67 @@ include("includes/header.php");
 
         </div>
     </section>
-    <section class="container my-5" aria-labelledby="titulo-promos">
 
-        <h2 id="titulo-promos" class="text-center mb-4">
+    <?php if (mysqli_num_rows($promociones) > 0) { ?>
 
-            Promociones Destacadas
+        <section class="container my-5" aria-labelledby="titulo-promos">
 
-        </h2>
+            <h2 id="titulo-promos" class="text-center mb-4">
 
-        <div class="row">
+                Promociones Destacadas
 
-            <?php while ($promo = mysqli_fetch_assoc($promociones)) {
-                $descripcionPromo = htmlspecialchars($promo['descripcionPromocion'], ENT_QUOTES, 'UTF-8');
-            ?>
+            </h2>
 
-                <div class="col-md-4 mb-4">
+            <div class="row">
 
-                    <div class="card h-100 shadow-lg card-hover border-0">
-                        <div class="card-body">
+                <?php while ($promo = mysqli_fetch_assoc($promociones)) {
+                    $descripcionPromo = htmlspecialchars($promo['descripcionPromocion'], ENT_QUOTES, 'UTF-8');
+                ?>
 
-                            <span class="badge bg-success">
+                    <div class="col-md-4 mb-4">
 
-                                Promoción
+                        <div class="card h-100 shadow-lg card-hover border-0">
+                            <div class="card-body">
 
-                            </span>
+                                <span class="badge bg-success">
 
-                            <h3 class="h5 mt-3">
+                                    Promoción
 
-                                <?= $descripcionPromo ?>
+                                </span>
 
-                            </h3>
+                                <h3 class="h5 mt-3">
 
-                            <p class="text-danger fs-3 fw-bold">
+                                    <?= $descripcionPromo ?>
 
-                                <?= (int) $promo['descuentoPromocion'] ?>% OFF
+                                </h3>
 
-                            </p>
-                            <a
-                                href="cliente/vuelos/listar.php?promo=<?= (int) $promo['codPromocion'] ?>"
-                                class="btn btn-success mt-3">
+                                <p class="text-danger fs-3 fw-bold">
 
-                                Ver vuelos con esta promoción
-                                <span class="visually-hidden"> ("<?= $descripcionPromo ?>")</span>
+                                    <?= (int) $promo['descuentoPromocion'] ?>% OFF
 
-                            </a>
+                                </p>
+                                <a
+                                    href="cliente/vuelos/listar.php?promo=<?= (int) $promo['codPromocion'] ?>"
+                                    class="btn btn-success mt-3">
+
+                                    Ver vuelos con esta promoción
+                                    <span class="visually-hidden"> ("<?= $descripcionPromo ?>")</span>
+
+                                </a>
+
+                            </div>
 
                         </div>
 
                     </div>
 
-                </div>
+                <?php } ?>
 
-            <?php } ?>
+            </div>
 
-        </div>
+        </section>
 
-    </section>
+    <?php } ?>
 
 
     <section class="container my-5" aria-labelledby="titulo-novedades">
@@ -485,6 +497,7 @@ include("includes/header.php");
                         <img
                             src="uploads/vuelos/<?= htmlspecialchars($vuelo['imagenVuelo'], ENT_QUOTES, 'UTF-8') ?>"
                             alt="Vuelo de <?= $origen ?> a <?= $destinoV ?>"
+                            class="card-img-top"
                             style="
                         height:200px;
                         object-fit:cover;
