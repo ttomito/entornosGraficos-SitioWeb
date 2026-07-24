@@ -4,26 +4,26 @@ include("../../includes/conexion.php");
 include("../../includes/verificarSession.php");
 include("../../includes/header.php");
 
+?>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<?php
+
 $registrosPorPagina = 10;
 
 $pagina = isset($_GET['pagina'])
-? (int)$_GET['pagina']
-: 1;
+    ? (int)$_GET['pagina']
+    : 1;
 
-if($pagina < 1)
-{
+if ($pagina < 1) {
     $pagina = 1;
 }
 
 $inicio =
-($pagina - 1)
-*
-$registrosPorPagina;
+    ($pagina - 1)
+    *
+    $registrosPorPagina;
 
 
-/*
-| Conteo
-*/
 
 $sqlConteo = "
 
@@ -36,25 +36,22 @@ WHERE tipoUsuario = 'CEO'
 ";
 
 $resultadoConteo =
-mysqli_query($link,$sqlConteo);
+    mysqli_query($link, $sqlConteo);
 
 $filaConteo =
-mysqli_fetch_assoc($resultadoConteo);
+    mysqli_fetch_assoc($resultadoConteo);
 
 $totalRegistros =
-$filaConteo['total'];
+    $filaConteo['total'];
 
 $totalPaginas =
-ceil(
-$totalRegistros
-/
-$registrosPorPagina
-);
+    ceil(
+        $totalRegistros
+            /
+            $registrosPorPagina
+    );
 
 
-/*
-| Consulta principal
-*/
 
 $sql = "
 
@@ -74,212 +71,266 @@ $registrosPorPagina
 ";
 
 $resultado =
-mysqli_query($link,$sql);
+    mysqli_query($link, $sql);
 
-if(!$resultado)
-{
-    die("Error en la consulta: ".mysqli_error($link));
+if (!$resultado) {
+    die("Error en la consulta: " . mysqli_error($link));
 }
 
 ?>
 
 <div class="container mt-4">
-<div class="d-flex justify-content-between mb-4">
+    <div class="d-flex justify-content-between mb-4">
 
-    <h2>
+        <h2 id="titulo-listado-ceos">
 
-        Gestión de CEOs
+            Gestión de CEOs
 
-    </h2>
+        </h2>
 
-</div>
+    </div>
 
 
     <div class="card card-custom">
 
         <div class="card-body">
 
-        <?php if(mysqli_num_rows($resultado)==0){ ?>
+            <?php if (mysqli_num_rows($resultado) == 0) { ?>
 
-<p class="text-muted">
+                <p class="text-muted">
 
-No hay CEOs registrados.
+                    No hay CEOs registrados.
 
-</p>
+                </p>
 
-<?php } else { ?>
+            <?php } else { ?>
 
-            <table class="table table-hover">
+                <table class="table table-hover" aria-labelledby="titulo-listado-ceos">
 
-                <thead>
+                    <caption class="visually-hidden">
+                        Listado de CEOs, página <?= $pagina ?> de <?= $totalPaginas ?>
+                    </caption>
 
-                    <tr>
+                    <thead>
 
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Email</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
+                        <tr>
 
-                    </tr>
+                            <th scope="col">ID</th>
+                            <th scope="col">Nombre</th>
+                            <th scope="col">Email</th>
+                            <th scope="col">Estado</th>
+                            <th scope="col">Acciones</th>
 
-                </thead>
+                        </tr>
 
-                <tbody>
+                    </thead>
 
-                <?php while($fila = mysqli_fetch_assoc($resultado)){ ?>
+                    <tbody>
 
-                    <tr>
+                        <?php while ($fila = mysqli_fetch_assoc($resultado)) {
+                            $nombreEscapado = htmlspecialchars($fila['nombreUsuario'], ENT_QUOTES, 'UTF-8');
+                        ?>
 
-                        <td>
+                            <tr>
 
-                            <?= $fila['codUsuario'] ?>
+                                <td>
 
-                        </td>
+                                    <?= htmlspecialchars($fila['codUsuario'], ENT_QUOTES, 'UTF-8') ?>
 
-                        <td>
+                                </td>
 
-                            <?= $fila['nombreUsuario'] ?>
+                                <td>
 
-                        </td>
+                                    <?= $nombreEscapado ?>
 
-                        <td>
+                                </td>
 
-                            <?= $fila['emailUsuario'] ?>
+                                <td>
 
-                        </td>
+                                    <?= htmlspecialchars($fila['emailUsuario'], ENT_QUOTES, 'UTF-8') ?>
 
-                        <td>
+                                </td>
 
-                            <?= $fila['estadoCuenta'] ?>
+                                <td>
 
-                        </td>
+                                    <?= htmlspecialchars($fila['estadoCuenta'], ENT_QUOTES, 'UTF-8') ?>
 
-                        <td>
-<?php
+                                </td>
 
-if($fila['estadoCuenta'] == 'PENDIENTE')
-{
-?>
+                                <td>
+                                    <?php
 
-<a
-href="aprobar.php?id=<?= $fila['codUsuario'] ?>"
-class="btn btn-success btn-sm">
+                                    if ($fila['estadoCuenta'] == 'PENDIENTE') {
+                                    ?>
 
-    Aprobar
+                                        <a
+                                            href="aprobar.php?id=<?= $fila['codUsuario'] ?>"
+                                            class="btn btn-success btn-sm"
+                                            aria-label="Aprobar a <?= $nombreEscapado ?>"
+                                            data-nombre="<?= $nombreEscapado ?>"
+                                            onclick="confirmarAprobacion(event, this)">
 
-</a>
+                                            Aprobar
 
-<a
-href="rechazar.php?id=<?= $fila['codUsuario'] ?>"
-class="btn btn-danger btn-sm">
+                                        </a>
 
-    Rechazar
+                                        <a
+                                            href="rechazar.php?id=<?= $fila['codUsuario'] ?>"
+                                            class="btn btn-danger btn-sm"
+                                            aria-label="Rechazar a <?= $nombreEscapado ?>"
+                                            data-nombre="<?= $nombreEscapado ?>"
+                                            onclick="confirmarRechazo(event, this)">
 
-</a>
+                                            Rechazar
 
-<?php
-}
-else
-{
-?>
+                                        </a>
 
-<span class="text-muted">
+                                    <?php
+                                    } else {
+                                    ?>
 
-Sin acciones
+                                        <span class="text-muted">
 
-</span>
+                                            Sin acciones
 
-<?php
-}
-?>
-                        </td>
+                                        </span>
 
-                    </tr>
+                                    <?php
+                                    }
+                                    ?>
+                                </td>
 
-                <?php } ?>
+                            </tr>
 
-                </tbody>
+                        <?php } ?>
 
-            </table>
-            <div class="d-flex justify-content-center mt-4">
+                    </tbody>
 
-<nav>
+                </table>
+                <div class="d-flex justify-content-center mt-4">
 
-<ul class="pagination">
+                    <nav aria-label="Paginación del listado de CEOs">
 
-<?php if($pagina > 1){ ?>
+                        <ul class="pagination">
 
-<li class="page-item">
+                            <?php if ($pagina > 1) { ?>
 
-<a
-class="page-link"
-href="?pagina=<?= $pagina-1 ?>">
+                                <li class="page-item">
 
-Anterior
+                                    <a
+                                        class="page-link"
+                                        href="?pagina=<?= $pagina - 1 ?>"
+                                        aria-label="Ir a la página anterior">
 
-</a>
+                                        Anterior
 
-</li>
+                                    </a>
 
-<?php } ?>
+                                </li>
 
-<?php
+                            <?php } ?>
 
-for(
-$i=1;
-$i<=$totalPaginas;
-$i++
-)
-{
+                            <?php
 
-?>
+                            for (
+                                $i = 1;
+                                $i <= $totalPaginas;
+                                $i++
+                            ) {
 
-<li
-class="page-item
-<?= $i==$pagina ? 'active' : '' ?>">
+                            ?>
 
-<a
-class="page-link"
-href="?pagina=<?= $i ?>">
+                                <li
+                                    class="page-item <?= $i == $pagina ? 'active' : '' ?>">
 
-<?= $i ?>
+                                    <a
+                                        class="page-link"
+                                        href="?pagina=<?= $i ?>"
+                                        aria-label="Ir a la página <?= $i ?>"
+                                        <?= $i == $pagina ? 'aria-current="page"' : '' ?>>
 
-</a>
+                                        <?= $i ?>
 
-</li>
+                                    </a>
 
-<?php } ?>
+                                </li>
 
-<?php if($pagina < $totalPaginas){ ?>
+                            <?php } ?>
 
-<li class="page-item">
+                            <?php if ($pagina < $totalPaginas) { ?>
 
-<a
-class="page-link"
-href="?pagina=<?= $pagina+1 ?>">
+                                <li class="page-item">
 
-Siguiente
+                                    <a
+                                        class="page-link"
+                                        href="?pagina=<?= $pagina + 1 ?>"
+                                        aria-label="Ir a la página siguiente">
 
-</a>
+                                        Siguiente
 
-</li>
+                                    </a>
 
-<?php } ?>
+                                </li>
 
-</ul>
+                            <?php } ?>
 
-</nav>
+                        </ul>
 
-</div>
+                    </nav>
 
-<?php } ?>
+                </div>
+
+            <?php } ?>
 
         </div>
 
     </div>
 
 </div>
+
+<script>
+    function confirmarAprobacion(event, elemento) {
+        event.preventDefault();
+
+        const nombre = elemento.dataset.nombre;
+
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: `¿Desea aprobar a "${nombre}" como CEO?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, aprobar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = elemento.href;
+            }
+        });
+    }
+
+    function confirmarRechazo(event, elemento) {
+        event.preventDefault();
+
+        const nombre = elemento.dataset.nombre;
+
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: `¿Desea rechazar a "${nombre}"?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, rechazar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = elemento.href;
+            }
+        });
+    }
+</script>
 
 <?php
 include("../../includes/footer.php");

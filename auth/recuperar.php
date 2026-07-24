@@ -14,7 +14,7 @@ include("../includes/header.php");
 
                 <div class="card-body">
 
-                    <h2>
+                    <h2 id="tituloRecuperar">
 
                         Recuperar Contraseña
 
@@ -26,7 +26,7 @@ include("../includes/header.php");
                     if(isset($_GET['ok']))
                     {
                     ?>
-                        <div class="alert alert-success">
+                        <div class="alert alert-success" role="alert">
 
                             Revisá tu correo electrónico.
 
@@ -37,7 +37,7 @@ include("../includes/header.php");
                     if(isset($_GET['error']))
                     {
                     ?>
-                        <div class="alert alert-danger">
+                        <div class="alert alert-danger" role="alert">
 
                             No existe una cuenta con ese correo.
 
@@ -46,30 +46,45 @@ include("../includes/header.php");
                     }
                     ?>
 
+                    <p class="text-muted" style="font-size: 0.9rem;">
+                        Ingresá el correo con el que te registraste. Este campo es obligatorio.
+                    </p>
+
                     <form
-                    action="enviarRecuperacion.php"
-                    method="post">
+                        id="formRecuperar"
+                        action="enviarRecuperacion.php"
+                        method="post"
+                        aria-labelledby="tituloRecuperar"
+                        novalidate>
 
                         <div class="mb-3">
 
-                            <label>
+                            <label for="email" class="form-label">
 
                                 Correo electrónico
 
                             </label>
 
                             <input
-                            type="email"
-                            name="email"
-                            class="form-control"
-                            required>
+                                type="email"
+                                id="email"
+                                name="email"
+                                class="form-control"
+                                maxlength="100"
+                                required
+                                aria-required="true"
+                                autocomplete="email"
+                                aria-describedby="emailAyuda">
+
+                            <small id="emailAyuda" class="form-text text-muted">Ejemplo: nombre@ejemplo.com</small>
 
                         </div>
 
                         <button
-                        class="btn btn-primary">
+                            type="submit"
+                            class="btn btn-primary">
 
-                            Enviar enlace de recuperacion
+                            Enviar enlace de recuperación
 
                         </button>
 
@@ -84,6 +99,19 @@ include("../includes/header.php");
     </div>
 
 </div>
+
+<script>
+    (function () {
+        var formulario = document.getElementById('formRecuperar');
+
+        formulario.addEventListener('submit', function (evento) {
+            if (!formulario.checkValidity()) {
+                evento.preventDefault();
+                formulario.reportValidity();
+            }
+        });
+    })();
+</script>
 
 <?php
 include("../includes/footer.php");

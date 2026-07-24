@@ -1,100 +1,116 @@
 <?php
-
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
-
+ 
 require '../../vendor/autoload.php';
-
+ 
 include("../../includes/verificarSession.php");
 include("../../includes/conexion.php");
-
-$id = $_GET['id'];
-
-
-
-/*
-    Obtener datos promoción y CEO
-*/
-
+ 
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+ 
+if ($id <= 0) {
+    header("Location: listar.php");
+    exit();
+}
+ 
+ 
 $consulta = "
-
+ 
 SELECT
 p.*,
 u.nombreUsuario,
 u.emailUsuario
-
+ 
 FROM promociones p
-
+ 
 INNER JOIN usuarios u
 ON p.codAerolinea = u.codAerolinea
-
-WHERE p.codPromocion = $id
-
+ 
+WHERE p.codPromocion = ?
+ 
 ";
-
-$resultado = mysqli_query(
-    $link,
-    $consulta
-);
-
-$datos = mysqli_fetch_assoc(
-    $resultado
-);
-
-if(!$datos)
-{
-    die("No se encontró el CEO asociado a esta aerolínea.");
+ 
+$stmt = mysqli_prepare($link, $consulta);
+ 
+if (!$stmt) {
+    error_log("Error al preparar la consulta: " . mysqli_error($link));
+    header("Location: listar.php?alerta=error_servidor");
+    exit();
 }
-
-$codAerolinea = $datos['codAerolinea'];
-
+ 
+mysqli_stmt_bind_param($stmt, "i", $id);
+mysqli_stmt_execute($stmt);
+ 
+$resultado = mysqli_stmt_get_result($stmt);
+$datos = $resultado ? mysqli_fetch_assoc($resultado) : null;
+mysqli_stmt_close($stmt);
+ 
+if (!$datos) {
+    header("Location: listar.php?alerta=no_encontrada");
+    exit();
+}
+ 
+$codAerolinea = (int)$datos['codAerolinea'];
 $nombre = $datos['nombreUsuario'];
-
 $email = $datos['emailUsuario'];
-
+ 
 /*
-    Denegar promociones aprobadas anteriores
+| Denegar promociones aprobadas anteriormente para esa aerolínea
 */
-
-$sql = "
-
+ 
+$sqlDenegar = "
+ 
 UPDATE promociones
-
+ 
 SET estadoPromocion = 'DENEGADA'
-
-WHERE codAerolinea = $codAerolinea
-
+ 
+WHERE codAerolinea = ?
+ 
 AND estadoPromocion = 'APROBADA'
-
+ 
 ";
-
-mysqli_query(
-    $link,
-    $sql
-);
-
+ 
+$stmtDenegar = mysqli_prepare($link, $sqlDenegar);
+ 
+if ($stmtDenegar) {
+    mysqli_stmt_bind_param($stmtDenegar, "i", $codAerolinea);
+    mysqli_stmt_execute($stmtDenegar);
+    mysqli_stmt_close($stmtDenegar);
+}
+ 
 /*
-    Aprobar promoción actual
+| Aprobar la promoción actual
 */
-
-$sql = "
-
+ 
+$sqlAprobar = "
+ 
 UPDATE promociones
-
+ 
 SET estadoPromocion = 'APROBADA'
-
-WHERE codPromocion = $id
-
+ 
+WHERE codPromocion = ?
+ 
 ";
-
-mysqli_query(
-    $link,
-    $sql
-);
-
-/*
-    Mail al CEO
-*/
+ 
+$stmtAprobar = mysqli_prepare($link, $sqlAprobar);
+ 
+if (!$stmtAprobar) {
+    error_log("Error al preparar la aprobación: " . mysqli_error($link));
+    header("Location: listar.php?alerta=error_servidor");
+    exit();
+}
+ 
+mysqli_stmt_bind_param($stmtAprobar, "i", $id);
+$aprobacionExitosa = mysqli_stmt_execute($stmtAprobar);
+mysqli_stmt_close($stmtAprobar);
+ 
+if (!$aprobacionExitosa) {
+    error_log("Error al aprobar promoción: " . mysqli_error($link));
+    header("Location: listar.php?alerta=error_servidor");
+    exit();
+}
+ 
 
 $mail = new PHPMailer(true);
 

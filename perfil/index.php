@@ -149,11 +149,17 @@ if (!$usuario) {
                                 id="telefono"
                                 name="telefono"
                                 class="form-control"
+                                pattern="[0-9\s()+\-]{6,20}"
+                                oninput="this.value = this.value.replace(/[^0-9\s()+-]/g, '')"
                                 value="<?= htmlspecialchars($usuario['telefonoUsuario'], ENT_QUOTES, 'UTF-8') ?>"
                                 maxlength="20"
                                 autocomplete="tel"
                                 required
                                 aria-required="true">
+
+                            <div id="ayudaTelefono" class="form-text">
+                                Ingrese entre 6 y 20 caracteres. Solo se permiten números, espacios, +, - y paréntesis.
+                            </div>
 
                         </div>
 
@@ -171,6 +177,7 @@ if (!$usuario) {
                                     name="clave"
                                     class="form-control"
                                     minlength="8"
+                                    pattern="(?=.*[A-Za-z])(?=.*\d).{8,}"
                                     autocomplete="new-password"
                                     placeholder="Dejar vacío para mantener la actual"
                                     aria-describedby="ayudaClave">
@@ -208,6 +215,7 @@ if (!$usuario) {
                                     name="clave_confirmacion"
                                     class="form-control"
                                     minlength="8"
+                                    pattern="(?=.*[A-Za-z])(?=.*\d).{8,}"
                                     autocomplete="new-password"
                                     placeholder="Repetir la nueva contraseña">
 

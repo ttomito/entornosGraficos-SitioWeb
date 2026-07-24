@@ -6,21 +6,20 @@ include("../../includes/header.php");
 
 $registrosPorPagina = 10;
 
-$pagina = isset($_GET['pagina']) 
-? (int)$_GET['pagina'] 
-: 1; 
+$pagina = isset($_GET['pagina'])
+    ? (int)$_GET['pagina']
+    : 1;
 
-if($pagina < 1) 
-{ 
-    $pagina = 1; 
-} 
+if ($pagina < 1) {
+    $pagina = 1;
+}
 
 $inicio = ($pagina - 1) * $registrosPorPagina;
 
 
-$idCEO = $_SESSION['id'];
+$idCEO = (int) ($_SESSION['id'] ?? 0);
 
-if($idCEO <= 0){
+if ($idCEO <= 0) {
     die("Acceso denegado");
 }
 
@@ -37,18 +36,68 @@ if (!$resultadoCEO) {
 
 $ceo = mysqli_fetch_assoc($resultadoCEO);
 
-$codAerolinea = $ceo['codAerolinea'];
+if (!$ceo || $ceo['codAerolinea'] === null) {
+?>
+
+    <main id="contenido-principal">
+
+        <div class="container mt-5">
+
+            <div class="row justify-content-center">
+
+                <div class="col-md-8">
+
+                    <div class="card card-custom">
+
+                        <div class="card-body p-5 text-center" role="alert">
+
+                            <h2 class="text-danger">
+
+                                Tu cuenta todavía no está vinculada a una aerolínea
+
+                            </h2>
+
+                            <p>
+
+                                Un administrador tiene que asociar tu cuenta a una aerolínea antes de que puedas gestionar promociones.
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+<?php
+
+    include("../../includes/footer.php");
+    exit();
+}
+
+$codAerolinea = (int) $ceo['codAerolinea'];
 
 $sqlConteo = " 
 SELECT COUNT(*) AS total 
 FROM promociones 
-WHERE codAerolinea =$codAerolinea
-"; 
+WHERE codAerolinea = $codAerolinea
+";
 
-$resultadoConteo = mysqli_query($link,$sqlConteo); 
-$filaConteo = mysqli_fetch_assoc($resultadoConteo); 
-$totalRegistros = $filaConteo['total']; 
-$totalPaginas = ceil( $totalRegistros / $registrosPorPagina);
+$resultadoConteo = mysqli_query($link, $sqlConteo);
+
+if (!$resultadoConteo) {
+    die(mysqli_error($link));
+}
+
+$filaConteo = mysqli_fetch_assoc($resultadoConteo);
+$totalRegistros = $filaConteo['total'];
+$totalPaginas = ceil($totalRegistros / $registrosPorPagina);
 
 $sql = "
 SELECT * 
@@ -68,125 +117,138 @@ if (!$resultado) {
 
 <main id="contenido-principal">
 
-<div class="container mt-4">
+    <div class="container mt-4">
 
-    <div class="d-flex justify-content-between mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
 
-        <h2>Gestión de Promociones</h2>
-        <a href="crear.php" class="btn btn-success">Nueva Promoción</a>
+            <h2>Gestión de Promociones</h2>
+            <a href="crear.php" class="btn btn-success">Nueva Promoción</a>
 
-    </div>
+        </div>
 
-    <?php if(mysqli_num_rows($resultado) > 0) { ?>
+        <?php if (mysqli_num_rows($resultado) > 0) { ?>
 
-    <div class="card card-custom">
+            <div class="card card-custom">
 
-        <div class="card-body">
+                <div class="card-body">
 
-            <table class="table table-hover">
+                    <div class="table-responsive">
 
-                <caption class="visually-hidden">
-                    Listado de promociones de la aerolínea
-                </caption>
+                        <table class="table table-hover">
 
-                <thead>
-                    <tr>
-                        <th scope="col">ID</th>
-                        <th scope="col">Descripción</th>
-                        <th scope="col">Descuento</th>
-                        <th scope="col">Fecha límite</th>
-                        <th scope="col">Estado</th>
-                        <th scope="col">Acciones</th>
-                    </tr>
-                </thead>
+                            <caption class="visually-hidden">
+                                Listado de promociones de la aerolínea
+                            </caption>
 
-                <tbody>
+                            <thead>
+                                <tr>
+                                    <th scope="col">ID</th>
+                                    <th scope="col">Descripción</th>
+                                    <th scope="col">Descuento</th>
+                                    <th scope="col">Fecha límite</th>
+                                    <th scope="col">Estado</th>
+                                    <th scope="col">Acciones</th>
+                                </tr>
+                            </thead>
 
-                <?php while($fila = mysqli_fetch_assoc($resultado)) { ?>
+                            <tbody>
 
-                    <tr>
-                        <td><?= $fila['codPromocion'] ?></td>
-                        <td><?= $fila['descripcionPromocion'] ?></td>
-                        <td><?= $fila['descuentoPromocion'] ?>%</td>
-                        <td><?= $fila['fechaLimitePromocion'] ?></td>
-                        <td><?= $fila['estadoPromocion'] ?></td>
+                                <?php while ($fila = mysqli_fetch_assoc($resultado)) {
 
-                        <td>
-                            <a href="editar.php?id=<?= $fila['codPromocion'] ?>" class="btn btn-warning btn-sm">
-                                Editar
-                                <span class="visually-hidden"> promoción "<?= $fila['descripcionPromocion'] ?>"</span>
-                            </a>
+                                    $codPromocionInt = (int) $fila['codPromocion'];
+                                    $descripcionOut = htmlspecialchars($fila['descripcionPromocion'], ENT_QUOTES, 'UTF-8');
+                                    $fechaLimiteOut = htmlspecialchars($fila['fechaLimitePromocion'], ENT_QUOTES, 'UTF-8');
+                                    $estadoOut = htmlspecialchars($fila['estadoPromocion'], ENT_QUOTES, 'UTF-8');
 
-                            <a href="eliminar.php?id=<?= $fila['codPromocion'] ?>"
-                            class="btn btn-danger btn-sm"
-                            onclick="return confirm('¿Eliminar la promoción &quot;<?= $fila['descripcionPromocion'] ?>&quot;?')">
-                                Eliminar
-                                <span class="visually-hidden"> promoción "<?= $fila['descripcionPromocion'] ?>"</span>
-                            </a>
-                        </td>
-                    </tr>
+                                ?>
 
-                <?php } ?>
+                                    <tr>
+                                        <td><?= $codPromocionInt ?></td>
+                                        <td><?= $descripcionOut ?></td>
+                                        <td><?= (int) $fila['descuentoPromocion'] ?>%</td>
+                                        <td><time datetime="<?= $fechaLimiteOut ?>"><?= $fechaLimiteOut ?></time></td>
+                                        <td><?= $estadoOut ?></td>
 
-                </tbody>
+                                        <td>
+                                            <a href="editar.php?id=<?= $codPromocionInt ?>" class="btn btn-warning btn-sm">
+                                                Editar
+                                                <span class="visually-hidden"> promoción "<?= $descripcionOut ?>"</span>
+                                            </a>
 
-            </table>
-            <div class="d-flex justify-content-center mt-4">
+                                            <a href="eliminar.php?id=<?= $codPromocionInt ?>"
+                                                class="btn btn-danger btn-sm eliminar-promocion"
+                                                data-descripcion="<?= $descripcionOut ?>">
+                                                Eliminar
+                                                <span class="visually-hidden"> promoción "<?= $descripcionOut ?>"</span>
+                                            </a>
+                                        </td>
+                                    </tr>
 
-            <nav>
+                                <?php } ?>
 
-            <ul class="pagination">
+                            </tbody>
 
-            <?php if($pagina > 1){ ?>
+                        </table>
 
-            <li class="page-item">
-            <a class="page-link" href="?pagina=<?= $pagina-1 ?>">
-            Anterior
-            </a>
-            </li>
+                    </div>
 
-            <?php } ?>
+                    <div class="d-flex justify-content-center mt-4">
 
-            <?php
-            for($i=1;$i<=$totalPaginas;$i++){
-            ?>
+                        <nav aria-label="Paginación de promociones">
 
-            <li class="page-item <?= $i==$pagina ? 'active' : '' ?>">
-            <a class="page-link" href="?pagina=<?= $i ?>">
-            <?= $i ?>
-            </a>
-            </li>
+                            <ul class="pagination flex-wrap justify-content-center">
 
-            <?php } ?>
+                                <?php if ($pagina > 1) { ?>
 
-            <?php if($pagina < $totalPaginas){ ?>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?pagina=<?= $pagina - 1 ?>">
+                                            Anterior
+                                        </a>
+                                    </li>
 
-            <li class="page-item">
-            <a class="page-link" href="?pagina=<?= $pagina+1 ?>">
-            Siguiente
-            </a>
-            </li>
+                                <?php } ?>
 
-            <?php } ?>
+                                <?php
+                                for ($i = 1; $i <= $totalPaginas; $i++) {
+                                ?>
 
-            </ul>
+                                    <li class="page-item <?= $i == $pagina ? 'active' : '' ?>">
+                                        <a class="page-link" href="?pagina=<?= $i ?>" <?= $i == $pagina ? 'aria-current="page"' : '' ?>>
+                                            <?= $i ?>
+                                            <?php if ($i == $pagina) { ?><span class="visually-hidden"> (página actual)</span><?php } ?>
+                                        </a>
+                                    </li>
 
-            </nav>
+                                <?php } ?>
+
+                                <?php if ($pagina < $totalPaginas) { ?>
+
+                                    <li class="page-item">
+                                        <a class="page-link" href="?pagina=<?= $pagina + 1 ?>">
+                                            Siguiente
+                                        </a>
+                                    </li>
+
+                                <?php } ?>
+
+                            </ul>
+
+                        </nav>
+
+                    </div>
+                </div>
 
             </div>
-        </div>
+
+        <?php } else { ?>
+
+            <div class="alert alert-info" role="status">
+                No hay promociones registradas.
+            </div>
+
+        <?php } ?>
 
     </div>
-
-    <?php } else { ?>
-
-        <div class="alert alert-info">
-            No hay promociones registradas.
-        </div>
-
-    <?php } ?>
-
-</div>
 
 </main>
 
@@ -225,62 +287,84 @@ $alertas = [
     ],
 ];
 
-if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)){
+if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)) {
     $alerta = $alertas[$_GET['alerta']];
 ?>
 
-<script>
-    Swal.fire({
-        icon:              '<?= $alerta['icon'] ?>',
-        title:             '<?= $alerta['title'] ?>',
-        text:              '<?= $alerta['text'] ?>',
-        confirmButtonText: 'Aceptar'
-    }).then((result) => {
-        if (result.isConfirmed)
-        {
-            window.location.href = 'listar.php';
-        }
-    });
-</script>
+    <script>
+        Swal.fire({
+            icon: '<?= $alerta['icon'] ?>',
+            title: '<?= $alerta['title'] ?>',
+            text: '<?= $alerta['text'] ?>',
+            confirmButtonText: 'Aceptar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = 'listar.php';
+            }
+        });
+    </script>
 <?php }; ?>
 
 <script>
-    function ocultarVuelo(event, elemento)
-    {
+    document.querySelectorAll('.eliminar-promocion').forEach(function(enlace) {
+        enlace.addEventListener('click', function(evento) {
+
+            if (typeof Swal === 'undefined') {
+                return confirm('¿Eliminar la promoción "' + enlace.dataset.descripcion + '"?');
+            }
+
+            evento.preventDefault();
+
+            Swal.fire({
+                title: '¿Eliminar promoción?',
+                text: '¿Desea eliminar la promoción "' + enlace.dataset.descripcion + '"? Esta acción no se puede deshacer.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((resultado) => {
+                if (resultado.isConfirmed) {
+                    window.location.href = enlace.href;
+                }
+            });
+        });
+    });
+
+    function ocultarVuelo(event, elemento) {
         event.preventDefault();
 
         Swal.fire({
-            title:               '¿Estás seguro?',
-            text:                '¿Desea ocultar este vuelo? Al hacerlo también se desactivarán las reservas asociadas.',
-            icon:                'warning',
-            showCancelButton:    true,
-            confirmButtonColor:  '#dc3545',
-            cancelButtonColor:   '#6c757d',
-            confirmButtonText:   'Sí, ocultar',
-            cancelButtonText:    'Cancelar'
+            title: '¿Estás seguro?',
+            text: '¿Desea ocultar este vuelo? Al hacerlo también se desactivarán las reservas asociadas.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, ocultar',
+            cancelButtonText: 'Cancelar'
         }).then((result) => {
-            if (result.isConfirmed){
+            if (result.isConfirmed) {
                 window.location.href = elemento.href;
             }
         });
     }
 
-    function activarVuelo(event, elemento)
-    {
+    function activarVuelo(event, elemento) {
         event.preventDefault();
 
         Swal.fire({
-            title:               '¿Estás seguro?',
-            text:                '¿Desea activar el vuelo? Al hacerlo también se activarán las reservas asociadas',
-            icon:                'warning',
-            showCancelButton:    true,
-            confirmButtonColor:  '#198754',
-            cancelButtonColor:   '#6c757d',
-            confirmButtonText:   'Sí, activar',
-            cancelButtonText:    'Cancelar'
+            title: '¿Estás seguro?',
+            text: '¿Desea activar el vuelo? Al hacerlo también se activarán las reservas asociadas',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, activar',
+            cancelButtonText: 'Cancelar'
         }).then((result) => {
-            if (result.isConfirmed)
-            {
+            if (result.isConfirmed) {
                 window.location.href = elemento.href;
             }
         });

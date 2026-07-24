@@ -2,68 +2,53 @@
 
 include("../includes/conexion.php");
 
-$token = $_GET['token'];
+$token = trim($_GET['token'] ?? '');
 
-$consulta = "
+$usuario = null;
 
-SELECT *
+if ($token !== '' && preg_match('/^[a-f0-9]{64}$/', $token)) {
 
-FROM usuarios
+    $tokenEsc = mysqli_real_escape_string($link, $token);
+    $consulta = "SELECT * FROM usuarios WHERE tokenValidacion = '$tokenEsc'";
+    $resultadoUsuario = mysqli_query($link, $consulta);
 
-WHERE tokenValidacion = '$token'
+    if ($resultadoUsuario) {
+        $usuario = mysqli_fetch_assoc($resultadoUsuario);
+    }
+}
 
-";
+include("../includes/header.php");
 
-$resultadoUsuario = mysqli_query(
-    $link,
-    $consulta
-);
+if (!$usuario) {
+?>
 
-$usuario = mysqli_fetch_assoc(
-    $resultadoUsuario
-);
+<div class="container mt-5">
 
-/*
-    Token inválido o ya utilizado
-*/
+    <div class="row justify-content-center">
 
-if(!$usuario)
-{
-    include("../includes/header.php");
+        <div class="col-md-6">
 
-    echo "
+            <div class="card card-custom">
 
-    <div class='container mt-5'>
+                <div class="card-body text-center p-5" role="alert">
 
-        <div class='row justify-content-center'>
+                    <h2 class="text-danger">
 
-            <div class='col-md-6'>
+                        Link inválido
 
-                <div class='card card-custom'>
+                    </h2>
 
-                    <div class='card-body text-center p-5'>
+                    <p>
 
-                        <h2 class='text-danger'>
+                        Este enlace ya fue utilizado o no existe.
 
-                            Link inválido
+                    </p>
 
-                        </h2>
+                    <a href="login.php" class="btn btn-primary">
 
-                        <p>
+                        Ir al Login
 
-                            Este enlace ya fue utilizado o no existe.
-
-                        </p>
-
-                        <a
-                        href='login.php'
-                        class='btn btn-primary'>
-
-                            Ir al Login
-
-                        </a>
-
-                    </div>
+                    </a>
 
                 </div>
 
@@ -73,56 +58,23 @@ if(!$usuario)
 
     </div>
 
-    ";
+</div>
+
+<?php
 
     include("../includes/footer.php");
-
     exit();
 }
 
-/*
-    CLIENTE
-*/
 
-if($usuario['tipoUsuario'] == 'CLIENTE')
-{
-    $sql = "
+if ($usuario['tipoUsuario'] == 'CLIENTE') {
+    $sql = "UPDATE usuarios SET estadoCuenta = 'ACTIVA', tokenValidacion = NULL WHERE tokenValidacion = '$tokenEsc'";
+} else {
 
-    UPDATE usuarios
-
-    SET
-    estadoCuenta = 'ACTIVA',
-    tokenValidacion = NULL
-
-    WHERE tokenValidacion = '$token'
-
-    ";
+    $sql = "UPDATE usuarios SET tokenValidacion = NULL WHERE tokenValidacion = '$tokenEsc'";
 }
 
-/*
-    CEO
-*/
-
-else
-{
-    $sql = "
-
-    UPDATE usuarios
-
-    SET
-    tokenValidacion = NULL
-
-    WHERE tokenValidacion = '$token'
-
-    ";
-}
-
-$resultado = mysqli_query(
-    $link,
-    $sql
-);
-
-include("../includes/header.php");
+$resultado = mysqli_query($link, $sql);
 
 ?>
 
@@ -136,62 +88,74 @@ include("../includes/header.php");
 
                 <div class="card-body text-center p-5">
 
-                    <?php if($resultado){ ?>
+                    <?php if ($resultado) { ?>
 
-                        <h1 class="text-success mb-4">
+                        <div role="status">
 
-                            ✅ Cuenta Validada
+                            <h2 class="text-success mb-4">
 
-                        </h1>
+                                <span aria-hidden="true"></span> Cuenta Validada
 
-                        <?php
-                        if($usuario['tipoUsuario'] == 'CEO')
-                        {
-                        ?>
+                            </h2>
 
-                            <p class="lead">
+                            <?php if ($usuario['tipoUsuario'] == 'CEO') { ?>
 
-                                Tu correo fue validado correctamente.
+                                <p class="lead">
+
+                                    Tu correo fue validado correctamente.
+
+                                </p>
+
+                                <p class="text-muted">
+
+                                    Ahora un administrador debe aprobar tu solicitud.
+
+                                </p>
+
+                            <?php } else { ?>
+
+                                <p class="lead">
+
+                                    Tu cuenta fue activada correctamente.
+
+                                </p>
+
+                                <p class="text-muted">
+
+                                    Ya podés iniciar sesión.
+
+                                </p>
+
+                            <?php } ?>
+
+                        </div>
+
+                    <?php } else { ?>
+
+                        <div role="alert">
+
+                            <h2 class="text-danger mb-4">
+
+                                Ocurrió un error
+
+                            </h2>
+
+                            <p>
+
+                                No pudimos procesar la validación. Intentá nuevamente
+                                más tarde o contactanos si el problema persiste.
 
                             </p>
 
-                            <p class="text-muted">
-
-                                Ahora un administrador debe aprobar tu solicitud.
-
-                            </p>
-
-                        <?php
-                        }
-                        else
-                        {
-                        ?>
-
-                            <p class="lead">
-
-                                Tu cuenta fue activada correctamente.
-
-                            </p>
-
-                            <p class="text-muted">
-
-                                Ya podés iniciar sesión.
-
-                            </p>
-
-                        <?php
-                        }
-                        ?>
-
-                        <a
-                        href="login.php"
-                        class="btn btn-primary btn-lg mt-3">
-
-                            Ir al Login
-
-                        </a>
+                        </div>
 
                     <?php } ?>
+
+                    <a href="login.php" class="btn btn-primary btn-lg mt-3">
+
+                        Ir al Login
+
+                    </a>
 
                 </div>
 

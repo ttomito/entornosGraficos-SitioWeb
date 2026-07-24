@@ -6,67 +6,38 @@ include("../../includes/conexion.php");
 $registrosPorPagina = 6;
 
 $pagina = isset($_GET['pagina'])
-? (int)$_GET['pagina']
-: 1;
+    ? (int)$_GET['pagina']
+    : 1;
 
-if($pagina < 1)
-{
+if ($pagina < 1) {
     $pagina = 1;
 }
 
 $inicio =
-($pagina - 1)
-*
-$registrosPorPagina;
+    ($pagina - 1) * $registrosPorPagina;
 
-
-
-$sqlConteo = "
-
-SELECT COUNT(*) total
-
-FROM novedades
-
-";
+$sqlConteo = "SELECT COUNT(*) total FROM novedades";
 
 $resultadoConteo =
-mysqli_query(
-$link,
-$sqlConteo
-);
+    mysqli_query(
+        $link,
+        $sqlConteo
+    );
 
 $filaConteo =
-mysqli_fetch_assoc(
-$resultadoConteo
-);
+    mysqli_fetch_assoc(
+        $resultadoConteo
+    );
 
 $totalRegistros =
-$filaConteo['total'];
+    $filaConteo['total'];
 
 $totalPaginas =
-ceil(
-$totalRegistros
-/
-$registrosPorPagina
-);
+    ceil($totalRegistros / $registrosPorPagina);
 
-$sql = "
+$sql = "SELECT * FROM novedades ORDER BY codNovedad DESC LIMIT $inicio, $registrosPorPagina";
 
-SELECT *
-
-FROM novedades
-
-ORDER BY codNovedad DESC
-
-LIMIT $inicio,
-$registrosPorPagina
-
-";
-
-$resultado = mysqli_query(
-    $link,
-    $sql
-);
+$resultado = mysqli_query($link, $sql);
 
 $hoy = new DateTime();
 
@@ -74,218 +45,217 @@ $hoy = new DateTime();
 
 <div class="container mt-4">
 
-<div class="d-flex justify-content-between mb-4">
+    <div class="d-flex justify-content-between mb-4">
 
-    <h2>
+        <h2>
 
-        Novedades
+            Novedades
 
-    </h2>
-
-</div>
-
-<div class="row">
-
-<?php
-
-while($fila = mysqli_fetch_assoc($resultado))
-{
-    $fechaPublicacion =
-    new DateTime(
-        $fila['fechaPublicacion']
-    );
-
-    $fechaExpiracion =
-    new DateTime(
-        $fila['fechaExpiracion']
-    );
-
-    if(
-        $fechaExpiracion >= $hoy
-    )
-    {
-?>
-
-<div class="col-md-4 mb-4">
-
-    <div class="card shadow-lg border-0 h-100 card-hover">
-
-    <?php if (!empty($fila['imagen'])) { ?>
-        <img
-            src="../../uploads/novedades/<?php echo $fila['imagen'] ?>"
-            class="card-img-top"
-            alt="Imagen de novedad"
-            style="height: 200px; object-fit: cover;">
-    <?php } ?>
-
-    <div class="card-body">
-
-            <span
-            class="badge bg-primary mb-3">
-
-                Novedad
-
-            </span>
-
-            <h4>
-
-                <?= $fila['tituloNovedad'] ?>
-
-            </h4>
-
-            <p>
-
-                <?= substr(
-                    $fila['textoNovedad'],
-                    0,
-                    150
-                ) ?>
-
-                ...
-
-            </p>
-
-            <hr>
-
-            <small>
-
-                Publicado:
-
-                <?= $fila['fechaPublicacion'] ?>
-
-            </small>
-
-            <br>
-
-            <small>
-
-                Expira:
-
-                <?= $fila['fechaExpiracion'] ?>
-
-            </small>
-
-            <br><br>
-
-            <?php
-
-            if(
-            isset($_SESSION['tipo'])
-            &&
-            $_SESSION['tipo']=='CLIENTE'
-            )
-            {
-            ?>
-
-            <a
-            href="../novedades/verNovedad.php?codNovedad=<?= $fila['codNovedad'] ?>"
-            class="btn btn-primary">
-
-                Ver Novedad
-
-            </a>
-
-            <?php
-            }
-            else
-            {
-            ?>
-
-            <a
-            href="/entornosGraficos-SitioWeb/auth/login.php"
-            class="btn btn-warning">
-
-                Iniciar Sesión
-
-            </a>
-
-            <?php
-            }
-            ?>
-
-        </div>
+        </h2>
 
     </div>
 
-</div>
+    <div class="row">
 
-<?php
-    }
-}
-?>
+        <?php
 
-</div>
-<div class="d-flex justify-content-center mt-4">
+        while ($fila = mysqli_fetch_assoc($resultado)) {
+            $fechaPublicacion =
+                new DateTime(
+                    $fila['fechaPublicacion']
+                );
 
-<nav>
+            $fechaExpiracion =
+                new DateTime(
+                    $fila['fechaExpiracion']
+                );
 
-<ul class="pagination">
+            if (
+                $fechaExpiracion >= $hoy
+            ) {
+                $titulo = htmlspecialchars($fila['tituloNovedad'], ENT_QUOTES, 'UTF-8');
+                $textoCorto = htmlspecialchars(mb_substr($fila['textoNovedad'], 0, 150), ENT_QUOTES, 'UTF-8');
+                $fechaPubTexto = htmlspecialchars($fila['fechaPublicacion'], ENT_QUOTES, 'UTF-8');
+                $fechaExpTexto = htmlspecialchars($fila['fechaExpiracion'], ENT_QUOTES, 'UTF-8');
+        ?>
 
-<?php if($pagina > 1){ ?>
+                <div class="col-md-4 mb-4">
 
-<li class="page-item">
+                    <div class="card shadow-lg border-0 h-100 card-hover">
 
-<a
-class="page-link"
-href="?pagina=<?= $pagina-1 ?>">
+                        <?php if (!empty($fila['imagen'])) { ?>
+                            <img
+                                src="../../uploads/novedades/<?= htmlspecialchars($fila['imagen'], ENT_QUOTES, 'UTF-8') ?>"
+                                class="card-img-top"
+                                alt="Imagen relacionada a la novedad: <?= $titulo ?>"
+                                style="height: 200px; object-fit: cover;">
+                        <?php } ?>
 
-Anterior
+                        <div class="card-body">
 
-</a>
+                            <span
+                                class="badge bg-primary mb-3">
 
-</li>
+                                Novedad
 
-<?php } ?>
+                            </span>
 
-<?php
+                            <h3 class="h5">
 
-for(
-$i=1;
-$i<=$totalPaginas;
-$i++
-)
-{
-?>
+                                <?= $titulo ?>
 
-<li
-class="page-item
-<?= $i==$pagina ? 'active' : '' ?>">
+                            </h3>
 
-<a
-class="page-link"
-href="?pagina=<?= $i ?>">
+                            <p>
 
-<?= $i ?>
+                                <?= $textoCorto ?>
 
-</a>
+                                ...
 
-</li>
+                            </p>
 
-<?php
-}
-?>
+                            <hr>
 
-<?php if($pagina < $totalPaginas){ ?>
+                            <small>
 
-<li class="page-item">
+                                Publicado:
 
-<a
-class="page-link"
-href="?pagina=<?= $pagina+1 ?>">
+                                <time datetime="<?= $fechaPubTexto ?>"><?= $fechaPubTexto ?></time>
 
-Siguiente
+                            </small>
 
-</a>
+                            <br>
 
-</li>
+                            <small>
 
-<?php } ?>
+                                Expira:
 
-</ul>
+                                <time datetime="<?= $fechaExpTexto ?>"><?= $fechaExpTexto ?></time>
 
-</nav>
+                            </small>
 
-</div>
+                            <br><br>
+
+                            <?php
+
+                            if (
+                                isset($_SESSION['tipo'])
+                                &&
+                                $_SESSION['tipo'] == 'CLIENTE'
+                            ) {
+                            ?>
+
+                                <a
+                                    href="../novedades/verNovedad.php?codNovedad=<?= (int) $fila['codNovedad'] ?>"
+                                    class="btn btn-primary">
+
+                                    Ver Novedad
+                                    <span class="visually-hidden"> sobre: <?= $titulo ?></span>
+
+                                </a>
+
+                            <?php
+                            } else {
+                            ?>
+
+                                <a
+                                    href="/entornosGraficos-SitioWeb/auth/login.php"
+                                    class="btn btn-warning">
+
+                                    Iniciar Sesión
+                                    <span class="visually-hidden"> para ver la novedad: <?= $titulo ?></span>
+
+                                </a>
+
+                            <?php
+                            }
+                            ?>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+        <?php
+            }
+        }
+        ?>
+
+    </div>
+    <div class="d-flex justify-content-center mt-4">
+
+        <nav aria-label="Paginación de novedades">
+
+            <ul class="pagination flex-wrap justify-content-center">
+
+                <?php if ($pagina > 1) { ?>
+
+                    <li class="page-item">
+
+                        <a
+                            class="page-link"
+                            href="?pagina=<?= $pagina - 1 ?>">
+
+                            Anterior
+
+                        </a>
+
+                    </li>
+
+                <?php } ?>
+
+                <?php
+
+                for (
+                    $i = 1;
+                    $i <= $totalPaginas;
+                    $i++
+                ) {
+                ?>
+
+                    <li
+                        class="page-item <?= $i == $pagina ? 'active' : '' ?>">
+
+                        <a
+                            class="page-link"
+                            href="?pagina=<?= $i ?>"
+                            <?= $i == $pagina ? 'aria-current="page"' : '' ?>>
+
+                            <?= $i ?>
+                            <?php if ($i == $pagina) { ?>
+                                <span class="visually-hidden"> (página actual)</span>
+                            <?php } ?>
+
+                        </a>
+
+                    </li>
+
+                <?php
+                }
+                ?>
+
+                <?php if ($pagina < $totalPaginas) { ?>
+
+                    <li class="page-item">
+
+                        <a
+                            class="page-link"
+                            href="?pagina=<?= $pagina + 1 ?>">
+
+                            Siguiente
+
+                        </a>
+
+                    </li>
+
+                <?php } ?>
+
+            </ul>
+
+        </nav>
+
+    </div>
 
 </div>
 
