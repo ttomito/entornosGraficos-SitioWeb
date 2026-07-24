@@ -444,6 +444,8 @@ Se muestran los vuelos disponibles para las fechas más cercanas.
 
         <div class="card-body">
 
+        <div class="table-responsive">
+
             <table class="table table-hover">
 
                <thead>
@@ -724,6 +726,7 @@ Cuenta de cliente requerida
 
 
             </table>
+            </div>
 
             <div class="d-flex justify-content-center mt-4">
 

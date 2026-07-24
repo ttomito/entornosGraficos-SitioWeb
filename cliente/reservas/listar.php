@@ -5,6 +5,51 @@ include("../../includes/conexion.php");
 
 $idCliente = $_SESSION['id'];
 
+$registrosPorPagina = 10;
+
+$pagina = isset($_GET['pagina'])
+? (int)$_GET['pagina']
+: 1;
+
+if($pagina < 1)
+{
+    $pagina = 1;
+}
+
+$inicio =
+($pagina - 1)
+*
+$registrosPorPagina;
+/*
+| Conteo
+*/
+
+$sqlConteo = "
+
+SELECT COUNT(*) AS total
+
+FROM reservas
+
+WHERE codUsuario = $idCliente
+
+";
+
+$resultadoConteo =
+mysqli_query($link,$sqlConteo);
+
+$filaConteo =
+mysqli_fetch_assoc($resultadoConteo);
+
+$totalRegistros =
+$filaConteo['total'];
+
+$totalPaginas =
+ceil(
+$totalRegistros
+/
+$registrosPorPagina
+);
+
 $sql = "
 
 SELECT *
@@ -15,9 +60,13 @@ WHERE codUsuario = $idCliente
 
 ORDER BY codReserva DESC
 
+LIMIT $inicio,
+$registrosPorPagina
+
 ";
 
-$resultado = mysqli_query(
+$resultado =
+mysqli_query(
     $link,
     $sql
 );
@@ -40,7 +89,17 @@ $resultado = mysqli_query(
 
         <div class="card-body">
 
-            <table class="table table-hover">
+           <?php if(mysqli_num_rows($resultado) == 0){ ?>
+
+    <p class="text-muted">
+
+        No posee reservas registradas.
+
+    </p>
+
+<?php } else { ?>
+
+    <table class="table table-hover">
 
                 <thead>
 
@@ -120,17 +179,23 @@ $resultado = mysqli_query(
 
                     </td>
 
-                    <td>
+                   <td>
 
-                        <?= $vuelo['fechaVuelo'] ?>
+<?= date(
+"d/m/Y",
+strtotime($vuelo['fechaVuelo'])
+) ?>
 
-                    </td>
+</td>
 
-                    <td>
+<td>
 
-                        <?= $fila['fechaReserva'] ?>
+<?= date(
+"d/m/Y",
+strtotime($fila['fechaReserva'])
+) ?>
 
-                    </td>
+</td>
 
                     <td>
 
@@ -194,6 +259,78 @@ $resultado = mysqli_query(
                 </tbody>
 
             </table>
+
+            <div class="d-flex justify-content-center mt-4">
+
+<nav>
+
+<ul class="pagination">
+
+<?php if($pagina > 1){ ?>
+
+<li class="page-item">
+
+<a
+class="page-link"
+href="?pagina=<?= $pagina-1 ?>">
+
+Anterior
+
+</a>
+
+</li>
+
+<?php } ?>
+
+<?php
+
+for(
+$i=1;
+$i<=$totalPaginas;
+$i++
+)
+{
+
+?>
+
+<li
+class="page-item
+<?= $i==$pagina ? 'active' : '' ?>">
+
+<a
+class="page-link"
+href="?pagina=<?= $i ?>">
+
+<?= $i ?>
+
+</a>
+
+</li>
+
+<?php } ?>
+
+<?php if($pagina < $totalPaginas){ ?>
+
+<li class="page-item">
+
+<a
+class="page-link"
+href="?pagina=<?= $pagina+1 ?>">
+
+Siguiente
+
+</a>
+
+</li>
+
+<?php } ?>
+
+</ul>
+
+</nav>
+
+</div>
+            <?php } ?>
 
         </div>
 
