@@ -1,91 +1,156 @@
 <?php
 
-include("../../includes/verificarSession.php");
+include("../../includes/verificarSessionCEO.php");
 include("../../includes/conexion.php");
 include("../../includes/header.php");
 
 $registrosPorPagina = 10;
+$errorConsulta = false;
 
-$pagina = isset($_GET['pagina'])
-    ? (int)$_GET['pagina']
-    : 1;
+$pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 
 if ($pagina < 1) {
     $pagina = 1;
 }
 
-$inicio = ($pagina - 1) * $registrosPorPagina;
-
 $idCEO = (int) ($_SESSION['id'] ?? 0);
+$codAerolinea = null;
 
-if ($idCEO <= 0) {
-    die("Acceso denegado");
+if ($idCEO > 0) {
+    $sqlCEO = "SELECT codAerolinea FROM usuarios WHERE codUsuario = ?";
+    $stmtCEO = mysqli_prepare($link, $sqlCEO);
+
+    if (!$stmtCEO) {
+        error_log("Error al preparar la consulta de CEO: " . mysqli_error($link));
+        $errorConsulta = true;
+    } else {
+        mysqli_stmt_bind_param($stmtCEO, "i", $idCEO);
+        mysqli_stmt_execute($stmtCEO);
+        $resultadoCEO = mysqli_stmt_get_result($stmtCEO);
+        $ceo = $resultadoCEO ? mysqli_fetch_assoc($resultadoCEO) : null;
+        mysqli_stmt_close($stmtCEO);
+
+        if ($ceo && $ceo['codAerolinea'] !== null) {
+            $codAerolinea = (int) $ceo['codAerolinea'];
+        }
+    }
+} else {
+    $errorConsulta = true;
 }
 
-$sqlConteo = "
-SELECT COUNT(*) AS total
-FROM vuelos
-WHERE codAerolinea = (
-    SELECT codAerolinea
-    FROM usuarios
-    WHERE codUsuario = $idCEO
-)";
+if ($errorConsulta) {
+?>
 
-$resultadoConteo = mysqli_query($link, $sqlConteo);
+    <main id="contenido-principal">
 
-$filaConteo = mysqli_fetch_assoc($resultadoConteo);
+        <div class="container mt-5">
 
-$totalRegistros = $filaConteo['total'];
+            <div class="alert alert-danger" role="alert">
+                Ocurrió un error al cargar tus datos. Intentá nuevamente más tarde.
+            </div>
 
-$totalPaginas = ceil($totalRegistros / $registrosPorPagina);
+        </div>
 
-$sql = "SELECT
-v.codVuelo,
-v.origenVuelo,
-v.destinoVuelo,
-v.fechaVuelo,
-v.asientosDisponibles,
+    </main>
 
-COALESCE(SUM(r.cantAsientos),0) AS ocupados
+<?php
+    include("../../includes/footer.php");
+    exit();
+}
 
-FROM vuelos v
-LEFT JOIN reservas r
-ON v.codVuelo = r.codVuelo
-AND r.estadoReserva = 'CONFIRMADA'
-WHERE v.codAerolinea = (SELECT codAerolinea FROM usuarios WHERE codUsuario = $idCEO)
-GROUP BY v.codVuelo 
-ORDER BY v.fechaVuelo
-LIMIT $inicio, $registrosPorPagina";
+if ($codAerolinea === null) {
+?>
 
-$resultado = mysqli_query($link, $sql);
+    <main id="contenido-principal">
 
-if (!$resultado) {
-    die(mysqli_error($link));
+        <div class="container mt-5">
+
+            <div class="card card-custom">
+
+                <div class="card-body p-5 text-center" role="alert">
+
+                    <h2 class="text-danger">
+                        Tu cuenta todavía no está vinculada a una aerolínea
+                    </h2>
+
+                    <p>
+                        Un administrador tiene que asociar tu cuenta a una aerolínea antes de que puedas ver la ocupación de vuelos.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+<?php
+    include("../../includes/footer.php");
+    exit();
+}
+
+$sqlConteo = "SELECT COUNT(*) AS total FROM vuelos WHERE codAerolinea = ?";
+$stmtConteo = mysqli_prepare($link, $sqlConteo);
+
+if (!$stmtConteo) {
+    error_log("Error al preparar el conteo: " . mysqli_error($link));
+    $errorConsulta = true;
+    $totalRegistros = 0;
+} else {
+    mysqli_stmt_bind_param($stmtConteo, "i", $codAerolinea);
+    mysqli_stmt_execute($stmtConteo);
+    $resultadoConteo = mysqli_stmt_get_result($stmtConteo);
+    $filaConteo = $resultadoConteo ? mysqli_fetch_assoc($resultadoConteo) : null;
+    $totalRegistros = $filaConteo ? (int)$filaConteo['total'] : 0;
+    mysqli_stmt_close($stmtConteo);
+}
+
+$totalPaginas = (int) ceil($totalRegistros / $registrosPorPagina);
+
+if ($totalPaginas > 0 && $pagina > $totalPaginas) {
+    $pagina = $totalPaginas;
+}
+
+$inicio = ($pagina - 1) * $registrosPorPagina;
+
+$resultado = null;
+
+if (!$errorConsulta) {
+    $sql = "SELECT
+        v.codVuelo,
+        v.origenVuelo,
+        v.destinoVuelo,
+        v.fechaVuelo,
+        v.asientosDisponibles,
+        COALESCE(SUM(r.cantAsientos),0) AS ocupados
+    FROM vuelos v
+    LEFT JOIN reservas r
+        ON v.codVuelo = r.codVuelo
+        AND r.estadoReserva = 'CONFIRMADA'
+    WHERE v.codAerolinea = ?
+    GROUP BY v.codVuelo
+    ORDER BY v.fechaVuelo
+    LIMIT ?, ?";
+
+    $stmt = mysqli_prepare($link, $sql);
+
+    if (!$stmt) {
+        error_log("Error al preparar el listado de ocupación: " . mysqli_error($link));
+        $errorConsulta = true;
+    } else {
+        mysqli_stmt_bind_param($stmt, "iii", $codAerolinea, $inicio, $registrosPorPagina);
+        mysqli_stmt_execute($stmt);
+        $resultado = mysqli_stmt_get_result($stmt);
+
+        if (!$resultado) {
+            error_log("Error al listar ocupación: " . mysqli_error($link));
+            $errorConsulta = true;
+        }
+    }
 }
 
 ?>
-
-<style>
-    .visually-hidden {
-        position: absolute !important;
-        width: 1px !important;
-        height: 1px !important;
-        padding: 0 !important;
-        margin: -1px !important;
-        overflow: hidden !important;
-        clip: rect(0, 0, 0, 0) !important;
-        white-space: nowrap !important;
-        border: 0 !important;
-    }
-
-    /* Foco visible reforzado para SC 2.4.7 */
-    a.btn:focus-visible,
-    a.page-link:focus-visible,
-    button:focus-visible {
-        outline: 3px solid #0d6efd;
-        outline-offset: 2px;
-    }
-</style>
 
 <main id="contenido-principal">
 
@@ -97,7 +162,13 @@ if (!$resultado) {
 
             <div class="card-body">
 
-                <?php if (mysqli_num_rows($resultado) > 0) { ?>
+                <?php if ($errorConsulta) { ?>
+
+                    <div class="alert alert-danger" role="alert">
+                        Ocurrió un error al cargar el listado. Intentá nuevamente más tarde.
+                    </div>
+
+                <?php } elseif (mysqli_num_rows($resultado) > 0) { ?>
 
                     <div class="table-responsive">
 

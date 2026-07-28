@@ -1,6 +1,6 @@
 <?php
 
-include("../../includes/verificarSession.php");
+include("../../includes/verificarSessionCeo.php");
 include("../../includes/header.php");
 
 ?>
@@ -29,6 +29,8 @@ include("../../includes/header.php");
                         </p>
 
                         <form action="guardar.php" method="post">
+
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
 
                             <div class="mb-3">
 
@@ -270,6 +272,11 @@ $alertas = [
         'icon'  => 'warning',
         'title' => 'Fecha inválida',
         'text'  => 'La fecha límite debe ser posterior a hoy.'
+    ],
+    'sin_aerolinea' => [
+        'icon'  => 'error',
+        'title' => 'Cuenta sin vincular',
+        'text'  => 'Tu cuenta todavía no está vinculada a una aerolínea. Contactá a un administrador.'
     ],
     'error_servidor' => [
         'icon'  => 'error',

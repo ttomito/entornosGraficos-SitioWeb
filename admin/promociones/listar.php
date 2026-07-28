@@ -1,10 +1,11 @@
 <?php
 
-include("../../includes/verificarSession.php");
+include("../../includes/verificarSessionAdmin.php");
 include("../../includes/conexion.php");
 include("../../includes/header.php");
 
 $registrosPorPagina = 10;
+$errorConsulta = false;
 
 $pagina = isset($_GET['pagina'])
     ? (int)$_GET['pagina']
@@ -14,59 +15,56 @@ if ($pagina < 1) {
     $pagina = 1;
 }
 
-$inicio =
-    ($pagina - 1)
-    *
-    $registrosPorPagina;
-
-
-$sqlConteo = "
-
-SELECT COUNT(*) AS total
-
-FROM promociones
-
-";
-
+$sqlConteo = "SELECT COUNT(*) AS total FROM promociones";
 $resultadoConteo = mysqli_query($link, $sqlConteo);
 
-$filaConteo = mysqli_fetch_assoc($resultadoConteo);
-
-$totalRegistros = $filaConteo['total'];
-
-$totalPaginas = ceil(
-    $totalRegistros
-        /
-        $registrosPorPagina
-);
-
-
-$sql = "
-
-SELECT
-p.*,
-a.nombreAerolinea
-
-FROM promociones p
-
-INNER JOIN aerolineas a
-ON p.codAerolinea = a.codAerolinea
-
-ORDER BY
-p.estadoPromocion,
-p.codPromocion DESC
-
-LIMIT $inicio,
-$registrosPorPagina
-
-";
-
-$resultado = mysqli_query($link, $sql);
-
-if (!$resultado) {
-    die("Error en la consulta: " . mysqli_error($link));
+if (!$resultadoConteo) {
+    error_log("Error al contar promociones: " . mysqli_error($link));
+    $errorConsulta = true;
+    $totalRegistros = 0;
+} else {
+    $filaConteo = mysqli_fetch_assoc($resultadoConteo);
+    $totalRegistros = (int)$filaConteo['total'];
 }
 
+$totalPaginas = (int)ceil($totalRegistros / $registrosPorPagina);
+
+// Evita pedir una página que no existe
+if ($totalPaginas > 0 && $pagina > $totalPaginas) {
+    $pagina = $totalPaginas;
+}
+
+$inicio = ($pagina - 1) * $registrosPorPagina;
+
+$resultado = null;
+
+if (!$errorConsulta) {
+    $sql = "
+        SELECT
+            p.*,
+            a.nombreAerolinea
+        FROM promociones p
+        INNER JOIN aerolineas a ON p.codAerolinea = a.codAerolinea
+        ORDER BY p.estadoPromocion, p.codPromocion DESC
+        LIMIT ?, ?
+    ";
+
+    $stmt = mysqli_prepare($link, $sql);
+
+    if (!$stmt) {
+        error_log("Error al preparar el listado de promociones: " . mysqli_error($link));
+        $errorConsulta = true;
+    } else {
+        mysqli_stmt_bind_param($stmt, "ii", $inicio, $registrosPorPagina);
+        mysqli_stmt_execute($stmt);
+        $resultado = mysqli_stmt_get_result($stmt);
+
+        if (!$resultado) {
+            error_log("Error al listar promociones: " . mysqli_error($link));
+            $errorConsulta = true;
+        }
+    }
+}
 ?>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -87,7 +85,11 @@ if (!$resultado) {
         <div class="card-body">
 
 
-            <?php if (mysqli_num_rows($resultado) == 0) { ?>
+            <?php if ($errorConsulta) { ?>
+
+                <p class="text-danger">Ocurrió un error al cargar el listado. Intentá nuevamente más tarde.</p>
+
+            <?php } elseif (mysqli_num_rows($resultado) === 0) { ?>
 
                 <p class="text-muted">
 
@@ -145,27 +147,27 @@ if (!$resultado) {
                                     if ($fila['estadoPromocion'] == 'PENDIENTE') {
                                     ?>
 
-                                        <a
-                                            href="aprobar.php?id=<?= $fila['codPromocion'] ?>"
-                                            class="btn btn-success btn-sm"
-                                            aria-label="Aprobar promoción #<?= $fila['codPromocion'] ?> de <?= $aerolineaEscapada ?>"
-                                            data-aerolinea="<?= $aerolineaEscapada ?>"
-                                            onclick="confirmarAprobacion(event, this)">
+                                        <form action="aprobar.php" method="post" class="d-inline" data-aerolinea="<?= $aerolineaEscapada ?>">
+                                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
+                                            <input type="hidden" name="id" value="<?= (int)$fila['codPromocion'] ?>">
+                                            <button type="submit"
+                                                class="btn btn-success btn-sm"
+                                                aria-label="Aprobar promoción #<?= (int)$fila['codPromocion'] ?> de <?= $aerolineaEscapada ?>"
+                                                onclick="confirmarAprobacion(event, this)">
+                                                Aprobar
+                                            </button>
+                                        </form>
 
-                                            Aprobar
-
-                                        </a>
-
-                                        <a
-                                            href="rechazar.php?id=<?= $fila['codPromocion'] ?>"
-                                            class="btn btn-danger btn-sm"
-                                            aria-label="Rechazar promoción #<?= $fila['codPromocion'] ?> de <?= $aerolineaEscapada ?>"
-                                            data-aerolinea="<?= $aerolineaEscapada ?>"
-                                            onclick="confirmarRechazo(event, this)">
-
-                                            Rechazar
-
-                                        </a>
+                                        <form action="rechazar.php" method="post" class="d-inline" data-aerolinea="<?= $aerolineaEscapada ?>">
+                                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
+                                            <input type="hidden" name="id" value="<?= (int)$fila['codPromocion'] ?>">
+                                            <button type="submit"
+                                                class="btn btn-danger btn-sm"
+                                                aria-label="Rechazar promoción #<?= (int)$fila['codPromocion'] ?> de <?= $aerolineaEscapada ?>"
+                                                onclick="confirmarRechazo(event, this)">
+                                                Rechazar
+                                            </button>
+                                        </form>
 
                                     <?php
                                     }
@@ -260,10 +262,11 @@ if (!$resultado) {
 </div>
 
 <script>
-    function confirmarAprobacion(event, elemento) {
+    function confirmarAprobacion(event, boton) {
         event.preventDefault();
 
-        const aerolinea = elemento.dataset.aerolinea;
+        const formulario = boton.closest('form');
+        const aerolinea = formulario.dataset.aerolinea;
 
         Swal.fire({
             title: '¿Estás seguro?',
@@ -276,15 +279,16 @@ if (!$resultado) {
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
-                window.location.href = elemento.href;
+                formulario.submit();
             }
         });
     }
 
-    function confirmarRechazo(event, elemento) {
+    function confirmarRechazo(event, boton) {
         event.preventDefault();
 
-        const aerolinea = elemento.dataset.aerolinea;
+        const formulario = boton.closest('form');
+        const aerolinea = formulario.dataset.aerolinea;
 
         Swal.fire({
             title: '¿Estás seguro?',
@@ -297,7 +301,7 @@ if (!$resultado) {
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
-                window.location.href = elemento.href;
+                formulario.submit();
             }
         });
     }

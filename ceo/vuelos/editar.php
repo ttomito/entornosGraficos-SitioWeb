@@ -1,6 +1,6 @@
 <?php
 
-include("../../includes/verificarSession.php");
+include("../../includes/verificarSessionCEO.php");
 include("../../includes/conexion.php");
 include("../../includes/header.php");
 
@@ -68,6 +68,7 @@ $fechaMinima = date('Y-m-d', strtotime('+1 day'));
 
                     <form action="actualizar.php" method="post" enctype="multipart/form-data">
 
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="id" value="<?= (int)$vuelo['codVuelo'] ?>">
                         <input type="hidden" name="imagenActual" value="<?= $imagenEscapada ?>">
 
@@ -108,7 +109,10 @@ $fechaMinima = date('Y-m-d', strtotime('+1 day'));
 
                         <div class="mb-3">
 
-                            <label for="imagen">Imagen de referencia</label>
+                            <label for="imagen">
+                                Imagen de referencia
+                                <?php if (empty($imagenEscapada)) { ?><span aria-hidden="true">*</span><?php } ?>
+                            </label>
 
                             <?php if (!empty($imagenEscapada)): ?>
                                 <div class="mb-2" id="contenedorImagenActual">
@@ -117,8 +121,22 @@ $fechaMinima = date('Y-m-d', strtotime('+1 day'));
                                 </div>
                             <?php endif; ?>
 
-                            <input type="file" id="imagen" name="imagen" class="form-control" accept="image/png, image/jpeg, image/webp" aria-describedby="imagenAyuda">
-                            <small id="imagenAyuda" class="form-text text-muted">Formatos permitidos: PNG, JPG, JPEG o WEBP. Seleccioná una nueva para reemplazar la actual.</small>
+                            <input
+                                type="file"
+                                id="imagen"
+                                name="imagen"
+                                class="form-control"
+                                accept="image/png, image/jpeg, image/webp"
+                                aria-describedby="imagenAyuda"
+                                <?= empty($imagenEscapada) ? 'required aria-required="true"' : '' ?>>
+
+                            <small id="imagenAyuda" class="form-text text-muted">
+                                <?php if (empty($imagenEscapada)) { ?>
+                                    Este vuelo todavía no tiene imagen — es obligatorio subir una (PNG, JPG, JPEG o WEBP).
+                                <?php } else { ?>
+                                    Formatos permitidos: PNG, JPG, JPEG o WEBP. Seleccioná una nueva para reemplazar la actual.
+                                <?php } ?>
+                            </small>
 
                             <div class="mt-2 d-none" id="contenedorVistaPrevia">
                                 <p class="text-muted mb-1" style="font-size: 0.85rem;">Nueva imagen seleccionada (se guardará al actualizar):</p>
@@ -171,6 +189,10 @@ $fechaMinima = date('Y-m-d', strtotime('+1 day'));
 
         const formulario = event.target.closest('form');
 
+        if (!formulario.reportValidity()) {
+            return;
+        }
+
         Swal.fire({
             title: '¿Estás seguro?',
             text: '¿Desea modificar este vuelo?',
@@ -194,6 +216,11 @@ $alertasEditarVuelo = [
         'icon'  => 'error',
         'title' => 'Campos incompletos',
         'text'  => 'Todos los campos son obligatorios.'
+    ],
+    'imagen_requerida' => [
+        'icon'  => 'error',
+        'title' => 'Falta la imagen',
+        'text'  => 'Este vuelo todavía no tiene imagen — tenés que subir una.'
     ],
     'origen_invalido' => [
         'icon'  => 'error',
@@ -239,6 +266,11 @@ $alertasEditarVuelo = [
         'icon'  => 'error',
         'title' => 'Error',
         'text'  => 'No se pudo guardar la imagen. Intente nuevamente.'
+    ],
+    'error_servidor' => [
+        'icon'  => 'error',
+        'title' => 'Error',
+        'text'  => 'Ocurrió un error inesperado. Intente nuevamente.'
     ]
 ];
 

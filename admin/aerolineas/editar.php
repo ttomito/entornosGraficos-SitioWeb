@@ -1,8 +1,7 @@
 <?php
 
-include("../../includes/verificarSession.php");
+include("../../includes/verificarSessionAdmin.php");
 include("../../includes/conexion.php");
-include("../../includes/header.php");
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -43,6 +42,8 @@ if (!$aerolinea) {
 $nombreEscapado = htmlspecialchars($aerolinea['nombreAerolinea'], ENT_QUOTES, 'UTF-8');
 $descripcionEscapada = htmlspecialchars($aerolinea['descripcionAerolinea'], ENT_QUOTES, 'UTF-8');
 $paisEscapado = htmlspecialchars($aerolinea['codPais'], ENT_QUOTES, 'UTF-8');
+
+include("../../includes/header.php");
 
 ?>
 
@@ -88,30 +89,41 @@ $paisEscapado = htmlspecialchars($aerolinea['codPais'], ENT_QUOTES, 'UTF-8');
 
                 <div class="mb-3">
 
-                    <label for="descripcion">Descripción</label>
+                    <label for="descripcion">
+                        Descripción
+                        <span aria-hidden="true">*</span>
+                        <span class="visually-hidden">(obligatorio)</span>
+                    </label>
                     <textarea
                         id="descripcion"
                         name="descripcion"
                         class="form-control"
+                        required
                         maxlength="500"
                         aria-describedby="descripcion-ayuda descripcion-error"><?= $descripcionEscapada ?></textarea>
-                    <div id="descripcion-ayuda" class="form-text">Opcional, hasta 500 caracteres.</div>
+                    <div id="descripcion-ayuda" class="form-text">Hasta 500 caracteres.</div>
                     <div id="descripcion-error" class="invalid-feedback" role="alert"></div>
 
                 </div>
 
                 <div class="mb-3">
 
-                    <label for="pais">País</label>
+                    <label for="pais">
+                        País
+                        <span aria-hidden="true">*</span>
+                        <span class="visually-hidden">(obligatorio)</span>
+                    </label>
                     <input
                         type="text"
                         id="pais"
                         name="pais"
-                        class="form-control"
+                        class="form-control text-uppercase"
                         value="<?= $paisEscapado ?>"
-                        maxlength="100"
+                        required
+                        maxlength="2"
+                        pattern="[A-Za-z]{2}"
                         aria-describedby="pais-ayuda pais-error">
-                    <div id="pais-ayuda" class="form-text">Opcional. Solo letras, espacios y guiones.</div>
+                    <div id="pais-ayuda" class="form-text">Código de país de 2 letras, ej: AR, BR.</div>
                     <div id="pais-error" class="invalid-feedback" role="alert"></div>
 
                 </div>
@@ -133,24 +145,28 @@ $paisEscapado = htmlspecialchars($aerolinea['codPais'], ENT_QUOTES, 'UTF-8');
             id: 'nombre',
             requerido: true,
             minLength: 2,
-            maxLength: 150,
+            maxLength: 100,
             mensajeVacio: 'Ingresá el nombre de la aerolínea.',
             mensajeCorto: 'El nombre debe tener al menos 2 caracteres.',
-            mensajeLargo: 'El nombre no puede superar los 150 caracteres.'
+            mensajeLargo: 'El nombre no puede superar los 100 caracteres.'
         },
         {
             id: 'descripcion',
-            requerido: false,
+            requerido: true,
             maxLength: 500,
+            mensajeVacio: 'Ingresá una descripción para la aerolínea.',
             mensajeLargo: 'La descripción no puede superar los 500 caracteres.'
         },
         {
             id: 'pais',
-            requerido: false,
-            maxLength: 100,
-            patron: /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/,
-            mensajePatron: 'El país solo puede contener letras, espacios y guiones.',
-            mensajeLargo: 'El país no puede superar los 100 caracteres.'
+            requerido: true,
+            minLength: 2,
+            maxLength: 2,
+            patron: /^[A-Za-z]{2}$/,
+            mensajeVacio: 'Ingresá el código de país.',
+            mensajeCorto: 'El país debe tener exactamente 2 letras.',
+            mensajeLargo: 'El país debe tener exactamente 2 letras.',
+            mensajePatron: 'El país debe ser un código de 2 letras (ej: AR, BR).'
         }
     ];
 
@@ -255,6 +271,55 @@ $paisEscapado = htmlspecialchars($aerolinea['codPais'], ENT_QUOTES, 'UTF-8');
         });
     }
 </script>
+
+<?php
+
+$alertasEditar = [
+    'campos_vacios' => [
+        'icon'  => 'error',
+        'title' => 'Campo obligatorio',
+        'text'  => 'Todos los campos son obligatorios.'
+    ],
+    'nombre_corto' => [
+        'icon'  => 'error',
+        'title' => 'Nombre muy corto',
+        'text'  => 'El nombre debe tener al menos 2 caracteres.'
+    ],
+    'nombre_largo' => [
+        'icon'  => 'error',
+        'title' => 'Nombre muy largo',
+        'text'  => 'El nombre no puede superar los 100 caracteres.'
+    ],
+    'descripcion_larga' => [
+        'icon'  => 'error',
+        'title' => 'Descripción muy larga',
+        'text'  => 'La descripción no puede superar los 500 caracteres.'
+    ],
+    'pais_invalido' => [
+        'icon'  => 'error',
+        'title' => 'País inválido',
+        'text'  => 'El país debe ser un código de 2 letras (ej: AR, BR).'
+    ],
+    'error_servidor' => [
+        'icon'  => 'error',
+        'title' => 'Error',
+        'text'  => 'Ocurrió un error inesperado. Intente nuevamente.'
+    ]
+];
+
+if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertasEditar)) {
+    $alertaEditar = $alertasEditar[$_GET['alerta']];
+?>
+
+    <script>
+        Swal.fire({
+            icon: '<?= $alertaEditar['icon'] ?>',
+            title: '<?= $alertaEditar['title'] ?>',
+            text: '<?= $alertaEditar['text'] ?>',
+            confirmButtonText: 'Aceptar'
+        });
+    </script>
+<?php } ?>
 
 <?php
 include("../../includes/footer.php");

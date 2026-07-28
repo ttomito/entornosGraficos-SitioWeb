@@ -1,153 +1,156 @@
 <?php
 
-include("../../includes/verificarSession.php");
-include("../../includes/header.php");
-include("../../includes/conexion.php");
+require_once("../../includes/verificarSession.php");
+require_once("../../includes/conexion.php");
 
 $codReserva = (int) ($_GET['codReserva'] ?? 0);
-$idUsuario = (int) $_SESSION['id'];
+$idUsuario  = (int) $_SESSION['id'];
 
 $reserva = null;
+$errorBD = false;
 
 if ($codReserva > 0) {
 
-    $sql = "
+    $sql = "SELECT r.*,
+                   v.origenVuelo,
+                   v.destinoVuelo,
+                   v.fechaVuelo,
+                   v.horaSalida
+            FROM reservas r
+            LEFT JOIN vuelos v ON v.codVuelo = r.codVuelo
+            WHERE r.codReserva = ? AND r.codUsuario = ?";
 
-    SELECT *
+    $stmtReserva = mysqli_prepare($link, $sql);
 
-    FROM reservas
+    if (!$stmtReserva) {
 
-    WHERE codReserva = $codReserva
+        $errorBD = true;
+    } else {
 
-    AND codUsuario = $idUsuario
+        mysqli_stmt_bind_param($stmtReserva, "ii", $codReserva, $idUsuario);
+        mysqli_stmt_execute($stmtReserva);
 
-    ";
+        $resultadoReserva = mysqli_stmt_get_result($stmtReserva);
 
-    $resultado = mysqli_query($link, $sql);
+        if (!$resultadoReserva) {
+            $errorBD = true;
+        } else {
+            $reserva = mysqli_fetch_assoc($resultadoReserva);
+        }
 
-    if ($resultado) {
-        $reserva = mysqli_fetch_assoc($resultado);
+        mysqli_stmt_close($stmtReserva);
     }
 }
 
-if (!$reserva) {
-?>
+$pantallaError = null;
 
-<div class="container mt-5">
+$volverAReserva = 'verReserva.php?codReserva=' . $codReserva;
 
-    <div class="row justify-content-center">
+if ($errorBD) {
 
-        <div class="col-md-8">
+    $pantallaError = [
+        'titulo' => 'Error al consultar la reserva',
+        'texto'  => 'Hubo un problema técnico. Intentá de nuevo en unos minutos.',
+        'href'   => 'listar.php',
+        'link'   => 'Volver',
+    ];
+} elseif (!$reserva) {
 
-            <div class="card card-custom">
+    $pantallaError = [
+        'titulo' => 'Reserva no encontrada',
+        'texto'  => 'La reserva que buscás no existe o no te pertenece.',
+        'href'   => 'listar.php',
+        'link'   => 'Volver',
+    ];
+} elseif ($reserva['estadoReserva'] !== 'PENDIENTE') {
 
-                <div class="card-body p-5 text-center" role="alert">
+    $pantallaError = [
+        'titulo' => 'No se puede pagar esta reserva',
+        'texto'  => 'Su estado actual es "' . $reserva['estadoReserva'] . '".',
+        'href'   => $volverAReserva,
+        'link'   => 'Volver a la reserva',
+    ];
+} elseif (is_null($reserva['origenVuelo'])) {
 
-                    <h2 class="text-danger">
-
-                        Reserva no encontrada
-
-                    </h2>
-
-                    <p>
-
-                        La reserva que buscás no existe o no te pertenece.
-
-                    </p>
-
-                    <a href="listar.php" class="btn btn-secondary">
-
-                        <span aria-hidden="true">←</span> Volver
-
-                    </a>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-<?php
-
-    include("../../includes/footer.php");
-    exit();
+    $pantallaError = [
+        'titulo' => 'No pudimos cargar el vuelo',
+        'texto'  => 'No encontramos el vuelo asociado a esta reserva.',
+        'href'   => $volverAReserva,
+        'link'   => 'Volver a la reserva',
+    ];
 }
 
-if ($reserva['estadoReserva'] !== 'PENDIENTE') {
-?>
+$tsSalida = false;
 
-<div class="container mt-5">
+if ($pantallaError === null && !empty($reserva['fechaVuelo'])) {
 
-    <div class="row justify-content-center">
+    $fechaBase = substr((string) $reserva['fechaVuelo'], 0, 10);
 
-        <div class="col-md-8">
+    $horaBase = !empty($reserva['horaSalida'])
+        ? (string) $reserva['horaSalida']
+        : '00:00:00';
 
-            <div class="card card-custom">
+    $tsSalida = strtotime($fechaBase . ' ' . $horaBase);
 
-                <div class="card-body p-5 text-center" role="alert">
+    if ($tsSalida !== false && $tsSalida < time()) {
 
-                    <h2 class="text-danger">
-
-                        No se puede pagar esta reserva
-
-                    </h2>
-
-                    <p>
-
-                        Su estado actual es "<?= htmlspecialchars($reserva['estadoReserva'], ENT_QUOTES, 'UTF-8') ?>".
-
-                    </p>
-
-                    <a href="verReserva.php?codReserva=<?= $codReserva ?>" class="btn btn-secondary">
-
-                        <span aria-hidden="true">←</span> Volver a la reserva
-
-                    </a>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-<?php
-
-    include("../../includes/footer.php");
-    exit();
-}
-
-$codVuelo = (int) $reserva['codVuelo'];
-
-$vuelo = null;
-
-if ($codVuelo > 0) {
-
-    $sqlvuelos = "
-
-    SELECT *
-
-    FROM vuelos
-
-    WHERE codVuelo = $codVuelo
-
-    ";
-
-    $resultadoVuelo = mysqli_query($link, $sqlvuelos);
-
-    if ($resultadoVuelo) {
-        $vuelo = mysqli_fetch_assoc($resultadoVuelo);
+        $pantallaError = [
+            'titulo' => 'El vuelo ya salió',
+            'texto'  => 'Esta reserva no se puede pagar porque el vuelo ya despegó.',
+            'href'   => $volverAReserva,
+            'link'   => 'Volver a la reserva',
+        ];
     }
 }
 
-if (!$vuelo) {
+include("../../includes/header.php");
+
+if ($pantallaError !== null) {
+?>
+
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card card-custom">
+                    <div class="card-body p-5 text-center" role="alert">
+
+                        <h2 class="text-danger">
+                            <?= htmlspecialchars($pantallaError['titulo'], ENT_QUOTES, 'UTF-8') ?>
+                        </h2>
+
+                        <p>
+                            <?= htmlspecialchars($pantallaError['texto'], ENT_QUOTES, 'UTF-8') ?>
+                        </p>
+
+                        <a
+                            href="<?= htmlspecialchars($pantallaError['href'], ENT_QUOTES, 'UTF-8') ?>"
+                            class="btn btn-secondary">
+                            <span aria-hidden="true">&larr;</span>
+                            <?= htmlspecialchars($pantallaError['link'], ENT_QUOTES, 'UTF-8') ?>
+                        </a>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<?php
+    include("../../includes/footer.php");
+    exit();
+}
+
+$origenOut  = htmlspecialchars($reserva['origenVuelo'], ENT_QUOTES, 'UTF-8');
+$destinoOut = htmlspecialchars($reserva['destinoVuelo'], ENT_QUOTES, 'UTF-8');
+
+$fechaVueloOut = $tsSalida ? date('d/m/Y', $tsSalida) : 'No disponible';
+$fechaVueloISO = $tsSalida ? date('Y-m-d', $tsSalida) : '';
+
+$hayHora       = !empty($reserva['horaSalida']);
+$horaSalidaOut = ($tsSalida && $hayHora) ? date('H:i', $tsSalida) : '';
+
+$tokenCsrf = htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8');
+
 ?>
 
 <div class="container mt-5">
@@ -158,25 +161,76 @@ if (!$vuelo) {
 
             <div class="card card-custom">
 
-                <div class="card-body p-5 text-center" role="alert">
+                <div class="card-body p-5">
 
-                    <h2 class="text-danger">
+                    <h2 id="tituloPagar">Pagar reserva</h2>
 
-                        No pudimos cargar el vuelo
+                    <dl class="row mb-4">
 
-                    </h2>
+                        <dt class="col-sm-5">Origen</dt>
+                        <dd class="col-sm-7"><?= $origenOut ?></dd>
 
-                    <p>
+                        <dt class="col-sm-5">Destino</dt>
+                        <dd class="col-sm-7"><?= $destinoOut ?></dd>
 
-                        No encontramos el vuelo asociado a esta reserva.
+                        <dt class="col-sm-5">Fecha del vuelo</dt>
+                        <dd class="col-sm-7">
+                            <?php if ($fechaVueloISO !== '') { ?>
+                                <time datetime="<?= $fechaVueloISO ?>"><?= $fechaVueloOut ?></time>
+                            <?php } else { ?>
+                                <?= $fechaVueloOut ?>
+                            <?php } ?>
+                        </dd>
 
-                    </p>
+                        <dt class="col-sm-5">Horario del vuelo</dt>
+                        <dd class="col-sm-7">
+                            <?php if ($horaSalidaOut !== '') { ?>
+                                <time datetime="<?= $horaSalidaOut ?>"><?= $horaSalidaOut ?> hs</time>
+                            <?php } else { ?>
+                                No disponible
+                            <?php } ?>
+                        </dd>
 
-                    <a href="verReserva.php?codReserva=<?= $codReserva ?>" class="btn btn-secondary">
+                        <dt class="col-sm-5">Cantidad de asientos</dt>
+                        <dd class="col-sm-7"><?= (int) $reserva['cantAsientos'] ?></dd>
 
-                        <span aria-hidden="true">←</span> Volver a la reserva
+                        <dt class="col-sm-5">Precio total</dt>
+                        <dd class="col-sm-7">
+                            $<?= number_format((float) $reserva['precioFinal'], 0, ',', '.') ?>
+                        </dd>
 
-                    </a>
+                    </dl>
+
+                    <form
+                        action="confirmarPago.php"
+                        method="post"
+                        aria-labelledby="tituloPagar">
+
+                        <input
+                            type="hidden"
+                            name="csrf_token"
+                            value="<?= $tokenCsrf ?>">
+
+                        <input
+                            type="hidden"
+                            name="codReserva"
+                            value="<?= $codReserva ?>">
+
+                        <div class="d-flex flex-wrap gap-2">
+
+                            <button type="submit" class="btn btn-success">
+                                Confirmar pago
+                            </button>
+
+                            <a
+                                href="<?= htmlspecialchars($volverAReserva, ENT_QUOTES, 'UTF-8') ?>"
+                                class="btn btn-outline-secondary">
+                                Cancelar
+                            </a>
+
+                        </div>
+
+                    </form>
 
                 </div>
 
@@ -185,100 +239,6 @@ if (!$vuelo) {
         </div>
 
     </div>
-
-</div>
-
-<?php
-
-    include("../../includes/footer.php");
-    exit();
-}
-
-$origenOut = htmlspecialchars($vuelo['origenVuelo'], ENT_QUOTES, 'UTF-8');
-$destinoOut = htmlspecialchars($vuelo['destinoVuelo'], ENT_QUOTES, 'UTF-8');
-$fechaVueloOut = htmlspecialchars($vuelo['fechaVuelo'], ENT_QUOTES, 'UTF-8');
-
-$error = isset($_GET['error']) ? htmlspecialchars($_GET['error'], ENT_QUOTES, 'UTF-8') : null;
-
-?>
-
-
-<div class="container mt-5">
-
-<div class="row justify-content-center">
-
-<div class="col-md-8">
-
-<div class="card card-custom">
-
-<div class="card-body p-5">
-
-<h2 id="tituloPagar">Pagar reserva</h2>
-
-<?php if ($error !== null) { ?>
-
-<div class="alert alert-danger" role="alert">
-
-    <?= $error ?>
-
-</div>
-
-<?php } ?>
-
-<div class="mb-3">
-    Origen: <?= $origenOut ?>
-</div>
-
-<div class="mb-3">
-    Destino: <?= $destinoOut ?>
-</div>
-
-<div class="mb-3">
-    Fecha: <time datetime="<?= $fechaVueloOut ?>"><?= $fechaVueloOut ?></time>
-</div>
-
-<div class="mb-3">
-    Cantidad de asientos: <?= (int) $reserva['cantAsientos'] ?>
-</div>
-
-<div class="mb-3">
-    Precio total: $<?= number_format($reserva['precioFinal'], 0, ',', '.') ?>
-</div>
-
-<form action="confirmarPago.php" method="post" aria-labelledby="tituloPagar">
-
-    <input
-        type="hidden"
-        name="codReserva"
-        value="<?= $codReserva ?>"
-    >
-
-    <div class="d-flex gap-2">
-
-        <button
-            type="submit"
-            class="btn btn-success"
-        >
-            Confirmar pago
-        </button>
-
-        <a href="verReserva.php?codReserva=<?= $codReserva ?>" class="btn btn-outline-secondary">
-
-            Cancelar
-
-        </a>
-
-    </div>
-
-</form>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
 
 </div>
 

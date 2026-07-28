@@ -242,63 +242,63 @@ if ($tokenValido && $_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <?php if ($tokenValido) { ?>
-<script>
-    (function () {
-        var formulario = document.getElementById('formRestablecer');
-        var clave = document.getElementById('clave');
-        var claveConfirmar = document.getElementById('claveConfirmar');
-        var errorConfirmar = document.getElementById('claveConfirmarError');
+    <script>
+        (function() {
+            var formulario = document.getElementById('formRestablecer');
+            var clave = document.getElementById('clave');
+            var claveConfirmar = document.getElementById('claveConfirmar');
+            var errorConfirmar = document.getElementById('claveConfirmarError');
 
-        // mostrar / ocultar contraseña
-        document.querySelectorAll('.toggle-clave').forEach(function (boton) {
-            boton.addEventListener('click', function () {
-                var idCampo = boton.getAttribute('data-target');
-                var campo = document.getElementById(idCampo);
-                var iconoMostrar = boton.querySelector('.icon-mostrar');
-                var iconoOcultar = boton.querySelector('.icon-ocultar');
-                var seVeAhora = campo.type === 'password';
+            // mostrar / ocultar contraseña
+            document.querySelectorAll('.toggle-clave').forEach(function(boton) {
+                boton.addEventListener('click', function() {
+                    var idCampo = boton.getAttribute('data-target');
+                    var campo = document.getElementById(idCampo);
+                    var iconoMostrar = boton.querySelector('.icon-mostrar');
+                    var iconoOcultar = boton.querySelector('.icon-ocultar');
+                    var seVeAhora = campo.type === 'password';
 
-                campo.type = seVeAhora ? 'text' : 'password';
-                boton.setAttribute('aria-pressed', seVeAhora ? 'true' : 'false');
-                boton.setAttribute('aria-label', seVeAhora ? 'Ocultar contraseña' : 'Mostrar contraseña');
-                iconoMostrar.style.display = seVeAhora ? 'none' : 'inline-block';
-                iconoOcultar.style.display = seVeAhora ? 'inline-block' : 'none';
+                    campo.type = seVeAhora ? 'text' : 'password';
+                    boton.setAttribute('aria-pressed', seVeAhora ? 'true' : 'false');
+                    boton.setAttribute('aria-label', seVeAhora ? 'Ocultar contraseña' : 'Mostrar contraseña');
+                    iconoMostrar.style.display = seVeAhora ? 'none' : 'inline-block';
+                    iconoOcultar.style.display = seVeAhora ? 'inline-block' : 'none';
+                });
             });
-        });
 
-        // contraseñas coincidan antes de enviar
-        function claveCoincide() {
-            var coincide = clave.value === claveConfirmar.value;
-
-            if (!coincide) {
-                claveConfirmar.setCustomValidity('Las contraseñas no coinciden.');
-                errorConfirmar.style.display = 'block';
-            } else {
-                claveConfirmar.setCustomValidity('');
-                errorConfirmar.style.display = 'none';
-            }
-
-            return coincide;
-        }
-
-        clave.addEventListener('input', claveCoincide);
-        claveConfirmar.addEventListener('input', claveCoincide);
-
-        formulario.addEventListener('submit', function (evento) {
-            var esValido = formulario.checkValidity();
-            var coincide = claveCoincide();
-
-            if (!esValido || !coincide) {
-                evento.preventDefault();
-                formulario.reportValidity();
+            // contraseñas coincidan antes de enviar
+            function claveCoincide() {
+                var coincide = clave.value === claveConfirmar.value;
 
                 if (!coincide) {
-                    claveConfirmar.focus();
+                    claveConfirmar.setCustomValidity('Las contraseñas no coinciden.');
+                    errorConfirmar.style.display = 'block';
+                } else {
+                    claveConfirmar.setCustomValidity('');
+                    errorConfirmar.style.display = 'none';
                 }
+
+                return coincide;
             }
-        });
-    })();
-</script>
+
+            clave.addEventListener('input', claveCoincide);
+            claveConfirmar.addEventListener('input', claveCoincide);
+
+            formulario.addEventListener('submit', function(evento) {
+                var esValido = formulario.checkValidity();
+                var coincide = claveCoincide();
+
+                if (!esValido || !coincide) {
+                    evento.preventDefault();
+                    formulario.reportValidity();
+
+                    if (!coincide) {
+                        claveConfirmar.focus();
+                    }
+                }
+            });
+        })();
+    </script>
 <?php } ?>
 
 <?php

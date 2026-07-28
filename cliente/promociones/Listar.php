@@ -8,18 +8,13 @@ $registrosPorPagina = 10;
 $filtroDescripcion = $_GET['descripcion'] ?? '';
 $filtroAerolinea   = $_GET['aerolinea'] ?? '';
 
-$pagina = isset($_GET['pagina'])
-    ? (int)$_GET['pagina'] :
-    1;
+$pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 
 if ($pagina < 1) {
     $pagina = 1;
 }
 
-$inicio =
-    ($pagina - 1)
-    *
-    $registrosPorPagina;
+$inicio = ($pagina - 1) * $registrosPorPagina;
 
 $filtroDescripcionEsc = mysqli_real_escape_string($link, addcslashes($filtroDescripcion, '%_'));
 $filtroAerolineaEsc   = mysqli_real_escape_string($link, addcslashes($filtroAerolinea, '%_'));
@@ -33,6 +28,20 @@ function urlPagina($n, $filtroDescripcion, $filtroAerolinea)
     ]);
 
     return '?' . htmlspecialchars($query, ENT_QUOTES, 'UTF-8');
+}
+
+function abortarConError($link, $contexto){
+    
+    error_log("Promociones - $contexto: " . mysqli_error($link));
+
+    echo '<div class="container mt-4">'
+        . '<div class="alert alert-danger" role="alert">'
+        . 'No se pudieron cargar las promociones en este momento. '
+        . 'Intentá nuevamente más tarde.'
+        . '</div></div>';
+
+    include("../../includes/footer.php");
+    exit();
 }
 
 $sqlConteo = "SELECT COUNT(*) AS total
@@ -51,6 +60,11 @@ if ($filtroAerolinea != '') {
 }
 
 $resultadoConteo = mysqli_query($link, $sqlConteo);
+
+if (!$resultadoConteo) {
+    abortarConError($link, "conteo");
+}
+
 $filaConteo = mysqli_fetch_assoc($resultadoConteo);
 $totalRegistros = $filaConteo['total'];
 $totalPaginas = ceil($totalRegistros / $registrosPorPagina);
@@ -75,7 +89,7 @@ $sql .= " ORDER BY p.codPromocion DESC LIMIT $inicio, $registrosPorPagina;";
 $resultado = mysqli_query($link, $sql);
 
 if (!$resultado) {
-    die("Error en la consulta: " . mysqli_error($link));
+    abortarConError($link, "listado");
 }
 
 
@@ -119,6 +133,7 @@ if (!$resultado) {
                             id="descripcion"
                             name="descripcion"
                             class="form-control"
+                            maxlength="100"
                             placeholder="Ej.: Europa, Dubái, Bariloche..."
                             value="<?= htmlspecialchars($filtroDescripcion, ENT_QUOTES, 'UTF-8') ?>">
 
@@ -137,6 +152,7 @@ if (!$resultado) {
                             id="aerolinea"
                             name="aerolinea"
                             class="form-control"
+                            maxlength="100"
                             placeholder="Ej.: Emirates, LATAM, Iberia..."
                             value="<?= htmlspecialchars($filtroAerolinea, ENT_QUOTES, 'UTF-8') ?>">
 

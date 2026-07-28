@@ -1,10 +1,11 @@
 <?php
 
-include("../../includes/verificarSession.php");
+include("../../includes/verificarSessionAdmin.php");
 include("../../includes/conexion.php");
 include("../../includes/header.php");
 
 $registrosPorPagina = 10;
+$errorConsulta = false;
 
 $pagina = isset($_GET['pagina'])
     ? (int)$_GET['pagina']
@@ -13,73 +14,64 @@ $pagina = isset($_GET['pagina'])
 if ($pagina < 1) {
     $pagina = 1;
 }
-$inicio =
-    ($pagina - 1)
-    *
-    $registrosPorPagina;
-
-
-
 
 $sqlConteo = "
-
-SELECT COUNT(*) AS total
-
-FROM usuarios
-
-WHERE tipoUsuario = 'CEO'
-
-AND aprobadoAdmin = 'SI'
-
+    SELECT COUNT(*) AS total
+    FROM usuarios
+    WHERE tipoUsuario = 'CEO'
+    AND aprobadoAdmin = 'SI'
 ";
 
-$resultadoConteo =
-    mysqli_query($link, $sqlConteo);
+$resultadoConteo = mysqli_query($link, $sqlConteo);
 
-$filaConteo =
-    mysqli_fetch_assoc($resultadoConteo);
+if (!$resultadoConteo) {
+    error_log("Error al contar CEOs: " . mysqli_error($link));
+    $errorConsulta = true;
+    $totalRegistros = 0;
+} else {
+    $filaConteo = mysqli_fetch_assoc($resultadoConteo);
+    $totalRegistros = (int)$filaConteo['total'];
+}
 
-$totalRegistros =
-    $filaConteo['total'];
+$totalPaginas = (int)ceil($totalRegistros / $registrosPorPagina);
 
-$totalPaginas =
-    ceil(
-        $totalRegistros
-            /
-            $registrosPorPagina
-    );
+// Evita pedir una página que no existe
+if ($totalPaginas > 0 && $pagina > $totalPaginas) {
+    $pagina = $totalPaginas;
+}
 
+$inicio = ($pagina - 1) * $registrosPorPagina;
 
+$resultado = null;
 
+if (!$errorConsulta) {
+    $sql = "
+        SELECT
+            u.*,
+            a.nombreAerolinea
+        FROM usuarios u
+        LEFT JOIN aerolineas a ON u.codAerolinea = a.codAerolinea
+        WHERE u.tipoUsuario = 'CEO'
+        AND u.aprobadoAdmin = 'SI'
+        ORDER BY u.nombreUsuario
+        LIMIT ?, ?
+    ";
 
-$sql = "
+    $stmt = mysqli_prepare($link, $sql);
 
-SELECT
-u.*,
-a.nombreAerolinea
+    if (!$stmt) {
+        error_log("Error al preparar el listado de CEOs: " . mysqli_error($link));
+        $errorConsulta = true;
+    } else {
+        mysqli_stmt_bind_param($stmt, "ii", $inicio, $registrosPorPagina);
+        mysqli_stmt_execute($stmt);
+        $resultado = mysqli_stmt_get_result($stmt);
 
-FROM usuarios u
-
-LEFT JOIN aerolineas a
-ON u.codAerolinea = a.codAerolinea
-
-WHERE u.tipoUsuario = 'CEO'
-
-AND u.aprobadoAdmin = 'SI'
-
-ORDER BY
-u.nombreUsuario
-
-LIMIT $inicio,
-$registrosPorPagina
-
-";
-
-$resultado =
-    mysqli_query($link, $sql);
-
-if (!$resultado) {
-    die("Error en la consulta: " . mysqli_error($link));
+        if (!$resultado) {
+            error_log("Error al listar CEOs: " . mysqli_error($link));
+            $errorConsulta = true;
+        }
+    }
 }
 ?>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -99,7 +91,11 @@ if (!$resultado) {
         <div class="card-body">
 
 
-            <?php if (mysqli_num_rows($resultado) == 0) { ?>
+            <?php if ($errorConsulta) { ?>
+
+                <p class="text-danger">Ocurrió un error al cargar el listado. Intentá nuevamente más tarde.</p>
+
+            <?php } elseif (mysqli_num_rows($resultado) === 0) { ?>
 
                 <p class="text-muted">
 
@@ -149,7 +145,7 @@ if (!$resultado) {
                                 <td>
 
                                     <a
-                                        href="asignar.php?id=<?= $fila['codUsuario'] ?>"
+                                        href="asignar.php?id=<?= (int)$fila['codUsuario'] ?>"
                                         class="btn btn-primary btn-sm"
                                         aria-label="Asignar aerolínea a <?= $nombreEscapado ?>">
 
@@ -254,6 +250,11 @@ $alertasAsignacion = [
         'icon'  => 'success',
         'title' => '¡Asignada!',
         'text'  => 'La aerolínea fue asignada correctamente.'
+    ],
+    'no_encontrada' => [
+        'icon'  => 'error',
+        'title' => 'Error',
+        'text'  => 'El CEO indicado no existe o no está aprobado.'
     ],
     'error_servidor' => [
         'icon'  => 'error',

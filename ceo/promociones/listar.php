@@ -1,42 +1,72 @@
 <?php
 
-include("../../includes/verificarSession.php");
+include("../../includes/verificarSessionCEO.php");
 include("../../includes/conexion.php");
 include("../../includes/header.php");
 
 $registrosPorPagina = 10;
+$errorConsulta = false;
 
-$pagina = isset($_GET['pagina'])
-    ? (int)$_GET['pagina']
-    : 1;
+$pagina = isset($_GET['pagina']) ? (int)$_GET['pagina']: 1;
 
 if ($pagina < 1) {
     $pagina = 1;
 }
 
-$inicio = ($pagina - 1) * $registrosPorPagina;
-
-
 $idCEO = (int) ($_SESSION['id'] ?? 0);
+$codAerolinea = null;
 
-if ($idCEO <= 0) {
-    die("Acceso denegado");
+if ($idCEO > 0) {
+    $sqlCEO = "SELECT codAerolinea FROM usuarios WHERE codUsuario = ?";
+    $stmtCEO = mysqli_prepare($link, $sqlCEO);
+
+    if (!$stmtCEO) {
+        error_log("Error al preparar la consulta de CEO: " . mysqli_error($link));
+        $errorConsulta = true;
+    } else {
+        mysqli_stmt_bind_param($stmtCEO, "i", $idCEO);
+        mysqli_stmt_execute($stmtCEO);
+        $resultadoCEO = mysqli_stmt_get_result($stmtCEO);
+        $ceo = $resultadoCEO ? mysqli_fetch_assoc($resultadoCEO) : null;
+        mysqli_stmt_close($stmtCEO);
+
+        if ($ceo && $ceo['codAerolinea'] !== null) {
+            $codAerolinea = (int) $ceo['codAerolinea'];
+        }
+    }
+} else {
+    $errorConsulta = true;
 }
 
-$sqlCEO = "
-SELECT codAerolinea 
-FROM usuarios 
-WHERE codUsuario = $idCEO";
+if ($errorConsulta) {
+?>
 
-$resultadoCEO = mysqli_query($link, $sqlCEO);
+    <main id="contenido-principal">
 
-if (!$resultadoCEO) {
-    die(mysqli_error($link));
+        <div class="container mt-5">
+
+            <div class="row justify-content-center">
+
+                <div class="col-md-8">
+
+                    <div class="alert alert-danger" role="alert">
+                        Ocurrió un error al cargar tus datos. Intentá nuevamente más tarde.
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+<?php
+    include("../../includes/footer.php");
+    exit();
 }
 
-$ceo = mysqli_fetch_assoc($resultadoCEO);
-
-if (!$ceo || $ceo['codAerolinea'] === null) {
+if ($codAerolinea === null) {
 ?>
 
     <main id="contenido-principal">
@@ -81,34 +111,49 @@ if (!$ceo || $ceo['codAerolinea'] === null) {
     exit();
 }
 
-$codAerolinea = (int) $ceo['codAerolinea'];
+$sqlConteo = "SELECT COUNT(*) AS total FROM promociones WHERE codAerolinea = ?";
+$stmtConteo = mysqli_prepare($link, $sqlConteo);
 
-$sqlConteo = " 
-SELECT COUNT(*) AS total 
-FROM promociones 
-WHERE codAerolinea = $codAerolinea
-";
-
-$resultadoConteo = mysqli_query($link, $sqlConteo);
-
-if (!$resultadoConteo) {
-    die(mysqli_error($link));
+if (!$stmtConteo) {
+    error_log("Error al preparar el conteo: " . mysqli_error($link));
+    $errorConsulta = true;
+    $totalRegistros = 0;
+} else {
+    mysqli_stmt_bind_param($stmtConteo, "i", $codAerolinea);
+    mysqli_stmt_execute($stmtConteo);
+    $resultadoConteo = mysqli_stmt_get_result($stmtConteo);
+    $filaConteo = $resultadoConteo ? mysqli_fetch_assoc($resultadoConteo) : null;
+    $totalRegistros = $filaConteo ? (int)$filaConteo['total'] : 0;
+    mysqli_stmt_close($stmtConteo);
 }
 
-$filaConteo = mysqli_fetch_assoc($resultadoConteo);
-$totalRegistros = $filaConteo['total'];
-$totalPaginas = ceil($totalRegistros / $registrosPorPagina);
+$totalPaginas = (int) ceil($totalRegistros / $registrosPorPagina);
 
-$sql = "
-SELECT * 
-FROM promociones 
-WHERE codAerolinea = $codAerolinea 
-ORDER BY codPromocion DESC
-LIMIT $inicio, $registrosPorPagina";
+if ($totalPaginas > 0 && $pagina > $totalPaginas) {
+    $pagina = $totalPaginas;
+}
 
-$resultado = mysqli_query($link, $sql);
-if (!$resultado) {
-    die(mysqli_error($link));
+$inicio = ($pagina - 1) * $registrosPorPagina;
+
+$resultado = null;
+
+if (!$errorConsulta) {
+    $sql = "SELECT * FROM promociones WHERE codAerolinea = ? ORDER BY codPromocion DESC LIMIT ?, ?";
+    $stmt = mysqli_prepare($link, $sql);
+
+    if (!$stmt) {
+        error_log("Error al preparar el listado de promociones: " . mysqli_error($link));
+        $errorConsulta = true;
+    } else {
+        mysqli_stmt_bind_param($stmt, "iii", $codAerolinea, $inicio, $registrosPorPagina);
+        mysqli_stmt_execute($stmt);
+        $resultado = mysqli_stmt_get_result($stmt);
+
+        if (!$resultado) {
+            error_log("Error al listar promociones: " . mysqli_error($link));
+            $errorConsulta = true;
+        }
+    }
 }
 
 ?>
@@ -126,7 +171,13 @@ if (!$resultado) {
 
         </div>
 
-        <?php if (mysqli_num_rows($resultado) > 0) { ?>
+        <?php if ($errorConsulta) { ?>
+
+            <div class="alert alert-danger" role="alert">
+                Ocurrió un error al cargar el listado. Intentá nuevamente más tarde.
+            </div>
+
+        <?php } elseif (mysqli_num_rows($resultado) > 0) { ?>
 
             <div class="card card-custom">
 
@@ -175,12 +226,14 @@ if (!$resultado) {
                                                 <span class="visually-hidden"> promoción "<?= $descripcionOut ?>"</span>
                                             </a>
 
-                                            <a href="eliminar.php?id=<?= $codPromocionInt ?>"
-                                                class="btn btn-danger btn-sm eliminar-promocion"
-                                                data-descripcion="<?= $descripcionOut ?>">
-                                                Eliminar
-                                                <span class="visually-hidden"> promoción "<?= $descripcionOut ?>"</span>
-                                            </a>
+                                            <form action="eliminar.php" method="post" class="d-inline" data-descripcion="<?= $descripcionOut ?>">
+                                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
+                                                <input type="hidden" name="id" value="<?= $codPromocionInt ?>">
+                                                <button type="submit" class="btn btn-danger btn-sm eliminar-promocion">
+                                                    Eliminar
+                                                    <span class="visually-hidden"> promoción "<?= $descripcionOut ?>"</span>
+                                                </button>
+                                            </form>
                                         </td>
                                     </tr>
 
@@ -260,6 +313,11 @@ $alertas = [
         'title' => 'Error',
         'text'  => 'Ocurrió un error inesperado. Intente nuevamente.'
     ],
+    'no_encontrada' => [
+        'icon'  => 'error',
+        'title' => 'Error',
+        'text'  => 'No se encontró la promoción.'
+    ],
     'creada' => [
         'icon'  => 'success',
         'title' => '¡Creado!',
@@ -267,8 +325,8 @@ $alertas = [
     ],
     'eliminado' => [
         'icon'  => 'success',
-        'title' => '¡Oculto!',
-        'text'  => 'Se ha ocultado el vuelo y sus reservas.'
+        'title' => '¡Eliminada!',
+        'text'  => 'Se ha eliminado la promoción.'
     ],
     'modificada' => [
         'icon'  => 'success',
@@ -306,18 +364,24 @@ if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)) {
 <?php }; ?>
 
 <script>
-    document.querySelectorAll('.eliminar-promocion').forEach(function(enlace) {
-        enlace.addEventListener('click', function(evento) {
+    document.querySelectorAll('.eliminar-promocion').forEach(function(boton) {
+        boton.addEventListener('click', function(evento) {
+
+            const formulario = boton.closest('form');
+            const descripcion = formulario.dataset.descripcion;
 
             if (typeof Swal === 'undefined') {
-                return confirm('¿Eliminar la promoción "' + enlace.dataset.descripcion + '"?');
+                if (confirm('¿Eliminar la promoción "' + descripcion + '"?')) {
+                    formulario.submit();
+                }
+                return;
             }
 
             evento.preventDefault();
 
             Swal.fire({
                 title: '¿Eliminar promoción?',
-                text: '¿Desea eliminar la promoción "' + enlace.dataset.descripcion + '"? Esta acción no se puede deshacer.',
+                text: '¿Desea eliminar la promoción "' + descripcion + '"? Esta acción no se puede deshacer.',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#dc3545',
@@ -326,49 +390,11 @@ if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)) {
                 cancelButtonText: 'Cancelar'
             }).then((resultado) => {
                 if (resultado.isConfirmed) {
-                    window.location.href = enlace.href;
+                    formulario.submit();
                 }
             });
         });
     });
-
-    function ocultarVuelo(event, elemento) {
-        event.preventDefault();
-
-        Swal.fire({
-            title: '¿Estás seguro?',
-            text: '¿Desea ocultar este vuelo? Al hacerlo también se desactivarán las reservas asociadas.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#dc3545',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Sí, ocultar',
-            cancelButtonText: 'Cancelar'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = elemento.href;
-            }
-        });
-    }
-
-    function activarVuelo(event, elemento) {
-        event.preventDefault();
-
-        Swal.fire({
-            title: '¿Estás seguro?',
-            text: '¿Desea activar el vuelo? Al hacerlo también se activarán las reservas asociadas',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#198754',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Sí, activar',
-            cancelButtonText: 'Cancelar'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = elemento.href;
-            }
-        });
-    }
 </script>
 
 <?php

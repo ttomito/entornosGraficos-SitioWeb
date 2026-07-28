@@ -1,6 +1,6 @@
 <?php
 
-include("../../includes/verificarSession.php");
+include("../../includes/verificarSessionAdmin.php");
 include("../../includes/conexion.php");
 include("../../includes/header.php");
 
@@ -57,8 +57,8 @@ $imagenEscapada = htmlspecialchars($novedad['imagen'] ?? '', ENT_QUOTES, 'UTF-8'
 
                     <form action="actualizar.php" method="post" enctype="multipart/form-data" aria-labelledby="titulo-form">
 
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="id" value="<?= (int)$novedad['codNovedad'] ?>">
-                        <input type="hidden" name="imagenActual" value="<?= $imagenEscapada ?>">
 
                         <div class="mb-3">
 
@@ -71,38 +71,40 @@ $imagenEscapada = htmlspecialchars($novedad['imagen'] ?? '', ENT_QUOTES, 'UTF-8'
                                 value="<?= $tituloEscapado ?>"
                                 required
                                 minlength="3"
-                                maxlength="150"
+                                maxlength="100"
                                 aria-required="true"
                                 aria-describedby="tituloAyuda">
-                            <small id="tituloAyuda" class="form-text text-muted">Entre 3 y 150 caracteres.</small>
+                            <small id="tituloAyuda" class="form-text text-muted">Entre 3 y 100 caracteres.</small>
 
                         </div>
 
                         <div class="mb-3">
 
-                            <label for="texto">Novedad</label>
+                            <label for="texto">Novedad <span aria-hidden="true">*</span></label>
                             <textarea
                                 id="texto"
                                 name="texto"
                                 class="form-control"
                                 rows="4"
-                                maxlength="2000"
+                                required
+                                maxlength="500"
+                                aria-required="true"
                                 aria-describedby="textoAyuda"><?= $textoEscapado ?></textarea>
-                            <small id="textoAyuda" class="form-text text-muted">Hasta 2000 caracteres.</small>
+                            <small id="textoAyuda" class="form-text text-muted">Hasta 500 caracteres.</small>
 
                         </div>
 
                         <div class="mb-3">
 
-                            <label for="publicacion">Fecha Publicación</label>
-                            <input type="date" id="publicacion" name="publicacion" value="<?= $publicacionEscapada ?>" class="form-control">
+                            <label for="publicacion">Fecha Publicación <span aria-hidden="true">*</span></label>
+                            <input type="date" id="publicacion" name="publicacion" value="<?= $publicacionEscapada ?>" class="form-control" required aria-required="true">
 
                         </div>
 
                         <div class="mb-3">
 
-                            <label for="expiracion">Fecha Expiración</label>
-                            <input type="date" id="expiracion" name="expiracion" value="<?= $expiracionEscapada ?>" class="form-control">
+                            <label for="expiracion">Fecha Expiración <span aria-hidden="true">*</span></label>
+                            <input type="date" id="expiracion" name="expiracion" value="<?= $expiracionEscapada ?>" class="form-control" required aria-required="true">
 
                         </div>
 
@@ -187,6 +189,64 @@ $imagenEscapada = htmlspecialchars($novedad['imagen'] ?? '', ENT_QUOTES, 'UTF-8'
         });
     }
 </script>
+
+<?php
+$alertasEditarNovedad = [
+    'campos_vacios' => [
+        'icon'  => 'error',
+        'title' => '¡Error!',
+        'text'  => 'Los campos no pueden ser vacíos.'
+    ],
+    'titulo_corto' => [
+        'icon'  => 'error',
+        'title' => 'Título muy corto',
+        'text'  => 'El título debe tener al menos 3 caracteres.'
+    ],
+    'titulo_largo' => [
+        'icon'  => 'error',
+        'title' => 'Título muy largo',
+        'text'  => 'El título no puede superar los 100 caracteres.'
+    ],
+    'texto_largo' => [
+        'icon'  => 'error',
+        'title' => 'Texto muy largo',
+        'text'  => 'El texto no puede superar los 500 caracteres.'
+    ],
+    'imagen_invalida' => [
+        'icon'  => 'error',
+        'title' => '¡Error!',
+        'text'  => 'Formato de la imagen inválido.'
+    ],
+    'imagen_muy_grande' => [
+        'icon'  => 'error',
+        'title' => '¡Error!',
+        'text'  => 'La imagen puede pesar hasta 3MB.'
+    ],
+    'error_imagen' => [
+        'icon'  => 'error',
+        'title' => '¡Error!',
+        'text'  => 'Ocurrió un error con la imagen.'
+    ],
+    'error_servidor' => [
+        'icon'  => 'error',
+        'title' => 'Error',
+        'text'  => 'Ocurrió un error inesperado. Intente nuevamente.'
+    ],
+];
+
+if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertasEditarNovedad)) {
+    $alertaEditarNovedad = $alertasEditarNovedad[$_GET['alerta']];
+?>
+
+    <script>
+        Swal.fire({
+            icon: '<?= $alertaEditarNovedad['icon'] ?>',
+            title: '<?= $alertaEditarNovedad['title'] ?>',
+            text: '<?= $alertaEditarNovedad['text'] ?>',
+            confirmButtonText: 'Aceptar'
+        });
+    </script>
+<?php } ?>
 
 <?php
 include("../../includes/footer.php");
