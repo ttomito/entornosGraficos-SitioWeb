@@ -230,7 +230,7 @@ include("includes/header.php");
                         class="card  netflix-card shadow border-0 card-hover">
 
                         <img
-                            src="<?= htmlspecialchars($destino['imagenVuelo'], ENT_QUOTES, 'UTF-8') ?>"
+                            src="uploads/vuelos/<?= htmlspecialchars($destino['imagenVuelo'], ENT_QUOTES, 'UTF-8') ?>"
                             alt="Vista del destino <?= $nombreDestino ?>"
                             title="<?= $nombreDestino ?>"
                             class="card-img-top"
