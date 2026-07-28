@@ -2,7 +2,7 @@
 
 $host = "localhost";
 $usuario = "root";
-$password = "";
+$password = "HolaMundo!123";
 $baseDatos = "sistema_vuelos";
 
 $link = mysqli_connect(

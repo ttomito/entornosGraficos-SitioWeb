@@ -284,7 +284,7 @@ include("includes/header.php");
 
 
 
-        </div>
+    
     </section>
 
     <?php if (mysqli_num_rows($promociones) > 0) { ?>
@@ -605,7 +605,6 @@ include("includes/header.php");
 
 
 
-        </div>
     </section>
 
 

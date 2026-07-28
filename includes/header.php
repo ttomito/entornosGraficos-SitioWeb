@@ -83,7 +83,7 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
+                            <a class="nav-link <?= strpos($rutaActual,'Sobrenosotros') !== false ? 'active-menu' : '' ?>"
                                 href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php">
 
                                 Sobre Nosotros
@@ -152,7 +152,7 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
+                            <a class="nav-link <?= strpos($rutaActual,'cliente/dashboard.php') !== false ? 'active-menu' : '' ?>"
                                 href="/entornosGraficos-SitioWeb/cliente/dashboard.php">
 
                                 Inicio
@@ -163,7 +163,7 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
+                            <a class="nav-link <?= strpos($rutaActual,'cliente/vuelos') !== false ? 'active-menu' : '' ?>"
                                 href="/entornosGraficos-SitioWeb/cliente/vuelos/listar.php">
 
                                 Vuelos
@@ -174,7 +174,7 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
+                            <a class="nav-link <?= strpos($rutaActual,'cliente/reservas') !== false ? 'active-menu' : '' ?>"
                                 href="/entornosGraficos-SitioWeb/cliente/reservas/listar.php">
 
                                 Reservas
@@ -185,7 +185,7 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
+                            <a class="nav-link <?= strpos($rutaActual,'cliente/promociones') !== false ? 'active-menu' : '' ?>"
                                 href="/entornosGraficos-SitioWeb/cliente/promociones/listar.php">
 
                                 Promociones
@@ -196,7 +196,7 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
+                            <a class="nav-link <?= strpos($rutaActual,'cliente/novedades') !== false ? 'active-menu' : '' ?>"
                                 href="/entornosGraficos-SitioWeb/cliente/novedades/listar.php">
 
                                 Novedades
@@ -207,7 +207,7 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
+                            <a class="nav-link <?= strpos($rutaActual,'perfil') !== false ? 'active-menu' : '' ?>"
                                 href="/entornosGraficos-SitioWeb/perfil/index.php">
 
                                 Mi Perfil
@@ -222,7 +222,7 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
+                            <a class="nav-link <?= strpos($rutaActual,'Sobrenosotros') !== false ? 'active-menu' : '' ?>"
                                 href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php">
 
                                 Sobre Nosotros
@@ -233,7 +233,7 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
+                            <a class="nav-link <?= strpos($rutaActual,'ceo/dashboard.php') !== false ? 'active-menu' : '' ?>"
                                 href="/entornosGraficos-SitioWeb/ceo/dashboard.php">
 
                                 Dashboard
@@ -244,7 +244,7 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
+                            <a class="nav-link <?= strpos($rutaActual,'ceo/vuelos') !== false ? 'active-menu' : '' ?>"
                                 href="/entornosGraficos-SitioWeb/ceo/vuelos/listar.php">
 
                                 Mis Vuelos
@@ -255,7 +255,7 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
+                            <a class="nav-link <?= strpos($rutaActual,'ceo/promociones') !== false ? 'active-menu' : '' ?>"
                                 href="/entornosGraficos-SitioWeb/ceo/promociones/listar.php">
 
                                 Promociones
@@ -266,7 +266,7 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
+                            <a class="nav-link <?= strpos($rutaActual,'perfil') !== false ? 'active-menu' : '' ?>"
                                 href="/entornosGraficos-SitioWeb/perfil/index.php">
 
                                 Mi Perfil
@@ -281,7 +281,7 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
+                            <a class="nav-link <?= strpos($rutaActual,'Sobrenosotros') !== false ? 'active-menu' : '' ?>"
                                 href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php">
 
                                 Sobre Nosotros
@@ -292,7 +292,7 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
+                            <a class="nav-link <?= strpos($rutaActual,'admin/dashboard.php') !== false ? 'active-menu' : '' ?>"
                                 href="/entornosGraficos-SitioWeb/admin/dashboard.php">
 
                                 Dashboard
@@ -303,8 +303,9 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/admin/aerolineas/listar.php">
+                           <a
+class="nav-link active-menu"
+href="/entornosGraficos-SitioWeb/admin/aerolineas/listar.php">
 
                                 Aerolíneas
 
@@ -314,7 +315,7 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
+                            <a class="nav-link <?= strpos($rutaActual,'admin/ceos') !== false ? 'active-menu' : '' ?>"
                                 href="/entornosGraficos-SitioWeb/admin/ceos/listar.php">
 
                                 CEOs
@@ -324,7 +325,7 @@ $rutaActual = $_SERVER['PHP_SELF'];
                         </li>
                           <li class="nav-item">
 
-                            <a class="nav-link"
+                            <a class="nav-link <?= strpos($rutaActual,'admin/asignaciones') !== false ? 'active-menu' : '' ?>"
                                 href="/entornosGraficos-SitioWeb/admin/asignaciones/listar.php">
 
                                 Asignaciones
@@ -335,7 +336,7 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
+                            <a class="nav-link <?= strpos($rutaActual,'admin/promociones') !== false ? 'active-menu' : '' ?>"
                                 href="/entornosGraficos-SitioWeb/admin/promociones/listar.php">
 
                                 Promociones
@@ -346,7 +347,7 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
+                            <a class="nav-link <?= strpos($rutaActual,'admin/novedades') !== false ? 'active-menu' : '' ?>"
                                 href="/entornosGraficos-SitioWeb/admin/novedades/listar.php">
 
                                 Novedades
@@ -357,7 +358,7 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
+                            <a class="nav-link <?= strpos($rutaActual,'perfil') !== false ? 'active-menu' : '' ?>"
                                 href="/entornosGraficos-SitioWeb/perfil/index.php">
 
                                 Mi Perfil
