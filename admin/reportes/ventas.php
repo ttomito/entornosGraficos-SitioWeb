@@ -6,88 +6,40 @@ include("../../includes/header.php");
 
 $registrosPorPagina = 10;
 
-$pagina = isset($_GET['pagina'])
-? (int)$_GET['pagina']
-: 1;
+$pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 
-if($pagina < 1)
-{
+if ($pagina < 1) {
     $pagina = 1;
 }
 
-$inicio =
-($pagina - 1)
-*
-$registrosPorPagina;
+$inicio = ($pagina - 1) * $registrosPorPagina;
 
+$sqlConteo = "SELECT COUNT(*) AS total FROM reservas WHERE estadoReserva = 'CONFIRMADA'";
 
-/*
-| Conteo
-*/
-
-$sqlConteo = "
-
-SELECT COUNT(*) AS total
-
-FROM reservas
-
-WHERE estadoReserva = 'CONFIRMADA'
-
-";
-
-$resultadoConteo = mysqli_query($link,$sqlConteo);
+$resultadoConteo = mysqli_query($link, $sqlConteo);
 
 $filaConteo = mysqli_fetch_assoc($resultadoConteo);
 
 $totalRegistros = $filaConteo['total'];
 
-$totalPaginas = ceil(
-$totalRegistros
-/
-$registrosPorPagina
-);
+$totalPaginas = ceil($totalRegistros/$registrosPorPagina);
 
-
-/*
-| Consulta principal
-*/
-
-$sql = "
-
-SELECT
-r.codReserva,
-u.nombreUsuario,
-a.nombreAerolinea,
-v.origenVuelo,
-v.destinoVuelo,
-r.fechaReserva,
-r.precioFinal
-
+$sql = "SELECT r.codReserva, u.nombreUsuario, a.nombreAerolinea, v.origenVuelo, v.destinoVuelo, r.fechaReserva, r.precioFinal
 FROM reservas r
-
 INNER JOIN usuarios u
 ON r.codUsuario = u.codUsuario
-
 INNER JOIN vuelos v
 ON r.codVuelo = v.codVuelo
-
 INNER JOIN aerolineas a
 ON v.codAerolinea = a.codAerolinea
-
 WHERE r.estadoReserva = 'CONFIRMADA'
-
 ORDER BY r.fechaReserva DESC
+LIMIT $inicio, $registrosPorPagina";
 
-LIMIT $inicio,
-$registrosPorPagina
+$resultado = mysqli_query($link, $sql);
 
-";
-
-$resultado = mysqli_query($link,$sql);
-
-if(!$resultado)
-{
-    die("Error en la consulta: ".mysqli_error($link));
+if (!$resultado) {
+    die("Error en la consulta: " . mysqli_error($link));
 }
 
 $sqlTotal = " SELECT SUM(precioFinal) total FROM reservas WHERE estadoReserva = 'CONFIRMADA'";
@@ -111,127 +63,121 @@ $totalVentas = mysqli_fetch_assoc(mysqli_query($link, $sqlTotal));
 
             </div>
 
-<?php if(mysqli_num_rows($resultado)==0){ ?>
+            <?php if (mysqli_num_rows($resultado) == 0) { ?>
 
-<p class="text-muted">
+                <p class="text-muted">
 
-No hay ventas registradas.
+                    No hay ventas registradas.
 
-</p>
+                </p>
 
-<?php } else { ?>
+            <?php } else { ?>
 
-<table class="table table-hover">
-                <thead>
-
-                    <tr>
-
-                        <th>ID</th>
-                        <th>Cliente</th>
-                        <th>Aerolínea</th>
-                        <th>Origen</th>
-                        <th>Destino</th>
-                        <th>Fecha</th>
-                        <th>Importe</th>
-
-                    </tr>
-
-                </thead>
-
-                <tbody>
-
-                    <?php while ($fila = mysqli_fetch_assoc($resultado)) { ?>
+                <table class="table table-hover">
+                    <thead>
 
                         <tr>
 
-                            <td><?= $fila['codReserva'] ?></td>
-                            <td><?= $fila['nombreUsuario'] ?></td>
-                            <td><?= $fila['nombreAerolinea'] ?></td>
-                            <td><?= $fila['origenVuelo'] ?></td>
-                            <td><?= $fila['destinoVuelo'] ?></td>
-                            <td><?= $fila['fechaReserva'] ?></td>
-                            <td>$<?= $fila['precioFinal'] ?></td>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Aerolínea</th>
+                            <th>Origen</th>
+                            <th>Destino</th>
+                            <th>Fecha</th>
+                            <th>Importe</th>
 
                         </tr>
 
-                    <?php } ?>
+                    </thead>
 
-                </tbody>
+                    <tbody>
 
-            </table>
+                        <?php while ($fila = mysqli_fetch_assoc($resultado)) { ?>
+
+                            <tr>
+
+                                <td><?= $fila['codReserva'] ?></td>
+                                <td><?= $fila['nombreUsuario'] ?></td>
+                                <td><?= $fila['nombreAerolinea'] ?></td>
+                                <td><?= $fila['origenVuelo'] ?></td>
+                                <td><?= $fila['destinoVuelo'] ?></td>
+                                <td><?= $fila['fechaReserva'] ?></td>
+                                <td>$<?= $fila['precioFinal'] ?></td>
+
+                            </tr>
+
+                        <?php } ?>
+
+                    </tbody>
+
+                </table>
 
             <?php } ?>
 
-<div class="d-flex justify-content-center mt-4">
+            <div class="d-flex justify-content-center mt-4">
 
-<nav>
+                <nav>
 
-<ul class="pagination">
+                    <ul class="pagination">
 
-<?php if($pagina>1){ ?>
+                        <?php if ($pagina > 1) { ?>
 
-<li class="page-item">
+                            <li class="page-item">
 
-<a
-class="page-link"
-href="?pagina=<?= $pagina-1 ?>">
+                                <a
+                                    class="page-link"
+                                    href="?pagina=<?= $pagina - 1 ?>">
 
-Anterior
+                                    Anterior
 
-</a>
+                                </a>
 
-</li>
+                            </li>
 
-<?php } ?>
+                        <?php } ?>
 
-<?php
+                        <?php
 
-for(
-$i=1;
-$i<=$totalPaginas;
-$i++
-)
-{
+                        for ($i = 1; $i <= $totalPaginas; $i++) {
 
-?>
+                        ?>
 
-<li
-class="page-item
-<?= $i==$pagina ? 'active' : '' ?>">
+                            <li
+                                class="page-item <?= $i == $pagina ? 'active' : '' ?>">
 
-<a
-class="page-link"
-href="?pagina=<?= $i ?>">
+                                <a
+                                    class="page-link"
+                                    href="?pagina=<?= $i ?>">
 
-<?= $i ?>
+                                    <?= $i ?>
 
-</a>
+                                </a>
 
-</li>
+                            </li>
 
-<?php } ?>
+                        <?php } ?>
 
-<?php if($pagina<$totalPaginas){ ?>
+                        <?php if ($pagina < $totalPaginas) { ?>
 
-<li class="page-item">
+                            <li class="page-item">
 
-<a
-class="page-link"
-href="?pagina=<?= $pagina+1 ?>">
+                                <a
+                                    class="page-link"
+                                    href="?pagina=<?= $pagina + 1 ?>">
 
-Siguiente
+                                    Siguiente
 
-</a>
+                                </a>
 
-</li>
+                            </li>
 
-<?php } ?>
+                        <?php } ?>
 
-</ul>
+                    </ul>
 
-</nav>
+                </nav>
 
-</div>
+            </div>
 
         </div>
 

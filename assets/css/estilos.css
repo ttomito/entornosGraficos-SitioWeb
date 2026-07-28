@@ -209,6 +209,7 @@ td {
 .hero h1:hover {
   transform: scale(1.02);
 }
+
 .netflix-wrapper {
   position: relative;
 }
@@ -254,4 +255,58 @@ td {
 
 .netflix-next {
   right: -25px;
+}
+
+.navbar-custom .nav-link.active {
+  color: #ffc107;
+  font-weight: 600;
+  position: relative;
+}
+
+.navbar-custom .nav-link.active::after {
+  content: "";
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: -2px;
+  height: 2px;
+  background-color: #ffc107;
+  border-radius: 2px;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+a.btn:focus-visible,
+a.page-link:focus-visible,
+button:focus-visible {
+  outline: 3px solid #0d6efd;
+  outline-offset: 2px;
+}
+
+.texto-secundario-accesible {
+  color: #495057;
+}
+
+.img-vuelo {
+  width: 120px;
+  height: 80px;
+  border-radius: 7px;
+  object-fit: cover;
+}
+
+.img-vuelo-placeholder {
+  width: 120px;
+  height: 80px;
+  border-radius: 7px;
+  background-color: #e9ecef;
 }

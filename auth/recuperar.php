@@ -23,23 +23,34 @@ include("../includes/header.php");
                     <hr>
 
                     <?php
-                    if(isset($_GET['ok']))
-                    {
+                    if (isset($_GET['ok'])) {
                     ?>
                         <div class="alert alert-success" role="alert">
 
-                            Revisá tu correo electrónico.
+                            Si existe una cuenta con ese correo, te enviamos un enlace
+                            para cambiar la contraseña. Revisá tu bandeja de entrada
+                            y la carpeta de correo no deseado.
 
                         </div>
                     <?php
                     }
 
-                    if(isset($_GET['error']))
-                    {
+                    if (isset($_GET['invalido'])) {
+                    ?>
+                        <div class="alert alert-warning" role="alert">
+
+                            Ingresá una dirección de correo válida.
+
+                        </div>
+                    <?php
+                    }
+
+                    if (isset($_GET['error'])) {
                     ?>
                         <div class="alert alert-danger" role="alert">
 
-                            No existe una cuenta con ese correo.
+                            No pudimos procesar tu pedido en este momento.
+                            Intentá nuevamente en unos minutos.
 
                         </div>
                     <?php
@@ -88,6 +99,14 @@ include("../includes/header.php");
 
                         </button>
 
+                        <a
+                            href="login.php"
+                            class="d-inline-block mt-3">
+
+                            Volver al inicio de sesión
+
+                        </a>
+
                     </form>
 
                 </div>
@@ -101,10 +120,10 @@ include("../includes/header.php");
 </div>
 
 <script>
-    (function () {
+    (function() {
         var formulario = document.getElementById('formRecuperar');
 
-        formulario.addEventListener('submit', function (evento) {
+        formulario.addEventListener('submit', function(evento) {
             if (!formulario.checkValidity()) {
                 evento.preventDefault();
                 formulario.reportValidity();

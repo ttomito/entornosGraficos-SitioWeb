@@ -1,26 +1,142 @@
 <?php
 
-include("../../includes/verificarSession.php");
-include("../../includes/header.php");
-include("../../includes/conexion.php");
+require_once("../../includes/verificarSession.php");
 
-$codVuelo = (int) ($_GET['codVuelo'] ?? 0);
+if (($_SESSION['tipo'] ?? '') !== 'CLIENTE') {
+    header("Location: ".ruta."/index.php");
+    exit();
+}
+
+require_once("../../includes/conexion.php");
+
+$codVuelo  = (int) ($_GET['codVuelo'] ?? 0);
 $idUsuario = (int) $_SESSION['id'];
+
+$flash = isset($_SESSION['flash']) ? $_SESSION['flash'] : null;
+unset($_SESSION['flash']);
 
 $vuelo = null;
 
 if ($codVuelo > 0) {
 
-    $sql = "SELECT * FROM vuelos WHERE codVuelo = $codVuelo";
-    $resultado = mysqli_query($link, $sql);
+    $sql = "SELECT * FROM vuelos WHERE codVuelo = ? AND activo = 1 AND fechaVuelo >= CURDATE()";
 
-    if ($resultado) {
-        $vuelo = mysqli_fetch_assoc($resultado);
+    $stmt = mysqli_prepare($link, $sql);
+
+    if ($stmt) {
+
+        mysqli_stmt_bind_param($stmt, "i", $codVuelo);
+        mysqli_stmt_execute($stmt);
+
+        $resultado = mysqli_stmt_get_result($stmt);
+
+        if ($resultado) {
+            $vuelo = mysqli_fetch_assoc($resultado);
+        }
+
+        mysqli_stmt_close($stmt);
+    } else {
+        error_log("Reservar - vuelo: " . mysqli_error($link));
+    }
+}
+
+$descuentoMaximo = 0.0;
+
+if ($vuelo) {
+
+    $sqlProm = "SELECT COALESCE(MAX(p.descuentoPromocion), 0) AS descuento
+                FROM promociones p
+                INNER JOIN promociones_destinos pd
+                        ON pd.codPromocion = p.codPromocion
+                WHERE p.codAerolinea = ?
+                  AND p.estadoPromocion = 'APROBADA'
+                  AND p.fechaLimitePromocion >= CURDATE()
+                  AND LOWER(TRIM(pd.destinoVuelo)) = LOWER(TRIM(?))";
+
+    $stmtProm = mysqli_prepare($link, $sqlProm);
+
+    if ($stmtProm) {
+
+        $codAerolinea = (int) $vuelo['codAerolinea'];
+        $destinoVuelo = (string) $vuelo['destinoVuelo'];
+
+        mysqli_stmt_bind_param($stmtProm, "is", $codAerolinea, $destinoVuelo);
+        mysqli_stmt_execute($stmtProm);
+
+        $filaProm = mysqli_fetch_assoc(
+            mysqli_stmt_get_result($stmtProm)
+        );
+
+        $descuentoMaximo = (float) ($filaProm['descuento'] ?? 0);
+
+        mysqli_stmt_close($stmtProm);
+    } else {
+        error_log("Reservar - promociones: " . mysqli_error($link));
     }
 }
 
 if (!$vuelo) {
+    http_response_code(404);
+}
+
+include_once("../../includes/header.php");
+
+
+if (!$vuelo) {
 ?>
+
+    <main id="contenido-principal">
+
+        <div class="container mt-5">
+
+            <div class="row justify-content-center">
+
+                <div class="col-md-8">
+
+                    <div class="card card-custom">
+
+                        <div class="card-body p-5 text-center">
+
+                            <h2 class="text-danger">Vuelo no encontrado</h2>
+
+                            <p>El vuelo que buscás no existe o ya no está disponible.</p>
+
+                            <a href="../vuelos/listar.php" class="btn btn-secondary">
+                                Volver al listado
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+<?php
+
+    include_once("../../includes/footer.php");
+    exit();
+}
+
+$precio      = (float) $vuelo['precioVuelo'];
+$precioFinal = $precio - ($precio * $descuentoMaximo / 100);
+
+$asientosDisponibles = (int) $vuelo['asientosDisponibles'];
+
+$origenOut  = htmlspecialchars($vuelo['origenVuelo'], ENT_QUOTES, 'UTF-8');
+$destinoOut = htmlspecialchars($vuelo['destinoVuelo'], ENT_QUOTES, 'UTF-8');
+
+$fechaVuelo    = new DateTime($vuelo['fechaVuelo']);
+$horaSalidaOut = htmlspecialchars($vuelo['horaSalida'], ENT_QUOTES, 'UTF-8');
+
+?>
+
+<main id="contenido-principal">
 
     <div class="container mt-5">
 
@@ -30,179 +146,127 @@ if (!$vuelo) {
 
                 <div class="card card-custom">
 
-                    <div class="card-body p-5 text-center" role="alert">
+                    <div class="card-body p-5">
 
-                        <h2 class="text-danger">
+                        <h2 id="tituloReservar">Reservar Vuelo</h2>
 
-                            Vuelo no encontrado
+                        <?php if ($flash !== null) { ?>
+                            <div
+                                id="flashReserva"
+                                class="alert alert-<?= $flash['tipo'] === 'success' ? 'success' : 'danger' ?>"
+                                data-tipo="<?= $flash['tipo'] === 'success' ? 'success' : 'error' ?>"
+                                role="alert">
+                                <?= htmlspecialchars($flash['mensaje'], ENT_QUOTES, 'UTF-8') ?>
+                            </div>
+                        <?php } ?>
 
-                        </h2>
+                        <dl class="mb-4">
 
-                        <p>
+                            <dt>Fecha de vuelo</dt>
+                            <dd>
+                                <time datetime="<?= $fechaVuelo->format('Y-m-d') ?>">
+                                    <?= $fechaVuelo->format('d/m/Y') ?>
+                                </time>
+                            </dd>
 
-                            El vuelo que buscás no existe o ya no está disponible.
+                            <dt>Horario del vuelo</dt>
+                            <dd>
+                                <?php if ($horaSalidaOut !== '') { ?>
+                                    <time datetime="<?= $horaSalidaOut ?>"><?= $horaSalidaOut ?></time>
+                                <?php } else { ?>
+                                    No disponible
+                                <?php } ?>
+                            </dd>
 
-                        </p>
+                            <dt>Origen</dt>
+                            <dd><?= $origenOut ?></dd>
 
-                        <a href="../vuelos/listar.php" class="btn btn-secondary">
+                            <dt>Destino</dt>
+                            <dd><?= $destinoOut ?></dd>
 
-                            <span aria-hidden="true">←</span> Volver
+                            <dt>Precio</dt>
+                            <dd>$<?= number_format($precio, 0, ',', '.') ?></dd>
 
-                        </a>
+                            <?php if ($descuentoMaximo > 0) { ?>
+                                <dt>Descuento (se aplica el mayor disponible)</dt>
+                                <dd><?= number_format($descuentoMaximo, 1, ',', '.') ?>%</dd>
+                            <?php } ?>
 
-                    </div>
+                            <dt>Precio final por asiento</dt>
+                            <dd>$<?= number_format($precioFinal, 0, ',', '.') ?></dd>
 
-                </div>
+                            <dt>Asientos disponibles</dt>
+                            <dd><?= $asientosDisponibles ?></dd>
 
-            </div>
+                            <dt>Total</dt>
+                            <dd>
+                                <strong id="totalReserva" data-unitario="<?= $precioFinal ?>">—</strong>
+                            </dd>
 
-        </div>
+                        </dl>
 
-    </div>
+                        <?php if ($asientosDisponibles <= 0) { ?>
 
-<?php
+                            <div class="alert alert-warning" role="alert">
+                                No quedan asientos disponibles para este vuelo.
+                            </div>
 
-    include("../../includes/footer.php");
-    exit();
-}
+                            <a href="../vuelos/listar.php" class="btn btn-secondary">
+                                Volver al listado
+                            </a>
 
-$codAerolinea = (int) $vuelo['codAerolinea'];
+                        <?php } else { ?>
 
-$sqlProm = "SELECT * FROM promociones WHERE codAerolinea = $codAerolinea AND estadoPromocion = 'APROBADA'";
+                            <form action="guardar.php" method="post" aria-labelledby="tituloReservar">
 
-$resultado_prom = mysqli_query($link, $sqlProm);
+                                <input type="hidden" name="codVuelo" value="<?= $codVuelo ?>">
 
-$descuentoMaximo = 0;
-$hoy = date("Y-m-d");
-
-if ($resultado_prom) {
-    while ($promocion = mysqli_fetch_assoc($resultado_prom)) {
-        if (
-            $promocion['descuentoPromocion'] > $descuentoMaximo
-            &&
-            $promocion['fechaLimitePromocion'] >= $hoy
-        ) {
-            $descuentoMaximo = $promocion['descuentoPromocion'];
-        }
-    }
-}
-
-$precio = $vuelo['precioVuelo'];
-$precioFinal = $precio - ($precio * $descuentoMaximo / 100);
-$asientosDisponibles = (int) $vuelo['asientosDisponibles'];
-
-$origenOut = htmlspecialchars($vuelo['origenVuelo'], ENT_QUOTES, 'UTF-8');
-$destinoOut = htmlspecialchars($vuelo['destinoVuelo'], ENT_QUOTES, 'UTF-8');
-$fechaVueloOut = htmlspecialchars($vuelo['fechaVuelo'], ENT_QUOTES, 'UTF-8');
-$horaSalidaOut = htmlspecialchars($vuelo['horaSalida'], ENT_QUOTES, 'UTF-8');
-
-$error = isset($_GET['error']) ? htmlspecialchars($_GET['error'], ENT_QUOTES, 'UTF-8') : null;
-
-?>
-
-<div class="container mt-5">
-
-    <div class="row justify-content-center">
-
-        <div class="col-md-8">
-
-            <div class="card card-custom">
-
-                <div class="card-body p-5">
-
-                    <h2 id="tituloReservar">Reservar Vuelo</h2>
-
-                    <?php if ($error !== null) { ?>
-
-                        <div class="alert alert-danger" role="alert">
-
-                            <?= $error ?>
-
-                        </div>
-
-                    <?php } ?>
-
-                    <div class="mb-3">
-                        Fecha de vuelo: <time datetime="<?= $fechaVueloOut ?>"><?= $fechaVueloOut ?></time>
-                    </div>
-                    <div class="mb-3">
-                        Horario del vuelo: <time datetime="<?= $horaSalidaOut ?>"><?= $horaSalidaOut ?></time>
-                    </div>
-                    <div class="mb-3">
-                        Origen: <?= $origenOut ?>
-                    </div>
-                    <div class="mb-3">
-                        Destino: <?= $destinoOut ?>
-                    </div>
-                    <div class="mb-3">
-                        Precio: $<?= number_format($precio, 0, ',', '.') ?>
-                    </div>
-                    <div class="mb-3">
-                        Descuento (se aplica el mayor disponible): <?= number_format($descuentoMaximo, 1, ',', '.') ?>%
-                    </div>
-                    <div class="mb-3">
-                        Precio final por asiento: $<?= number_format($precioFinal, 0, ',', '.') ?>
-                    </div>
-                    <div class="mb-3">
-                        Asientos disponibles: <?= $asientosDisponibles ?>
-                    </div>
-
-                    <?php if ($asientosDisponibles <= 0) { ?>
-
-                        <div class="alert alert-warning" role="alert">
-                            No quedan asientos disponibles para este vuelo.
-                        </div>
-
-                        <a href="../vuelos/listar.php" class="btn btn-secondary">
-
-                            <span aria-hidden="true">←</span> Volver
-
-                        </a>
-
-                    <?php } else { ?>
-
-                        <form action="guardar.php" method="post" aria-labelledby="tituloReservar">
-
-                            <input type="hidden" name="codVuelo" value="<?= $codVuelo ?>">
-
-                            <div class="mb-3">
-
-                                <label for="cantAsientos" class="form-label">Cantidad de asientos</label>
-
+                                <!-- guardar.php lo compara contra $_SESSION['csrf_token'] -->
                                 <input
-                                    type="number"
-                                    id="cantAsientos"
-                                    name="cantAsientos"
-                                    class="form-control w-50"
-                                    min="1"
-                                    max="<?= $asientosDisponibles ?>"
-                                    required
-                                    aria-required="true"
-                                    aria-describedby="cantAsientosAyuda">
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
 
-                                <small id="cantAsientosAyuda" class="form-text text-muted">Podés reservar entre 1 y <?= $asientosDisponibles ?> asientos.</small>
+                                <div class="mb-3">
 
-                            </div>
+                                    <label for="cantAsientos" class="form-label">
+                                        Cantidad de asientos
+                                    </label>
 
-                            <div class="d-flex gap-2">
+                                    <input
+                                        type="number"
+                                        id="cantAsientos"
+                                        name="cantAsientos"
+                                        class="form-control w-50"
+                                        min="1"
+                                        max="<?= $asientosDisponibles ?>"
+                                        step="1"
+                                        required
+                                        aria-describedby="cantAsientosAyuda">
 
-                                <button class="btn btn-primary" type="submit">
+                                    <small id="cantAsientosAyuda" class="form-text text-muted">
+                                        Podés reservar entre 1 y <?= $asientosDisponibles ?> asientos.
+                                    </small>
 
-                                    Reservar
+                                </div>
 
-                                </button>
+                                <div class="d-flex flex-wrap gap-2">
 
-                                <a href="../vuelos/listar.php" class="btn btn-outline-secondary">
+                                    <button class="btn btn-primary" type="submit">
+                                        Reservar
+                                    </button>
 
-                                    Volver
+                                    <a href="../vuelos/listar.php" class="btn btn-outline-secondary">
+                                        Volver
+                                    </a>
 
-                                </a>
+                                </div>
 
-                            </div>
+                            </form>
 
-                        </form>
+                        <?php } ?>
 
-                    <?php } ?>
+                    </div>
 
                 </div>
 
@@ -212,8 +276,71 @@ $error = isset($_GET['error']) ? htmlspecialchars($_GET['error'], ENT_QUOTES, 'U
 
     </div>
 
-</div>
+</main>
+
+<script
+    src="https://cdn.jsdelivr.net/npm/sweetalert2@11"
+    crossorigin="anonymous"></script>
+
+<script>
+    (function() {
+
+        // Mensaje que pudo dejar guardar.php
+        var flash = document.getElementById('flashReserva');
+
+        if (!flash || typeof Swal === 'undefined') {
+            return;
+        }
+
+        var tipo = flash.getAttribute('data-tipo') === 'success' ? 'success' : 'error';
+        var mensaje = flash.textContent.trim();
+
+        flash.style.display = 'none';
+
+        Swal.fire({
+            icon: tipo,
+            title: tipo === 'success' ? 'Listo' : 'No se pudo reservar',
+            text: mensaje,
+            confirmButtonText: 'Aceptar'
+        });
+
+    })();
+</script>
+
+<script>
+    (function() {
+
+        var campo = document.getElementById('cantAsientos');
+        var total = document.getElementById('totalReserva');
+
+        if (!campo || !total) {
+            return;
+        }
+
+        var unitario = parseFloat(total.getAttribute('data-unitario'));
+
+        if (isNaN(unitario)) {
+            return;
+        }
+
+        function actualizarTotal() {
+
+            var cantidad = parseInt(campo.value, 10);
+
+            if (isNaN(cantidad) || cantidad < 1) {
+                total.textContent = '—';
+                return;
+            }
+
+            total.textContent = '$' + Math.round(unitario * cantidad).toLocaleString('es-AR');
+        }
+
+        campo.addEventListener('input', actualizarTotal);
+        actualizarTotal();
+
+    })();
+</script>
 
 <?php
-include("../../includes/footer.php");
+include_once("../../includes/footer.php");
 ?>

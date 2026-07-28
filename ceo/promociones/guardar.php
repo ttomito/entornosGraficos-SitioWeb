@@ -1,12 +1,18 @@
 <?php
 
-include("../../includes/verificarSession.php");
+include("../../includes/verificarSessionCEO.php");
 include("../../includes/conexion.php");
 
-$idCEO = $_SESSION['id'];
+if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+    header("Location: crear.php?alerta=error_servidor");
+    exit();
+}
+
+$idCEO = (int) ($_SESSION['id'] ?? 0);
 
 if ($idCEO <= 0) {
-    die("Acceso denegado");
+    header("Location: crear.php");
+    exit();
 }
 
 $descripcion    = $_POST['descripcion'] ?? '';
@@ -18,7 +24,6 @@ if (!is_array($destinosCrudos)) {
     $destinosCrudos = [];
 }
 
-// Limpiamos espacios y descartamos vacíos
 $destinos = [];
 foreach ($destinosCrudos as $d) {
     $d = trim((string) $d);
@@ -44,7 +49,7 @@ foreach ($destinos as $d) {
     }
 }
 
-// Quitamos duplicados sin importar mayúsculas/minúsculas
+// sacamos los duplicados sin importar mayusculas/minusculas
 $destinosUnicos = [];
 foreach ($destinos as $d) {
     $destinosUnicos[mb_strtolower($d)] = $d;
@@ -55,52 +60,77 @@ if (!is_numeric($descuento) || $descuento < 1 || $descuento > 100) {
     header("Location: crear.php?alerta=descuento_invalido");
     exit();
 }
+$descuento = (int) $descuento;
 
 if (strtotime($fechaLimite) === false || $fechaLimite <= date('Y-m-d')) {
     header("Location: crear.php?alerta=fecha_invalida");
     exit();
 }
 
-$sqlCEO = "SELECT codAerolinea FROM usuarios WHERE codUsuario = $idCEO";
-$resultadoCEO = mysqli_query($link, $sqlCEO);
+$sqlCEO = "SELECT codAerolinea FROM usuarios WHERE codUsuario = ?";
+$stmtCEO = mysqli_prepare($link, $sqlCEO);
 
-if (!$resultadoCEO) {
+if (!$stmtCEO) {
+    error_log("Error al preparar la consulta de CEO: " . mysqli_error($link));
     header("Location: crear.php?alerta=error_servidor");
     exit();
 }
 
-$ceo = mysqli_fetch_assoc($resultadoCEO);
-$codAerolinea = $ceo['codAerolinea'];
+mysqli_stmt_bind_param($stmtCEO, "i", $idCEO);
+mysqli_stmt_execute($stmtCEO);
+$resultadoCEO = mysqli_stmt_get_result($stmtCEO);
+$ceo = $resultadoCEO ? mysqli_fetch_assoc($resultadoCEO) : null;
+mysqli_stmt_close($stmtCEO);
+
+if (!$ceo || $ceo['codAerolinea'] === null) {
+    header("Location: crear.php?alerta=sin_aerolinea");
+    exit();
+}
+
+$codAerolinea = (int) $ceo['codAerolinea'];
 
 mysqli_begin_transaction($link);
+$exito = true;
 
 $sql = "INSERT INTO promociones (codAerolinea, descripcionPromocion, descuentoPromocion, estadoPromocion, fechaLimitePromocion)
-VALUES ($codAerolinea, '$descripcion', $descuento, 'PENDIENTE', '$fechaLimite')";
+        VALUES (?, ?, ?, 'PENDIENTE', ?)";
 
-$respuesta = mysqli_query($link, $sql);
+$stmt = mysqli_prepare($link, $sql);
 
-if (!$respuesta) {
-    mysqli_rollback($link);
-    header("Location: crear.php?alerta=error_servidor");
-    exit();
+if (!$stmt) {
+    $exito = false;
+} else {
+    mysqli_stmt_bind_param($stmt, "isis", $codAerolinea, $descripcion, $descuento, $fechaLimite);
+    $exito = mysqli_stmt_execute($stmt);
+    $codPromocion = $exito ? mysqli_insert_id($link) : null;
+    mysqli_stmt_close($stmt);
 }
 
-$codPromocion = mysqli_insert_id($link);
+if ($exito) {
+    $sqlDestino = "INSERT INTO promociones_destinos (codPromocion, destinoVuelo) VALUES (?, ?)";
+    $stmtDestino = mysqli_prepare($link, $sqlDestino);
 
-foreach ($destinos as $destino) {
+    if (!$stmtDestino) {
+        $exito = false;
+    } else {
+        foreach ($destinos as $destino) {
+            mysqli_stmt_bind_param($stmtDestino, "is", $codPromocion, $destino);
 
-    $destinoEsc = mysqli_real_escape_string($link, $destino);
+            if (!mysqli_stmt_execute($stmtDestino)) {
+                $exito = false;
+                break;
+            }
+        }
 
-    $sqlDestino = "INSERT INTO promocionesDestinos (codPromocion, destinoVuelo)
-    VALUES ($codPromocion, '$destinoEsc')";
-
-    $respuestaDestino = mysqli_query($link, $sqlDestino);
-
-    if (!$respuestaDestino) {
-        mysqli_rollback($link);
-        header("Location: crear.php?alerta=error_servidor");
-        exit();
+        mysqli_stmt_close($stmtDestino);
     }
+}
+
+if (!$exito) {
+    mysqli_rollback($link);
+    error_log("Error al crear promoción: " . mysqli_error($link));
+    header("Location: crear.php?alerta=error_servidor");
+    exit();
 }
 
 mysqli_commit($link);

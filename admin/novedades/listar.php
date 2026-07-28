@@ -1,73 +1,59 @@
 <?php
 
-include("../../includes/verificarSession.php");
+include("../../includes/verificarSessionAdmin.php");
 include("../../includes/conexion.php");
 include("../../includes/header.php");
 
 $registrosPorPagina = 10;
+$errorConsulta = false;
 
 $pagina = isset($_GET['pagina'])
-? (int)$_GET['pagina']
-: 1;
+    ? (int)$_GET['pagina']
+    : 1;
 
-if($pagina < 1)
-{
+if ($pagina < 1) {
     $pagina = 1;
 }
 
-$inicio =
-($pagina - 1)
-*
-$registrosPorPagina;
+$sqlConteo = "SELECT COUNT(*) AS total FROM novedades";
+$resultadoConteo = mysqli_query($link, $sqlConteo);
 
+if (!$resultadoConteo) {
+    error_log("Error al contar novedades: " . mysqli_error($link));
+    $errorConsulta = true;
+    $totalRegistros = 0;
+} else {
+    $filaConteo = mysqli_fetch_assoc($resultadoConteo);
+    $totalRegistros = (int)$filaConteo['total'];
+}
 
-/*
-| Conteo
-*/
+$totalPaginas = (int)ceil($totalRegistros / $registrosPorPagina);
 
-$sqlConteo = "
+if ($totalPaginas > 0 && $pagina > $totalPaginas) {
+    $pagina = $totalPaginas;
+}
 
-SELECT COUNT(*) AS total
+$inicio = ($pagina - 1) * $registrosPorPagina;
 
-FROM novedades
+$resultado = null;
 
-";
+if (!$errorConsulta) {
+    $sql = "SELECT * FROM novedades ORDER BY codNovedad DESC LIMIT ?, ?";
+    $stmt = mysqli_prepare($link, $sql);
 
-$resultadoConteo = mysqli_query($link,$sqlConteo);
+    if (!$stmt) {
+        error_log("Error al preparar el listado de novedades: " . mysqli_error($link));
+        $errorConsulta = true;
+    } else {
+        mysqli_stmt_bind_param($stmt, "ii", $inicio, $registrosPorPagina);
+        mysqli_stmt_execute($stmt);
+        $resultado = mysqli_stmt_get_result($stmt);
 
-$filaConteo = mysqli_fetch_assoc($resultadoConteo);
-
-$totalRegistros = $filaConteo['total'];
-
-$totalPaginas = ceil(
-$totalRegistros
-/
-$registrosPorPagina
-);
-
-
-/*
-| Consulta principal
-*/
-
-$sql = "
-
-SELECT *
-
-FROM novedades
-
-ORDER BY codNovedad DESC
-
-LIMIT $inicio,
-$registrosPorPagina
-
-";
-
-$resultado = mysqli_query($link,$sql);
-
-if(!$resultado)
-{
-    die("Error en la consulta: ".mysqli_error($link));
+        if (!$resultado) {
+            error_log("Error al listar novedades: " . mysqli_error($link));
+            $errorConsulta = true;
+        }
+    }
 }
 
 ?>
@@ -89,132 +75,157 @@ if(!$resultado)
 
         <div class="card-body">
 
-<?php if(mysqli_num_rows($resultado)==0){ ?>
+            <?php if ($errorConsulta) { ?>
 
-<p class="text-muted">
+                <p class="text-danger">
 
-No hay novedades registradas.
+                    Ocurrió un error al cargar el listado. Intentá nuevamente más tarde.
 
-</p>
+                </p>
 
-<?php } else { ?>
+            <?php } elseif (mysqli_num_rows($resultado) == 0) { ?>
 
-<table class="table table-hover">
-                <thead>
+                <p class="text-muted">
 
-                    <tr>
+                    No hay novedades registradas.
 
-                        <th>ID</th>
-                        <th>Novedad</th>
-                        <th>Publicación</th>
-                        <th>Expiración</th>
-                        <th>Acciones</th>
+                </p>
 
-                    </tr>
+            <?php } else { ?>
 
-                </thead>
+                <table class="table table-hover">
+                    <thead>
 
-                <tbody>
+                        <tr>
 
-                <?php while($fila = mysqli_fetch_assoc($resultado)){ ?>
+                            <th>ID</th>
+                            <th>Imagen</th>
+                            <th>Novedad</th>
+                            <th>Publicación</th>
+                            <th>Expiración</th>
+                            <th>Acciones</th>
 
-                    <tr>
+                        </tr>
 
-                        <td><?= $fila['codNovedad'] ?></td>
-                        <td><?= $fila['textoNovedad'] ?></td>
-                        <td><?= $fila['fechaPublicacion'] ?></td>
-                        <td><?= $fila['fechaExpiracion'] ?></td>
-                        <td>
+                    </thead>
 
-                            <a href="editar.php?id=<?= $fila['codNovedad'] ?>" class="btn btn-warning btn-sm">
-                            Editar
-                            </a>
+                    <tbody>
 
-                            <a href="eliminar.php?id=<?= $fila['codNovedad'] ?>" class="btn btn-danger btn-sm"
-                            onclick="eliminarNovedad(event, this, '<?= $fila['textoNovedad'] ?>')">
-                            Eliminar
-                            </a>
+                        <?php while ($fila = mysqli_fetch_assoc($resultado)) {
+                            $tituloEscapado = htmlspecialchars($fila['tituloNovedad'] ?? '', ENT_QUOTES, 'UTF-8');
+                            $textoEscapado = htmlspecialchars($fila['textoNovedad'] ?? '', ENT_QUOTES, 'UTF-8');
+                        ?>
 
-                        </td>
+                            <tr>
 
-                    </tr>
+                                <td><?= (int)$fila['codNovedad'] ?></td>
+                                <td>
+                                    <?php if (!empty($fila['imagen'])) { ?>
+                                        <img
+                                            src="../../uploads/novedades/<?= htmlspecialchars($fila['imagen'], ENT_QUOTES, 'UTF-8') ?>"
+                                            alt="Imagen relacionada a la novedad: <?= $tituloEscapado ?>"
+                                            title="<?= $tituloEscapado ?>"
+                                            style="height: 60px; width: 90px; object-fit: cover; border-radius: 4px;">
+                                    <?php } else { ?>
+                                        <span class="text-muted">Sin imagen</span>
+                                    <?php } ?>
+                                </td>
+                                <td><?= $textoEscapado ?></td>
+                                <td><?= htmlspecialchars($fila['fechaPublicacion'], ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= htmlspecialchars($fila['fechaExpiracion'], ENT_QUOTES, 'UTF-8') ?></td>
+                                <td>
 
-                <?php } ?>
+                                    <a href="editar.php?id=<?= (int)$fila['codNovedad'] ?>" class="btn btn-warning btn-sm">
+                                        Editar
+                                    </a>
 
-                </tbody>
+                                    <form action="eliminar.php" method="post" class="d-inline" data-titulo="<?= $tituloEscapado ?>">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
+                                        <input type="hidden" name="id" value="<?= (int)$fila['codNovedad'] ?>">
+                                        <button type="submit" class="btn btn-danger btn-sm" onclick="eliminarNovedad(event, this)">
+                                            Eliminar
+                                        </button>
+                                    </form>
 
-            </table>
+                                </td>
 
-<div class="d-flex justify-content-center mt-4">
+                            </tr>
 
-<nav>
+                        <?php } ?>
 
-<ul class="pagination">
+                    </tbody>
 
-<?php if($pagina>1){ ?>
+                </table>
 
-<li class="page-item">
+                <div class="d-flex justify-content-center mt-4">
 
-<a
-class="page-link"
-href="?pagina=<?= $pagina-1 ?>">
+                    <nav>
 
-Anterior
+                        <ul class="pagination">
 
-</a>
+                            <?php if ($pagina > 1) { ?>
 
-</li>
+                                <li class="page-item">
 
-<?php } ?>
+                                    <a
+                                        class="page-link"
+                                        href="?pagina=<?= $pagina - 1 ?>">
 
-<?php
+                                        Anterior
 
-for(
-$i=1;
-$i<=$totalPaginas;
-$i++
-)
-{
+                                    </a>
 
-?>
+                                </li>
 
-<li class="page-item <?= $i==$pagina ? 'active' : '' ?>">
+                            <?php } ?>
 
-<a
-class="page-link"
-href="?pagina=<?= $i ?>">
+                            <?php
 
-<?= $i ?>
+                            for (
+                                $i = 1;
+                                $i <= $totalPaginas;
+                                $i++
+                            ) {
 
-</a>
+                            ?>
 
-</li>
+                                <li class="page-item <?= $i == $pagina ? 'active' : '' ?>">
 
-<?php } ?>
+                                    <a
+                                        class="page-link"
+                                        href="?pagina=<?= $i ?>">
 
-<?php if($pagina<$totalPaginas){ ?>
+                                        <?= $i ?>
 
-<li class="page-item">
+                                    </a>
 
-<a
-class="page-link"
-href="?pagina=<?= $pagina+1 ?>">
+                                </li>
 
-Siguiente
+                            <?php } ?>
 
-</a>
+                            <?php if ($pagina < $totalPaginas) { ?>
 
-</li>
+                                <li class="page-item">
 
-<?php } ?>
+                                    <a
+                                        class="page-link"
+                                        href="?pagina=<?= $pagina + 1 ?>">
 
-</ul>
+                                        Siguiente
 
-</nav>
+                                    </a>
 
-</div>
+                                </li>
 
-<?php } ?>
+                            <?php } ?>
+
+                        </ul>
+
+                    </nav>
+
+                </div>
+
+            <?php } ?>
 
         </div>
 
@@ -267,43 +278,43 @@ $alertas = [
     ],
 ];
 
-if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)){
+if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)) {
     $alerta = $alertas[$_GET['alerta']];
 ?>
 
-<script>
-    Swal.fire({
-        icon:              '<?= $alerta['icon'] ?>',
-        title:             '<?= $alerta['title'] ?>',
-        text:              '<?= $alerta['text'] ?>',
-        confirmButtonText: 'Aceptar'
-    }).then((result) => {
-        if (result.isConfirmed)
-        {
-            window.location.href = 'listar.php';
-        }
-    });
-</script>
+    <script>
+        Swal.fire({
+            icon: '<?= $alerta['icon'] ?>',
+            title: '<?= $alerta['title'] ?>',
+            text: '<?= $alerta['text'] ?>',
+            confirmButtonText: 'Aceptar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = 'listar.php';
+            }
+        });
+    </script>
 <?php }; ?>
 
 <script>
-    function eliminarNovedad(event, elemento, nombre)
-    {
+    function eliminarNovedad(event, boton) {
         event.preventDefault();
 
+        const formulario = boton.closest('form');
+        const titulo = formulario.dataset.titulo;
+
         Swal.fire({
-            title:               '¿Estás seguro?',
-            text:                `¿Desea eliminar la novedad "${nombre}"?`,
-            icon:                'warning',
-            showCancelButton:    true,
-            confirmButtonColor:  '#dc3545',
-            cancelButtonColor:   '#6c757d',
-            confirmButtonText:   'Sí, eliminar',
-            cancelButtonText:    'Cancelar'
+            title: '¿Estás seguro?',
+            text: `¿Desea eliminar la novedad "${titulo}"?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
         }).then((result) => {
-            if (result.isConfirmed)
-            {
-                window.location.href = elemento.href;
+            if (result.isConfirmed) {
+                formulario.submit();
             }
         });
     }

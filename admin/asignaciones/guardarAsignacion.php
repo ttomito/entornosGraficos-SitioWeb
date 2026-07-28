@@ -1,10 +1,15 @@
 <?php
 
-include("../../includes/verificarSession.php");
+include("../../includes/verificarSessionAdmin.php");
 include("../../includes/conexion.php");
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: listar.php");
+    exit();
+}
+
+if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+    header("Location: listar.php?alerta=error_servidor");
     exit();
 }
 
@@ -16,8 +21,29 @@ if ($idCEO <= 0) {
     exit();
 }
 
+$sqlVerificarCEO = "SELECT codUsuario FROM usuarios WHERE codUsuario = ? AND tipoUsuario = 'CEO'";
+$stmtVerificarCEO = mysqli_prepare($link, $sqlVerificarCEO);
+
+if (!$stmtVerificarCEO) {
+    error_log("Error al preparar la verificación de CEO: " . mysqli_error($link));
+    header("Location: listar.php?alerta=error_servidor");
+    exit();
+}
+
+mysqli_stmt_bind_param($stmtVerificarCEO, "i", $idCEO);
+mysqli_stmt_execute($stmtVerificarCEO);
+mysqli_stmt_store_result($stmtVerificarCEO);
+
+if (mysqli_stmt_num_rows($stmtVerificarCEO) === 0) {
+    mysqli_stmt_close($stmtVerificarCEO);
+    header("Location: listar.php?alerta=no_encontrada");
+    exit();
+}
+
+mysqli_stmt_close($stmtVerificarCEO);
+
 if ($codAerolineaRaw === '' || !ctype_digit($codAerolineaRaw)) {
-    header("Location: asignar.php?id=$idCEO&alerta=campos_vacios");
+    header("Location: asignaciones.php?id=$idCEO&alerta=campos_vacios");
     exit();
 }
 
@@ -33,11 +59,7 @@ if ($codAerolinea === 0) {
     }
 } else {
 
-    /*
-    | Se verifica que la aerolínea elegida exista antes de asignarla
-    */
-
-    $sqlVerificar = "SELECT codAerolinea FROM aerolineas WHERE codAerolinea = ?";
+    $sqlVerificar = "SELECT codAerolinea FROM aerolineas WHERE codAerolinea = ? AND activo = 1";
     $stmtVerificar = mysqli_prepare($link, $sqlVerificar);
 
     if (!$stmtVerificar) {
@@ -52,7 +74,7 @@ if ($codAerolinea === 0) {
 
     if (mysqli_stmt_num_rows($stmtVerificar) === 0) {
         mysqli_stmt_close($stmtVerificar);
-        header("Location: asignar.php?id=$idCEO&alerta=aerolinea_invalida");
+        header("Location: asignaciones.php?id=$idCEO&alerta=aerolinea_invalida");
         exit();
     }
 

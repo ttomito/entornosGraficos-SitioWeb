@@ -1,219 +1,184 @@
 <?php
 
-include("../../includes/verificarSession.php");
-include("../../includes/header.php");
-include("../../includes/conexion.php");
+require_once("../../includes/verificarSession.php");
+require_once("../../includes/conexion.php");
 
 $codReserva = (int) ($_GET['codReserva'] ?? 0);
-$idUsuario = (int) $_SESSION['id'];
+$idUsuario  = (int) $_SESSION['id'];
+
+$flash = isset($_SESSION['flash']) ? $_SESSION['flash'] : null;
+unset($_SESSION['flash']);
 
 $reserva = null;
+$errorBD = false;
 
 if ($codReserva > 0) {
 
-    $sql = "
+    $sql = "SELECT r.*,
+                   v.origenVuelo,
+                   v.destinoVuelo,
+                   v.fechaVuelo,
+                   v.horaSalida,
+                   v.precioVuelo,
+                   v.asientosDisponibles
+            FROM reservas r
+            LEFT JOIN vuelos v ON v.codVuelo = r.codVuelo
+            WHERE r.codReserva = ? AND r.codUsuario = ?";
 
-    SELECT *
+    $stmtReserva = mysqli_prepare($link, $sql);
 
-    FROM reservas
+    if (!$stmtReserva) {
 
-    WHERE codReserva = $codReserva
+        $errorBD = true;
 
-    AND codUsuario = $idUsuario
+    } else {
 
-    ";
+        mysqli_stmt_bind_param($stmtReserva, "ii", $codReserva, $idUsuario);
+        mysqli_stmt_execute($stmtReserva);
 
-    $resultado = mysqli_query($link, $sql);
+        $resultadoReserva = mysqli_stmt_get_result($stmtReserva);
 
-    if ($resultado) {
-        $reserva = mysqli_fetch_assoc($resultado);
+        if (!$resultadoReserva) {
+            $errorBD = true;
+        } else {
+            $reserva = mysqli_fetch_assoc($resultadoReserva);
+        }
+
+        mysqli_stmt_close($stmtReserva);
     }
 }
 
-if (!$reserva) {
-?>
+$pantallaError = null;
 
-    <div class="container mt-5">
+$volverAReserva = 'verReserva.php?codReserva=' . $codReserva;
 
-        <div class="row justify-content-center">
+if ($errorBD) {
 
-            <div class="col-md-8">
+    $pantallaError = [
+        'titulo' => 'Error al consultar la reserva',
+        'texto'  => 'Hubo un problema técnico. Intentá de nuevo en unos minutos.',
+        'href'   => 'listar.php',
+        'link'   => 'Volver',
+    ];
 
-                <div class="card card-custom">
+} elseif (!$reserva) {
 
-                    <div class="card-body p-5 text-center" role="alert">
+    $pantallaError = [
+        'titulo' => 'Reserva no encontrada',
+        'texto'  => 'La reserva que buscás no existe o no te pertenece.',
+        'href'   => 'listar.php',
+        'link'   => 'Volver',
+    ];
 
-                        <h2 class="text-danger">
+} elseif ($reserva['estadoReserva'] !== 'PENDIENTE') {
 
-                            Reserva no encontrada
+    $pantallaError = [
+        'titulo' => 'No se puede modificar esta reserva',
+        'texto'  => 'Su estado actual es "' . $reserva['estadoReserva'] . '".',
+        'href'   => $volverAReserva,
+        'link'   => 'Volver a la reserva',
+    ];
 
-                        </h2>
+} elseif (is_null($reserva['origenVuelo'])) {
 
-                        <p>
+    $pantallaError = [
+        'titulo' => 'No pudimos cargar el vuelo',
+        'texto'  => 'No encontramos el vuelo asociado a esta reserva.',
+        'href'   => $volverAReserva,
+        'link'   => 'Volver a la reserva',
+    ];
 
-                            La reserva que buscás no existe o no te pertenece.
-
-                        </p>
-
-                        <a href="listar.php" class="btn btn-secondary">
-
-                            <span aria-hidden="true">←</span> Volver
-
-                        </a>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-<?php
-
-    include("../../includes/footer.php");
-    exit();
 }
 
-if ($reserva['estadoReserva'] !== 'PENDIENTE') {
-?>
+$tsSalida = false;
 
-    <div class="container mt-5">
+if ($pantallaError === null && !empty($reserva['fechaVuelo'])) {
 
-        <div class="row justify-content-center">
+    $fechaBase = substr((string) $reserva['fechaVuelo'], 0, 10);
 
-            <div class="col-md-8">
+    $horaBase = !empty($reserva['horaSalida'])
+        ? (string) $reserva['horaSalida']
+        : '00:00:00';
 
-                <div class="card card-custom">
+    $tsSalida = strtotime($fechaBase . ' ' . $horaBase);
 
-                    <div class="card-body p-5 text-center" role="alert">
+    if ($tsSalida !== false && $tsSalida < time()) {
 
-                        <h2 class="text-danger">
-
-                            No se puede modificar esta reserva
-
-                        </h2>
-
-                        <p>
-
-                            Su estado actual es "<?= htmlspecialchars($reserva['estadoReserva'], ENT_QUOTES, 'UTF-8') ?>".
-
-                        </p>
-
-                        <a href="verReserva.php?codReserva=<?= $codReserva ?>" class="btn btn-secondary">
-
-                            <span aria-hidden="true">←</span> Volver a la reserva
-
-                        </a>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-<?php
-
-    include("../../includes/footer.php");
-    exit();
-}
-
-$codVuelo = (int) $reserva['codVuelo'];
-
-$vuelo = null;
-
-if ($codVuelo > 0) {
-
-    $sqlvuelos = "
-
-    SELECT *
-
-    FROM vuelos
-
-    WHERE codVuelo = $codVuelo
-
-    ";
-
-    $resultadoVuelo = mysqli_query($link, $sqlvuelos);
-
-    if ($resultadoVuelo) {
-        $vuelo = mysqli_fetch_assoc($resultadoVuelo);
+        $pantallaError = [
+            'titulo' => 'El vuelo ya salió',
+            'texto'  => 'Esta reserva no se puede modificar porque el vuelo ya despegó.',
+            'href'   => $volverAReserva,
+            'link'   => 'Volver a la reserva',
+        ];
     }
 }
 
-if (!$vuelo) {
+include("../../includes/header.php");
+
+if ($pantallaError !== null) {
 ?>
 
     <div class="container mt-5">
-
         <div class="row justify-content-center">
-
             <div class="col-md-8">
-
                 <div class="card card-custom">
-
                     <div class="card-body p-5 text-center" role="alert">
 
                         <h2 class="text-danger">
-
-                            No pudimos cargar el vuelo
-
+                            <?= htmlspecialchars($pantallaError['titulo'], ENT_QUOTES, 'UTF-8') ?>
                         </h2>
 
                         <p>
-
-                            No encontramos el vuelo asociado a esta reserva.
-
+                            <?= htmlspecialchars($pantallaError['texto'], ENT_QUOTES, 'UTF-8') ?>
                         </p>
 
-                        <a href="verReserva.php?codReserva=<?= $codReserva ?>" class="btn btn-secondary">
-
-                            <span aria-hidden="true">←</span> Volver a la reserva
-
+                        <a
+                            href="<?= htmlspecialchars($pantallaError['href'], ENT_QUOTES, 'UTF-8') ?>"
+                            class="btn btn-secondary">
+                            <span aria-hidden="true">&larr;</span>
+                            <?= htmlspecialchars($pantallaError['link'], ENT_QUOTES, 'UTF-8') ?>
                         </a>
 
                     </div>
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
 
 <?php
-
     include("../../includes/footer.php");
     exit();
 }
 
 $cantAsientosActual = (int) $reserva['cantAsientos'];
 
-$descuento = 0;
-if ($cantAsientosActual > 0 && $vuelo['precioVuelo'] > 0) {
-    $descuento = (($vuelo['precioVuelo'] - ($reserva['precioFinal'] / $cantAsientosActual)) / $vuelo['precioVuelo']) * 100;
+$precioUnitario = $cantAsientosActual > 0
+    ? ((float) $reserva['precioFinal'] / $cantAsientosActual)
+    : 0.0;
+
+$precioVueloActual = (float) $reserva['precioVuelo'];
+
+$descuento = 0.0;
+
+if ($precioVueloActual > 0 && $precioUnitario < $precioVueloActual) {
+    $descuento = (($precioVueloActual - $precioUnitario) / $precioVueloActual) * 100;
 }
 
-$precioFinal = $vuelo['precioVuelo'] - ($vuelo['precioVuelo'] * $descuento / 100);
+$origenOut  = htmlspecialchars($reserva['origenVuelo'], ENT_QUOTES, 'UTF-8');
+$destinoOut = htmlspecialchars($reserva['destinoVuelo'], ENT_QUOTES, 'UTF-8');
 
-$origenOut = htmlspecialchars($vuelo['origenVuelo'], ENT_QUOTES, 'UTF-8');
-$destinoOut = htmlspecialchars($vuelo['destinoVuelo'], ENT_QUOTES, 'UTF-8');
-$fechaVueloOut = htmlspecialchars($vuelo['fechaVuelo'], ENT_QUOTES, 'UTF-8');
-$horaSalidaOut = htmlspecialchars($vuelo['horaSalida'], ENT_QUOTES, 'UTF-8');
+$fechaVueloOut = $tsSalida ? date('d/m/Y', $tsSalida) : 'No disponible';
+$fechaVueloISO = $tsSalida ? date('Y-m-d', $tsSalida) : '';
 
-$asientosMax = (int) $vuelo['asientosDisponibles'] + $cantAsientosActual;
+$hayHora       = !empty($reserva['horaSalida']);
+$horaSalidaOut = ($tsSalida && $hayHora) ? date('H:i', $tsSalida) : '';
 
-$error = isset($_GET['error']) ? htmlspecialchars($_GET['error'], ENT_QUOTES, 'UTF-8') : null;
+// Los asientos propios ya están descontados del vuelo, por eso se suman
+$asientosMax = (int) $reserva['asientosDisponibles'] + $cantAsientosActual;
+
+$tokenCsrf = htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8');
 
 ?>
-
 
 <div class="container mt-5">
 
@@ -227,51 +192,95 @@ $error = isset($_GET['error']) ? htmlspecialchars($_GET['error'], ENT_QUOTES, 'U
 
                     <h2 id="tituloModificar">Modificar reserva</h2>
 
-                    <?php if ($error !== null) { ?>
-
-                        <div class="alert alert-danger" role="alert">
-
-                            <?= $error ?>
-
+                    <?php if ($flash !== null) { ?>
+                        <div
+                            id="flashReserva"
+                            class="alert alert-<?= $flash['tipo'] === 'success' ? 'success' : 'danger' ?>"
+                            data-tipo="<?= $flash['tipo'] === 'success' ? 'success' : 'error' ?>"
+                            role="alert">
+                            <?= htmlspecialchars($flash['mensaje'], ENT_QUOTES, 'UTF-8') ?>
                         </div>
-
                     <?php } ?>
 
+                    <dl class="row mb-4">
 
+                        <dt class="col-sm-6">Fecha de vuelo</dt>
+                        <dd class="col-sm-6">
+                            <?php if ($fechaVueloISO !== '') { ?>
+                                <time datetime="<?= $fechaVueloISO ?>"><?= $fechaVueloOut ?></time>
+                            <?php } else { ?>
+                                <?= $fechaVueloOut ?>
+                            <?php } ?>
+                        </dd>
 
-                    <div class="mb-3">
-                        Fecha de vuelo: <time datetime="<?= $fechaVueloOut ?>"><?= $fechaVueloOut ?></time>
-                    </div>
-                    <div class="mb-3">
-                        Horario del vuelo: <time datetime="<?= $horaSalidaOut ?>"><?= $horaSalidaOut ?></time>
-                    </div>
-                    <div class="mb-3">
-                        Origen: <?= $origenOut ?>
-                    </div>
-                    <div class="mb-3">
-                        Destino: <?= $destinoOut ?>
-                    </div>
-                    <div class="mb-3">
-                        Precio asientos: $<?= number_format($vuelo['precioVuelo'], 0, ',', '.') ?>
-                    </div>
+                        <dt class="col-sm-6">Horario del vuelo</dt>
+                        <dd class="col-sm-6">
+                            <?php if ($horaSalidaOut !== '') { ?>
+                                <time datetime="<?= $horaSalidaOut ?>"><?= $horaSalidaOut ?> hs</time>
+                            <?php } else { ?>
+                                No disponible
+                            <?php } ?>
+                        </dd>
 
-                    <div class="mb-3">
-                        Descuento: <?= number_format($descuento, 1, ',', '.') ?>%
-                    </div>
-                    <div class="mb-3">
-                        Precio final: $<?= number_format($precioFinal, 0, ',', '.') ?>
-                    </div>
-                    <div class="mb-3">
-                        Asientos disponibles: <?= (int) $vuelo['asientosDisponibles'] ?>
-                    </div>
+                        <dt class="col-sm-6">Origen</dt>
+                        <dd class="col-sm-6"><?= $origenOut ?></dd>
 
-                    <form action="guardarModificaciones.php" method="post" aria-labelledby="tituloModificar" novalidate>
+                        <dt class="col-sm-6">Destino</dt>
+                        <dd class="col-sm-6"><?= $destinoOut ?></dd>
+
+                        <dt class="col-sm-6">Tarifa actual del vuelo</dt>
+                        <dd class="col-sm-6">
+                            $<?= number_format($precioVueloActual, 0, ',', '.') ?>
+                        </dd>
+
+                        <?php if ($descuento > 0) { ?>
+                            <dt class="col-sm-6">Descuento aplicado</dt>
+                            <dd class="col-sm-6"><?= number_format($descuento, 1, ',', '.') ?>%</dd>
+                        <?php } ?>
+
+                        <dt class="col-sm-6">Precio por asiento</dt>
+                        <dd class="col-sm-6">
+                            $<?= number_format($precioUnitario, 0, ',', '.') ?>
+                        </dd>
+
+                        <dt class="col-sm-6">Asientos disponibles</dt>
+                        <dd class="col-sm-6"><?= (int) $reserva['asientosDisponibles'] ?></dd>
+
+                        <dt class="col-sm-6">Total</dt>
+                        <dd class="col-sm-6">
+                            <strong id="totalReserva"
+                                    data-unitario="<?= $precioUnitario ?>">
+                                $<?= number_format((float) $reserva['precioFinal'], 0, ',', '.') ?>
+                            </strong>
+                        </dd>
+
+                    </dl>
+
+                    <p class="text-muted small">
+                        El precio por asiento de tu reserva se mantiene aunque cambies
+                        la cantidad. No se recalcula con la tarifa vigente.
+                    </p>
+
+                    <form
+                        action="guardarModificaciones.php"
+                        method="post"
+                        aria-labelledby="tituloModificar">
+
+                        <input
+                            type="hidden"
+                            name="csrf_token"
+                            value="<?= $tokenCsrf ?>">
+
+                        <input
+                            type="hidden"
+                            name="codReserva"
+                            value="<?= $codReserva ?>">
 
                         <div class="mb-3">
 
-                            <input type="hidden" name="codReserva" value="<?= $codReserva ?>">
-
-                            <label for="cantAsientos" class="form-label">Asientos reservados</label>
+                            <label for="cantAsientos" class="form-label">
+                                Asientos reservados
+                            </label>
 
                             <input
                                 type="number"
@@ -280,36 +289,107 @@ $error = isset($_GET['error']) ? htmlspecialchars($_GET['error'], ENT_QUOTES, 'U
                                 class="form-control w-50"
                                 min="1"
                                 max="<?= $asientosMax ?>"
+                                step="1"
                                 value="<?= $cantAsientosActual ?>"
                                 required
-                                aria-required="true"
                                 aria-describedby="cantAsientosAyuda">
 
-                            <small id="cantAsientosAyuda" class="form-text text-muted">Podés reservar entre 1 y <?= $asientosMax ?> asientos.</small>
+                            <small id="cantAsientosAyuda" class="form-text text-muted">
+                                Podés reservar entre 1 y <?= $asientosMax ?> asientos.
+                            </small>
 
                         </div>
 
-                        <div class="d-flex gap-2">
+                        <div class="d-flex flex-wrap gap-2">
 
                             <button class="btn btn-primary" type="submit">
-
                                 Guardar cambios
-
                             </button>
 
-                            <a href="verReserva.php?codReserva=<?= $codReserva ?>" class="btn btn-outline-secondary">
-
+                            <a
+                                href="<?= htmlspecialchars($volverAReserva, ENT_QUOTES, 'UTF-8') ?>"
+                                class="btn btn-outline-secondary">
                                 Cancelar
-
                             </a>
 
                         </div>
 
                     </form>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
+
 </div>
+
+<script
+    src="https://cdn.jsdelivr.net/npm/sweetalert2@11"
+    crossorigin="anonymous"></script>
+
+<script>
+    (function () {
+
+        // Mensaje que pudo dejar guardarModificaciones.php
+        var flash = document.getElementById('flashReserva');
+
+        if (!flash || typeof Swal === 'undefined') {
+            return;
+        }
+
+        var tipo    = flash.getAttribute('data-tipo') === 'success' ? 'success' : 'error';
+        var mensaje = flash.textContent.trim();
+
+        flash.style.display = 'none';
+
+        Swal.fire({
+            icon: tipo,
+            title: tipo === 'success' ? 'Listo' : 'No se pudo completar',
+            text: mensaje,
+            confirmButtonText: 'Aceptar'
+        });
+
+    })();
+</script>
+
+<script>
+    (function () {
+
+        // Recalcula el total mientras el usuario cambia la cantidad
+
+        var campo = document.getElementById('cantAsientos');
+        var total = document.getElementById('totalReserva');
+
+        if (!campo || !total) {
+            return;
+        }
+
+        var unitario = parseFloat(total.getAttribute('data-unitario'));
+
+        if (isNaN(unitario)) {
+            return;
+        }
+
+        function actualizarTotal() {
+
+            var cantidad = parseInt(campo.value, 10);
+
+            if (isNaN(cantidad) || cantidad < 1) {
+                total.textContent = '—';
+                return;
+            }
+
+            var monto = Math.round(unitario * cantidad);
+
+            total.textContent = '$' + monto.toLocaleString('es-AR');
+        }
+
+        campo.addEventListener('input', actualizarTotal);
+
+    })();
+</script>
 
 <?php include("../../includes/footer.php"); ?>

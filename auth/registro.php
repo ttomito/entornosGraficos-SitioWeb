@@ -55,7 +55,7 @@ include("../includes/header.php");
 
                         <div class="alert alert-danger text-center" role="alert">
 
-                            Ya existe una cuenta asociada a ese correo.
+                            Ya existe una cuenta asociada a ese correo o DNI.
 
                         </div>
 
@@ -68,6 +68,31 @@ include("../includes/header.php");
                         <div class="alert alert-danger text-center" role="alert">
 
                             Revisá los datos ingresados: alguno de los campos no cumple el formato requerido.
+
+                        </div>
+
+                    <?php
+                    }
+
+                    if (isset($_GET['mailerror'])) {
+                    ?>
+
+                        <div class="alert alert-warning text-center" role="alert">
+
+                            No pudimos enviar el correo de validación, así que el registro no se completó.
+                            Verificá que la dirección sea correcta e intentá nuevamente en unos minutos.
+
+                        </div>
+
+                    <?php
+                    }
+
+                    if (isset($_GET['error'])) {
+                    ?>
+
+                        <div class="alert alert-danger text-center" role="alert">
+
+                            Ocurrió un error al procesar el registro. Intentá nuevamente más tarde.
 
                         </div>
 
@@ -91,110 +116,110 @@ include("../includes/header.php");
                         method="post"
                         novalidate>
 
-<div class="row">
+                        <div class="row">
 
-    <div class="col-md-6 mb-3">
+                            <div class="col-md-6 mb-3">
 
-        <label for="nombre" class="form-label">
+                                <label for="nombre" class="form-label">
 
-            Nombre <span aria-hidden="true">*</span>
+                                    Nombre <span aria-hidden="true">*</span>
 
-        </label>
+                                </label>
 
-        <input
-            type="text"
-            id="nombre"
-            name="nombre"
-            class="form-control"
-            maxlength="60"
-            minlength="2"
-            pattern="[A-Za-zÀ-ÿ\s]+"
-            required
-            aria-required="true"
-            aria-describedby="nombreAyuda">
+                                <input
+                                    type="text"
+                                    id="nombre"
+                                    name="nombre"
+                                    class="form-control"
+                                    maxlength="60"
+                                    minlength="2"
+                                    pattern="[A-Za-zÀ-ÿ\s]+"
+                                    required
+                                    aria-required="true"
+                                    aria-describedby="nombreAyuda">
 
-        <small id="nombreAyuda" class="form-text text-muted">Solo letras y espacios, entre 2 y 60 caracteres.</small>
+                                <small id="nombreAyuda" class="form-text text-muted">Solo letras y espacios, entre 2 y 60 caracteres.</small>
 
-    </div>
+                            </div>
 
-    <div class="col-md-6 mb-3">
+                            <div class="col-md-6 mb-3">
 
-        <label for="apellido" class="form-label">
+                                <label for="apellido" class="form-label">
 
-            Apellido <span aria-hidden="true">*</span>
+                                    Apellido <span aria-hidden="true">*</span>
 
-        </label>
+                                </label>
 
-        <input
-            type="text"
-            id="apellido"
-            name="apellido"
-            class="form-control"
-            maxlength="60"
-            minlength="2"
-            pattern="[A-Za-zÀ-ÿ\s]+"
-            required
-            aria-required="true"
-            aria-describedby="apellidoAyuda">
+                                <input
+                                    type="text"
+                                    id="apellido"
+                                    name="apellido"
+                                    class="form-control"
+                                    maxlength="60"
+                                    minlength="2"
+                                    pattern="[A-Za-zÀ-ÿ\s]+"
+                                    required
+                                    aria-required="true"
+                                    aria-describedby="apellidoAyuda">
 
-        <small id="apellidoAyuda" class="form-text text-muted">Solo letras y espacios, entre 2 y 60 caracteres.</small>
+                                <small id="apellidoAyuda" class="form-text text-muted">Solo letras y espacios, entre 2 y 60 caracteres.</small>
 
-    </div>
+                            </div>
 
-</div>
+                        </div>
 
-<div class="row">
+                        <div class="row">
 
-    <div class="col-md-6 mb-3">
+                            <div class="col-md-6 mb-3">
 
-        <label for="dni" class="form-label">
+                                <label for="dni" class="form-label">
 
-            DNI <span aria-hidden="true">*</span>
+                                    DNI <span aria-hidden="true">*</span>
 
-        </label>
+                                </label>
 
-        <input
-            type="text"
-            id="dni"
-            name="dni"
-            class="form-control"
-            inputmode="numeric"
-            maxlength="8"
-            minlength="7"
-            pattern="\d{7,8}"
-            required
-            aria-required="true"
-            aria-describedby="dniAyuda">
+                                <input
+                                    type="text"
+                                    id="dni"
+                                    name="dni"
+                                    class="form-control"
+                                    inputmode="numeric"
+                                    maxlength="8"
+                                    minlength="7"
+                                    pattern="\d{7,8}"
+                                    required
+                                    aria-required="true"
+                                    aria-describedby="dniAyuda">
 
-        <small id="dniAyuda" class="form-text text-muted">Solo números, sin puntos (7 u 8 dígitos).</small>
+                                <small id="dniAyuda" class="form-text text-muted">Solo números, sin puntos (7 u 8 dígitos).</small>
 
-    </div>
+                            </div>
 
-    <div class="col-md-6 mb-3">
+                            <div class="col-md-6 mb-3">
 
-        <label for="telefono" class="form-label">
+                                <label for="telefono" class="form-label">
 
-            Teléfono <span aria-hidden="true">*</span>
+                                    Teléfono <span aria-hidden="true">*</span>
 
-        </label>
+                                </label>
 
-        <input
-            type="tel"
-            id="telefono"
-            name="telefono"
-            class="form-control"
-            maxlength="20"
-            minlength="6"
-            pattern="[0-9+\-\s()]{6,20}"
-            required
-            aria-required="true"
-            aria-describedby="telefonoAyuda">
+                                <input
+                                    type="tel"
+                                    id="telefono"
+                                    name="telefono"
+                                    class="form-control"
+                                    maxlength="20"
+                                    minlength="6"
+                                    pattern="[0-9+\-\s()]{6,20}"
+                                    required
+                                    aria-required="true"
+                                    aria-describedby="telefonoAyuda">
 
-        <small id="telefonoAyuda" class="form-text text-muted">Solo números y los símbolos + - ( ), entre 6 y 20 caracteres.</small>
+                                <small id="telefonoAyuda" class="form-text text-muted">Solo números y los símbolos + - ( ), entre 6 y 20 caracteres.</small>
 
-    </div>
+                            </div>
 
-</div>
+                        </div>
 
                         <div class="mb-3">
 
@@ -379,15 +404,15 @@ include("../includes/header.php");
 </div>
 
 <script>
-    (function () {
+    (function() {
         var formulario = document.getElementById('formRegistro');
         var clave = document.getElementById('clave');
         var claveConfirmar = document.getElementById('claveConfirmar');
         var errorConfirmar = document.getElementById('claveConfirmarError');
 
         // mostrar ocultar contraseña
-        document.querySelectorAll('.toggle-clave').forEach(function (boton) {
-            boton.addEventListener('click', function () {
+        document.querySelectorAll('.toggle-clave').forEach(function(boton) {
+            boton.addEventListener('click', function() {
                 var idCampo = boton.getAttribute('data-target');
                 var campo = document.getElementById(idCampo);
                 var iconoMostrar = boton.querySelector('.icon-mostrar');
@@ -420,7 +445,7 @@ include("../includes/header.php");
         clave.addEventListener('input', claveCoincide);
         claveConfirmar.addEventListener('input', claveCoincide);
 
-        formulario.addEventListener('submit', function (evento) {
+        formulario.addEventListener('submit', function(evento) {
             var esValido = formulario.checkValidity();
             var coincide = claveCoincide();
 

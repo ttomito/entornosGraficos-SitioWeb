@@ -1,100 +1,129 @@
 <?php
 
-include("../../includes/header.php");
-include("../../includes/conexion.php");
+include_once("../../includes/header.php");
+include_once("../../includes/conexion.php");
 
 $registrosPorPagina = 6;
 
-$pagina = isset($_GET['pagina'])
-    ? (int)$_GET['pagina']
-    : 1;
+$pagina = isset($_GET['pagina']) ? (int) $_GET['pagina'] : 1;
 
 if ($pagina < 1) {
     $pagina = 1;
 }
 
-$inicio =
-    ($pagina - 1) * $registrosPorPagina;
 
-$sqlConteo = "SELECT COUNT(*) total FROM novedades";
+$sqlConteo = "SELECT COUNT(*) AS total FROM novedades WHERE fechaExpiracion >= CURDATE()";
 
-$resultadoConteo =
-    mysqli_query(
-        $link,
-        $sqlConteo
-    );
+$resultadoConteo = mysqli_query($link, $sqlConteo);
 
-$filaConteo =
-    mysqli_fetch_assoc(
-        $resultadoConteo
-    );
+$filaConteo = mysqli_fetch_assoc($resultadoConteo);
 
-$totalRegistros =
-    $filaConteo['total'];
+$totalRegistros = (int) $filaConteo['total'];
 
-$totalPaginas =
-    ceil($totalRegistros / $registrosPorPagina);
+$totalPaginas = max(1, (int) ceil($totalRegistros / $registrosPorPagina));
 
-$sql = "SELECT * FROM novedades ORDER BY codNovedad DESC LIMIT $inicio, $registrosPorPagina";
+if ($pagina > $totalPaginas) {
+    $pagina = $totalPaginas;
+}
 
-$resultado = mysqli_query($link, $sql);
+$inicio = ($pagina - 1) * $registrosPorPagina;
 
-$hoy = new DateTime();
+$sql = "SELECT *
+        FROM novedades
+        WHERE fechaExpiracion >= CURDATE()
+        ORDER BY codNovedad DESC
+        LIMIT ? OFFSET ?";
+
+$sentencia = mysqli_prepare($link, $sql);
+
+mysqli_stmt_bind_param($sentencia, "ii", $registrosPorPagina, $inicio);
+
+mysqli_stmt_execute($sentencia);
+
+$resultado = mysqli_stmt_get_result($sentencia);
+
+$estaLogueado = isset($_SESSION['id']);
+
+$esCliente = isset($_SESSION['tipo'])
+    && $_SESSION['tipo'] === 'CLIENTE';
 
 ?>
 
-<div class="container mt-4">
+<main id="contenido-principal">
 
-    <div class="d-flex justify-content-between mb-4">
+    <div class="container mt-4">
 
-        <h2>
+        <div class="d-flex justify-content-between mb-4">
 
-            Novedades
+            <h2>
 
-        </h2>
+                Novedades
 
-    </div>
+            </h2>
 
-    <div class="row">
+        </div>
 
-        <?php
+        <?php if ($totalRegistros === 0) { ?>
 
-        while ($fila = mysqli_fetch_assoc($resultado)) {
-            $fechaPublicacion =
-                new DateTime(
-                    $fila['fechaPublicacion']
+            <div class="alert alert-info" role="status">
+
+                No hay novedades disponibles en este momento.
+
+            </div>
+
+        <?php } ?>
+
+        <div class="row">
+
+            <?php
+
+            while ($fila = mysqli_fetch_assoc($resultado)) {
+
+                $titulo = htmlspecialchars(
+                    $fila['tituloNovedad'] ?? '',
+                    ENT_QUOTES,
+                    'UTF-8'
                 );
 
-            $fechaExpiracion =
-                new DateTime(
-                    $fila['fechaExpiracion']
+                $textoOriginal = $fila['textoNovedad'] ?? '';
+
+                $textoCorto = mb_substr($textoOriginal, 0, 150);
+
+                if (mb_strlen($textoOriginal) > 150) {
+                    $textoCorto = rtrim($textoCorto) . '...';
+                }
+
+                $textoCorto = htmlspecialchars(
+                    $textoCorto,
+                    ENT_QUOTES,
+                    'UTF-8'
                 );
 
-            if (
-                $fechaExpiracion >= $hoy
-            ) {
-                $titulo = htmlspecialchars($fila['tituloNovedad'], ENT_QUOTES, 'UTF-8');
-                $textoCorto = htmlspecialchars(mb_substr($fila['textoNovedad'], 0, 150), ENT_QUOTES, 'UTF-8');
-                $fechaPubTexto = htmlspecialchars($fila['fechaPublicacion'], ENT_QUOTES, 'UTF-8');
-                $fechaExpTexto = htmlspecialchars($fila['fechaExpiracion'], ENT_QUOTES, 'UTF-8');
-        ?>
+                $fechaPublicacion = new DateTime($fila['fechaPublicacion']);
+
+                $fechaExpiracion = new DateTime($fila['fechaExpiracion']);
+
+            ?>
 
                 <div class="col-md-4 mb-4">
 
                     <div class="card shadow-lg border-0 h-100 card-hover">
 
                         <?php if (!empty($fila['imagen'])) { ?>
+
                             <img
                                 src="../../uploads/novedades/<?= htmlspecialchars($fila['imagen'], ENT_QUOTES, 'UTF-8') ?>"
                                 class="card-img-top"
-                                alt="Imagen relacionada a la novedad: <?= $titulo ?>"
+                                alt="<?= $titulo ?>"
+                                title="Imagen de la novedad: <?= $titulo ?>"
+                                loading="lazy"
                                 style="height: 200px; object-fit: cover;">
+
                         <?php } ?>
 
                         <div class="card-body">
 
-                            <span
-                                class="badge bg-primary mb-3">
+                            <span class="badge bg-primary mb-3">
 
                                 Novedad
 
@@ -110,8 +139,6 @@ $hoy = new DateTime();
 
                                 <?= $textoCorto ?>
 
-                                ...
-
                             </p>
 
                             <hr>
@@ -120,7 +147,9 @@ $hoy = new DateTime();
 
                                 Publicado:
 
-                                <time datetime="<?= $fechaPubTexto ?>"><?= $fechaPubTexto ?></time>
+                                <time datetime="<?= $fechaPublicacion->format('Y-m-d') ?>">
+                                    <?= $fechaPublicacion->format('d/m/Y') ?>
+                                </time>
 
                             </small>
 
@@ -130,23 +159,18 @@ $hoy = new DateTime();
 
                                 Expira:
 
-                                <time datetime="<?= $fechaExpTexto ?>"><?= $fechaExpTexto ?></time>
+                                <time datetime="<?= $fechaExpiracion->format('Y-m-d') ?>">
+                                    <?= $fechaExpiracion->format('d/m/Y') ?>
+                                </time>
 
                             </small>
 
                             <br><br>
 
-                            <?php
-
-                            if (
-                                isset($_SESSION['tipo'])
-                                &&
-                                $_SESSION['tipo'] == 'CLIENTE'
-                            ) {
-                            ?>
+                            <?php if ($esCliente) { ?>
 
                                 <a
-                                    href="../novedades/verNovedad.php?codNovedad=<?= (int) $fila['codNovedad'] ?>"
+                                    href="verNovedad.php?codNovedad=<?= (int) $fila['codNovedad'] ?>"
                                     class="btn btn-primary">
 
                                     Ver Novedad
@@ -154,12 +178,18 @@ $hoy = new DateTime();
 
                                 </a>
 
-                            <?php
-                            } else {
-                            ?>
+                            <?php } elseif ($estaLogueado) { ?>
+
+                                <span class="text-muted small">
+
+                                    Contenido disponible para clientes.
+
+                                </span>
+
+                            <?php } else { ?>
 
                                 <a
-                                    href="/entornosGraficos-SitioWeb/auth/login.php"
+                                    href=<?php echo ruta."/auth/login.php" ?>
                                     class="btn btn-warning">
 
                                     Iniciar Sesión
@@ -167,9 +197,7 @@ $hoy = new DateTime();
 
                                 </a>
 
-                            <?php
-                            }
-                            ?>
+                            <?php } ?>
 
                         </div>
 
@@ -177,88 +205,87 @@ $hoy = new DateTime();
 
                 </div>
 
-        <?php
+            <?php
             }
-        }
-        ?>
+            ?>
 
-    </div>
-    <div class="d-flex justify-content-center mt-4">
+        </div>
 
-        <nav aria-label="Paginación de novedades">
+        <?php if ($totalPaginas > 1) { ?>
 
-            <ul class="pagination flex-wrap justify-content-center">
+            <div class="d-flex justify-content-center mt-4">
 
-                <?php if ($pagina > 1) { ?>
+                <nav aria-label="Paginación de novedades">
 
-                    <li class="page-item">
+                    <ul class="pagination flex-wrap justify-content-center">
 
-                        <a
-                            class="page-link"
-                            href="?pagina=<?= $pagina - 1 ?>">
+                        <?php if ($pagina > 1) { ?>
 
-                            Anterior
+                            <li class="page-item">
 
-                        </a>
+                                <a
+                                    class="page-link"
+                                    href="?pagina=<?= $pagina - 1 ?>">
 
-                    </li>
+                                    Anterior
 
-                <?php } ?>
+                                </a>
 
-                <?php
+                            </li>
 
-                for (
-                    $i = 1;
-                    $i <= $totalPaginas;
-                    $i++
-                ) {
-                ?>
+                        <?php } ?>
 
-                    <li
-                        class="page-item <?= $i == $pagina ? 'active' : '' ?>">
+                        <?php for ($i = 1; $i <= $totalPaginas; $i++) { ?>
 
-                        <a
-                            class="page-link"
-                            href="?pagina=<?= $i ?>"
-                            <?= $i == $pagina ? 'aria-current="page"' : '' ?>>
+                            <li class="page-item <?= $i == $pagina ? 'active' : '' ?>">
 
-                            <?= $i ?>
-                            <?php if ($i == $pagina) { ?>
-                                <span class="visually-hidden"> (página actual)</span>
-                            <?php } ?>
+                                <a
+                                    class="page-link"
+                                    href="?pagina=<?= $i ?>"
+                                    <?= $i == $pagina ? 'aria-current="page"' : '' ?>>
 
-                        </a>
+                                    <?= $i ?>
 
-                    </li>
+                                    <?php if ($i == $pagina) { ?>
+                                        <span class="visually-hidden"> (página actual)</span>
+                                    <?php } ?>
 
-                <?php
-                }
-                ?>
+                                </a>
 
-                <?php if ($pagina < $totalPaginas) { ?>
+                            </li>
 
-                    <li class="page-item">
+                        <?php } ?>
 
-                        <a
-                            class="page-link"
-                            href="?pagina=<?= $pagina + 1 ?>">
+                        <?php if ($pagina < $totalPaginas) { ?>
 
-                            Siguiente
+                            <li class="page-item">
 
-                        </a>
+                                <a
+                                    class="page-link"
+                                    href="?pagina=<?= $pagina + 1 ?>">
 
-                    </li>
+                                    Siguiente
 
-                <?php } ?>
+                                </a>
 
-            </ul>
+                            </li>
 
-        </nav>
+                        <?php } ?>
+
+                    </ul>
+
+                </nav>
+
+            </div>
+
+        <?php } ?>
 
     </div>
 
-</div>
+</main>
 
+<?php
 
+mysqli_stmt_close($sentencia);
 
-<?php include("../../includes/footer.php"); ?>
+include_once("../../includes/footer.php");

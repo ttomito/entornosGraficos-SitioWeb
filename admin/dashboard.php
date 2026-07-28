@@ -6,82 +6,28 @@ include("../includes/verificarSession.php");
 include("../includes/header.php");
 
 
+$sqlAerolineas = "SELECT COUNT(*) AS total FROM aerolineas";
 
+$resultadoAerolineas = mysqli_query($link, $sqlAerolineas);
 
-$sqlAerolineas = "
-SELECT COUNT(*) AS total
-FROM aerolineas
-";
+$totalAerolineas = mysqli_fetch_assoc($resultadoAerolineas);
 
-$resultadoAerolineas =
-    mysqli_query(
-        $link,
-        $sqlAerolineas
-    );
+$sqlPendientes = "SELECT COUNT(*) AS total FROM promociones WHERE estadoPromocion = 'PENDIENTE'";
 
-$totalAerolineas =
-    mysqli_fetch_assoc(
-        $resultadoAerolineas
-    );
+$resultadoPendientes = mysqli_query($link,$sqlPendientes);
 
-$sqlPendientes = "
+$totalPendientes = mysqli_fetch_assoc($resultadoPendientes);
 
-SELECT COUNT(*) AS total
+$sqlAprobadas = "SELECT COUNT(*) AS total FROM promociones WHERE estadoPromocion = 'APROBADA'";
 
-FROM promociones
+$resultadoAprobadas = mysqli_query($link, $sqlAprobadas);
 
-WHERE estadoPromocion = 'PENDIENTE'
+$totalAprobadas = mysqli_fetch_assoc($resultadoAprobadas);
 
-";
+$sqlUsuarios = "SELECT COUNT(*) AS total FROM usuarios";
 
-$resultadoPendientes =
-    mysqli_query(
-        $link,
-        $sqlPendientes
-    );
-
-$totalPendientes =
-    mysqli_fetch_assoc(
-        $resultadoPendientes
-    );
-
-$sqlAprobadas = "
-
-SELECT COUNT(*) AS total
-
-FROM promociones
-
-WHERE estadoPromocion = 'APROBADA'
-
-";
-
-$resultadoAprobadas =
-    mysqli_query(
-        $link,
-        $sqlAprobadas
-    );
-
-$totalAprobadas =
-    mysqli_fetch_assoc(
-        $resultadoAprobadas
-    );
-
-
-$sqlUsuarios = "
-SELECT COUNT(*) AS total
-FROM usuarios
-";
-
-$resultadoUsuarios =
-    mysqli_query(
-        $link,
-        $sqlUsuarios
-    );
-
-$totalUsuarios =
-    mysqli_fetch_assoc(
-        $resultadoUsuarios
-    );
+$resultadoUsuarios = mysqli_query($link, $sqlUsuarios);
+$totalUsuarios = mysqli_fetch_assoc($resultadoUsuarios);
 ?>
 
 <div class="container mt-5">

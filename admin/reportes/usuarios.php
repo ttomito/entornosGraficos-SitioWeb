@@ -6,73 +6,30 @@ include("../../includes/header.php");
 
 $registrosPorPagina = 10;
 
-$pagina = isset($_GET['pagina'])
-? (int)$_GET['pagina']
-: 1;
+$pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 
-if($pagina < 1)
-{
+if ($pagina < 1) {
     $pagina = 1;
 }
 
-$inicio =
-($pagina - 1)
-*
-$registrosPorPagina;
+$inicio = ($pagina - 1) * $registrosPorPagina;
 
+$sqlConteo = "SELECT COUNT(*) AS total FROM usuarios";
 
-/*
-| Conteo
-*/
-
-$sqlConteo = "
-
-SELECT COUNT(*) AS total
-
-FROM usuarios
-
-";
-
-$resultadoConteo = mysqli_query($link,$sqlConteo);
+$resultadoConteo = mysqli_query($link, $sqlConteo);
 
 $filaConteo = mysqli_fetch_assoc($resultadoConteo);
 
 $totalRegistros = $filaConteo['total'];
 
-$totalPaginas = ceil(
-$totalRegistros
-/
-$registrosPorPagina
-);
+$totalPaginas = ceil($totalRegistros/$registrosPorPagina);
 
+$sql = "SELECT codUsuario, nombreUsuario, emailUsuario, tipoUsuario, estadoCuenta FROM usuarios ORDER BY nombreUsuario LIMIT $inicio, $registrosPorPagina ";
 
-/*
-| Consulta principal
-*/
+$resultado = mysqli_query($link, $sql);
 
-$sql = "
-
-SELECT
-codUsuario,
-nombreUsuario,
-emailUsuario,
-tipoUsuario,
-estadoCuenta
-
-FROM usuarios
-
-ORDER BY nombreUsuario
-
-LIMIT $inicio,
-$registrosPorPagina
-
-";
-
-$resultado = mysqli_query($link,$sql);
-
-if(!$resultado)
-{
-    die("Error en la consulta: ".mysqli_error($link));
+if (!$resultado) {
+    die("Error en la consulta: " . mysqli_error($link));
 }
 
 ?>
@@ -85,122 +42,116 @@ if(!$resultado)
 
         <div class="card-body">
 
-<?php if(mysqli_num_rows($resultado)==0){ ?>
+            <?php if (mysqli_num_rows($resultado) == 0) { ?>
 
-<p class="text-muted">
+                <p class="text-muted">
 
-No hay usuarios registrados.
+                    No hay usuarios registrados.
 
-</p>
+                </p>
 
-<?php } else { ?>
+            <?php } else { ?>
 
-            <table class="table table-hover">
+                <table class="table table-hover">
 
-                <thead>
+                    <thead>
 
-                    <tr>
+                        <tr>
 
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Email</th>
-                        <th>Tipo</th>
-                        <th>Estado</th>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                            <th>Tipo</th>
+                            <th>Estado</th>
 
-                    </tr>
+                        </tr>
 
-                </thead>
+                    </thead>
 
-                <tbody>
+                    <tbody>
 
-                <?php while($fila = mysqli_fetch_assoc($resultado)){ ?>
+                        <?php while ($fila = mysqli_fetch_assoc($resultado)) { ?>
 
-                    <tr>
+                            <tr>
 
-                        <td><?= $fila['codUsuario'] ?></td>
-                        <td><?= $fila['nombreUsuario'] ?></td>
-                        <td><?= $fila['emailUsuario'] ?></td>
-                        <td><?= $fila['tipoUsuario'] ?></td>
-                        <td><?= $fila['estadoCuenta'] ?></td>
+                                <td><?= $fila['codUsuario'] ?></td>
+                                <td><?= $fila['nombreUsuario'] ?></td>
+                                <td><?= $fila['emailUsuario'] ?></td>
+                                <td><?= $fila['tipoUsuario'] ?></td>
+                                <td><?= $fila['estadoCuenta'] ?></td>
 
-                    </tr>
+                            </tr>
 
-                <?php } ?>
+                        <?php } ?>
 
-                </tbody>
+                    </tbody>
 
-            </table>
+                </table>
             <?php } ?>
             <div class="d-flex justify-content-center mt-4">
 
-<nav>
+                <nav>
 
-<ul class="pagination">
+                    <ul class="pagination">
 
-<?php if($pagina > 1){ ?>
+                        <?php if ($pagina > 1) { ?>
 
-<li class="page-item">
+                            <li class="page-item">
 
-<a
-class="page-link"
-href="?pagina=<?= $pagina-1 ?>">
+                                <a
+                                    class="page-link"
+                                    href="?pagina=<?= $pagina - 1 ?>">
 
-Anterior
+                                    Anterior
 
-</a>
+                                </a>
 
-</li>
+                            </li>
 
-<?php } ?>
+                        <?php } ?>
 
-<?php
+                        <?php
 
-for(
-$i=1;
-$i<=$totalPaginas;
-$i++
-)
-{
+                        for ($i = 1; $i <= $totalPaginas; $i++) {
 
-?>
+                        ?>
 
-<li
-class="page-item
-<?= $i==$pagina ? 'active' : '' ?>">
+                            <li
+                                class="page-item <?= $i == $pagina ? 'active' : '' ?>">
+                                
+                                <a
+                                    class="page-link"
+                                    href="?pagina=<?= $i ?>">
 
-<a
-class="page-link"
-href="?pagina=<?= $i ?>">
+                                    <?= $i ?>
 
-<?= $i ?>
+                                </a>
 
-</a>
+                            </li>
 
-</li>
+                        <?php } ?>
 
-<?php } ?>
+                        <?php if ($pagina < $totalPaginas) { ?>
 
-<?php if($pagina < $totalPaginas){ ?>
+                            <li class="page-item">
 
-<li class="page-item">
+                                <a
+                                    class="page-link"
+                                    href="?pagina=<?= $pagina + 1 ?>">
 
-<a
-class="page-link"
-href="?pagina=<?= $pagina+1 ?>">
+                                    Siguiente
 
-Siguiente
+                                </a>
 
-</a>
+                            </li>
 
-</li>
+                        <?php } ?>
 
-<?php } ?>
+                    </ul>
 
-</ul>
+                </nav>
 
-</nav>
-
-</div>
+            </div>
 
         </div>
 

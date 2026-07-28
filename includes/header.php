@@ -1,10 +1,27 @@
 <?php
 
+include("rutas.php");
+
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
-$paginaActual = basename($_SERVER['PHP_SELF']);
+
 $rutaActual = $_SERVER['PHP_SELF'];
+
+// Extraemos solo el path de la URL definida en rutas.php
+$rutaBase = parse_url(ruta, PHP_URL_PATH);
+
+function esRutaActiva($rutaRelativa)
+{
+    global $rutaActual, $rutaBase;
+    return $rutaActual === $rutaBase . $rutaRelativa ? ' active' : '';
+}
+
+function ariaActual($rutaRelativa)
+{
+    global $rutaActual, $rutaBase;
+    return $rutaActual === $rutaBase . $rutaRelativa ? ' aria-current="page"' : '';
+}
 
 ?>
 
@@ -28,13 +45,13 @@ $rutaActual = $_SERVER['PHP_SELF'];
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
         rel="stylesheet">
 
-        <link
+    <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <link
         rel="stylesheet"
-        href="/entornosGraficos-SitioWeb/assets/css/estilos.css">
+        href="<?php echo ruta . '/assets/css/estilos.css'; ?>">
 
 </head>
 
@@ -49,9 +66,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
         <div class="container">
 
             <a
-                class="navbar-brand fw-bold fs-3"
-                href="/entornosGraficos-SitioWeb/index.php"
-                style="color: white;">
+                class="navbar-brand fw-bold fs-3 text-white"
+                href="<?php echo ruta . '/index.php'; ?>">
 
                 AirTickets
 
@@ -83,8 +99,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php">
+                            <a class="nav-link<?= esRutaActiva('/Sobrenosotros/pagina.php') ?>"
+                                href="<?php echo ruta . '/Sobrenosotros/pagina.php'; ?>" <?= ariaActual('/Sobrenosotros/pagina.php') ?>>
 
                                 Sobre Nosotros
 
@@ -96,8 +112,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/index.php">
+                            <a class="nav-link<?= esRutaActiva('/index.php') ?>"
+                                href="<?php echo ruta . '/index.php'; ?>" <?= ariaActual('/index.php') ?>>
 
                                 Inicio
 
@@ -107,7 +123,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link" href="/entornosGraficos-SitioWeb/cliente/vuelos/listar.php">
+                            <a class="nav-link<?= esRutaActiva('/cliente/vuelos/listar.php') ?>"
+                                href="<?php echo ruta . '/cliente/vuelos/listar.php'; ?>" <?= ariaActual('/cliente/vuelos/listar.php') ?>>
 
                                 Vuelos
 
@@ -117,7 +134,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link" href="/entornosGraficos-SitioWeb/cliente/promociones/listar.php">
+                            <a class="nav-link<?= esRutaActiva('/cliente/promociones/listar.php') ?>"
+                                href="<?php echo ruta . '/cliente/promociones/listar.php'; ?>" <?= ariaActual('/cliente/promociones/listar.php') ?>>
 
                                 Promociones
 
@@ -127,7 +145,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link" href="/entornosGraficos-SitioWeb/cliente/novedades/listar.php">
+                            <a class="nav-link<?= esRutaActiva('/cliente/novedades/listar.php') ?>"
+                                href="<?php echo ruta . '/cliente/novedades/listar.php'; ?>" <?= ariaActual('/cliente/novedades/listar.php') ?>>
 
                                 Novedades
 
@@ -141,8 +160,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php">
+                            <a class="nav-link<?= esRutaActiva('/Sobrenosotros/pagina.php') ?>"
+                                href="<?php echo ruta . '/Sobrenosotros/pagina.php'; ?>" <?= ariaActual('/Sobrenosotros/pagina.php') ?>>
 
                                 Sobre Nosotros
 
@@ -152,8 +171,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/cliente/dashboard.php">
+                            <a class="nav-link<?= esRutaActiva('/cliente/dashboard.php') ?>"
+                                href="<?php echo ruta . '/cliente/dashboard.php'; ?>" <?= ariaActual('/cliente/dashboard.php') ?>>
 
                                 Inicio
 
@@ -163,8 +182,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/cliente/vuelos/listar.php">
+                            <a class="nav-link<?= esRutaActiva('/cliente/vuelos/listar.php') ?>"
+                                href="<?php echo ruta . '/cliente/vuelos/listar.php'; ?>" <?= ariaActual('/cliente/vuelos/listar.php') ?>>
 
                                 Vuelos
 
@@ -174,8 +193,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/cliente/reservas/listar.php">
+                            <a class="nav-link<?= esRutaActiva('/cliente/reservas/listar.php') ?>"
+                                href="<?php echo ruta . '/cliente/reservas/listar.php'; ?>" <?= ariaActual('/cliente/reservas/listar.php') ?>>
 
                                 Reservas
 
@@ -185,8 +204,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/cliente/promociones/listar.php">
+                            <a class="nav-link<?= esRutaActiva('/cliente/promociones/listar.php') ?>"
+                                href="<?php echo ruta . '/cliente/promociones/listar.php'; ?>" <?= ariaActual('/cliente/promociones/listar.php') ?>>
 
                                 Promociones
 
@@ -196,8 +215,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/cliente/novedades/listar.php">
+                            <a class="nav-link<?= esRutaActiva('/cliente/novedades/listar.php') ?>"
+                                href="<?php echo ruta . '/cliente/novedades/listar.php'; ?>" <?= ariaActual('/cliente/novedades/listar.php') ?>>
 
                                 Novedades
 
@@ -207,8 +226,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/perfil/index.php">
+                            <a class="nav-link<?= esRutaActiva('/perfil/index.php') ?>"
+                                href="<?php echo ruta . '/perfil/index.php'; ?>" <?= ariaActual('/perfil/index.php') ?>>
 
                                 Mi Perfil
 
@@ -222,8 +241,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php">
+                            <a class="nav-link<?= esRutaActiva('/Sobrenosotros/pagina.php') ?>"
+                                href="<?php echo ruta . '/Sobrenosotros/pagina.php'; ?>" <?= ariaActual('/Sobrenosotros/pagina.php') ?>>
 
                                 Sobre Nosotros
 
@@ -233,8 +252,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/ceo/dashboard.php">
+                            <a class="nav-link<?= esRutaActiva('/ceo/dashboard.php') ?>"
+                                href="<?php echo ruta . '/ceo/dashboard.php'; ?>" <?= ariaActual('/ceo/dashboard.php') ?>>
 
                                 Dashboard
 
@@ -244,8 +263,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/ceo/vuelos/listar.php">
+                            <a class="nav-link<?= esRutaActiva('/ceo/vuelos/listar.php') ?>"
+                                href="<?php echo ruta . '/ceo/vuelos/listar.php'; ?>" <?= ariaActual('/ceo/vuelos/listar.php') ?>>
 
                                 Mis Vuelos
 
@@ -255,8 +274,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/ceo/promociones/listar.php">
+                            <a class="nav-link<?= esRutaActiva('/ceo/promociones/listar.php') ?>"
+                                href="<?php echo ruta . '/ceo/promociones/listar.php'; ?>" <?= ariaActual('/ceo/promociones/listar.php') ?>>
 
                                 Promociones
 
@@ -266,8 +285,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/perfil/index.php">
+                            <a class="nav-link<?= esRutaActiva('/perfil/index.php') ?>"
+                                href="<?php echo ruta . '/perfil/index.php'; ?>" <?= ariaActual('/perfil/index.php') ?>>
 
                                 Mi Perfil
 
@@ -281,8 +300,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/Sobrenosotros/pagina.php">
+                            <a class="nav-link<?= esRutaActiva('/Sobrenosotros/pagina.php') ?>"
+                                href="<?php echo ruta . '/Sobrenosotros/pagina.php'; ?>" <?= ariaActual('/Sobrenosotros/pagina.php') ?>>
 
                                 Sobre Nosotros
 
@@ -292,8 +311,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/admin/dashboard.php">
+                            <a class="nav-link<?= esRutaActiva('/admin/dashboard.php') ?>"
+                                href="<?php echo ruta . '/admin/dashboard.php'; ?>" <?= ariaActual('/admin/dashboard.php') ?>>
 
                                 Dashboard
 
@@ -303,8 +322,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/admin/aerolineas/listar.php">
+                            <a class="nav-link<?= esRutaActiva('/admin/aerolineas/listar.php') ?>"
+                                href="<?php echo ruta . '/admin/aerolineas/listar.php'; ?>" <?= ariaActual('/admin/aerolineas/listar.php') ?>>
 
                                 Aerolíneas
 
@@ -314,18 +333,18 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/admin/ceos/listar.php">
+                            <a class="nav-link<?= esRutaActiva('/admin/ceos/listar.php') ?>"
+                                href="<?php echo ruta . '/admin/ceos/listar.php'; ?>" <?= ariaActual('/admin/ceos/listar.php') ?>>
 
                                 CEOs
 
                             </a>
 
                         </li>
-                          <li class="nav-item">
+                        <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/admin/asignaciones/listar.php">
+                            <a class="nav-link<?= esRutaActiva('/admin/asignaciones/listar.php') ?>"
+                                href="<?php echo ruta . '/admin/asignaciones/listar.php'; ?>" <?= ariaActual('/admin/asignaciones/listar.php') ?>>
 
                                 Asignaciones
 
@@ -335,8 +354,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/admin/promociones/listar.php">
+                            <a class="nav-link<?= esRutaActiva('/admin/promociones/listar.php') ?>"
+                                href="<?php echo ruta . '/admin/promociones/listar.php'; ?>" <?= ariaActual('/admin/promociones/listar.php') ?>>
 
                                 Promociones
 
@@ -346,8 +365,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/admin/novedades/listar.php">
+                            <a class="nav-link<?= esRutaActiva('/admin/novedades/listar.php') ?>"
+                                href="<?php echo ruta . '/admin/novedades/listar.php'; ?>" <?= ariaActual('/admin/novedades/listar.php') ?>>
 
                                 Novedades
 
@@ -357,8 +376,8 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                         <li class="nav-item">
 
-                            <a class="nav-link"
-                                href="/entornosGraficos-SitioWeb/perfil/index.php">
+                            <a class="nav-link<?= esRutaActiva('/perfil/index.php') ?>"
+                                href="<?php echo ruta . '/perfil/index.php'; ?>" <?= ariaActual('/perfil/index.php') ?>>
 
                                 Mi Perfil
 
@@ -383,17 +402,17 @@ $rutaActual = $_SERVER['PHP_SELF'];
 
                             Hola,
 
-                            <?= htmlspecialchars($_SESSION['nombre'], ENT_QUOTES, 'UTF-8') ?>
+                            <?= htmlspecialchars($_SESSION['nombre'] ?? '', ENT_QUOTES, 'UTF-8') ?>
 
                         </span>
 
-                        
+
                         <a
-                            href="/entornosGraficos-SitioWeb/auth/logout.php"
+                            href="<?php echo ruta . '/auth/logout.php'; ?>"
                             class="btn btn-danger">
 
                             Salir
-                            <span class="visually-hidden"> de la cuenta de <?= htmlspecialchars($_SESSION['nombre'], ENT_QUOTES, 'UTF-8') ?></span>
+                            <span class="visually-hidden"> de la cuenta de <?= htmlspecialchars($_SESSION['nombre'] ?? '', ENT_QUOTES, 'UTF-8') ?></span>
 
                         </a>
 
@@ -402,7 +421,7 @@ $rutaActual = $_SERVER['PHP_SELF'];
                     ?>
 
                         <a
-                            href="/entornosGraficos-SitioWeb/auth/login.php"
+                            href="<?php echo ruta . '/auth/login.php'; ?>"
                             class="btn btn-outline-light me-2">
 
                             Ingresar
@@ -410,7 +429,7 @@ $rutaActual = $_SERVER['PHP_SELF'];
                         </a>
 
                         <a
-                            href="/entornosGraficos-SitioWeb/auth/registro.php"
+                            href="<?php echo ruta . '/auth/registro.php'; ?>"
                             class="btn btn-warning">
 
                             Registrarse

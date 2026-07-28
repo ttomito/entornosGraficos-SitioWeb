@@ -1,6 +1,6 @@
 <?php
 
-include("../../includes/verificarSession.php");
+include("../../includes/verificarSessionAdmin.php");
 include("../../includes/header.php");
 
 ?>
@@ -41,38 +41,49 @@ include("../../includes/header.php");
                                 class="form-control"
                                 required
                                 minlength="2"
-                                maxlength="150"
+                                maxlength="100"
                                 aria-describedby="nombre-ayuda nombre-error">
-                            <div id="nombre-ayuda" class="form-text">Entre 2 y 150 caracteres.</div>
+                            <div id="nombre-ayuda" class="form-text">Entre 2 y 100 caracteres.</div>
                             <div id="nombre-error" class="invalid-feedback" role="alert"></div>
 
                         </div>
 
                         <div class="mb-3">
 
-                            <label for="descripcion">Descripción</label>
+                            <label for="descripcion">
+                                Descripción
+                                <span aria-hidden="true">*</span>
+                                <span class="visually-hidden">(obligatorio)</span>
+                            </label>
                             <textarea
                                 id="descripcion"
                                 name="descripcion"
                                 class="form-control"
+                                required
                                 maxlength="500"
                                 aria-describedby="descripcion-ayuda descripcion-error"></textarea>
-                            <div id="descripcion-ayuda" class="form-text">Opcional, hasta 500 caracteres.</div>
+                            <div id="descripcion-ayuda" class="form-text">Hasta 500 caracteres.</div>
                             <div id="descripcion-error" class="invalid-feedback" role="alert"></div>
 
                         </div>
 
                         <div class="mb-3">
 
-                            <label for="pais">País</label>
+                            <label for="pais">
+                                País
+                                <span aria-hidden="true">*</span>
+                                <span class="visually-hidden">(obligatorio)</span>
+                            </label>
                             <input
                                 type="text"
                                 id="pais"
                                 name="pais"
-                                class="form-control"
-                                maxlength="100"
+                                class="form-control text-uppercase"
+                                required
+                                maxlength="2"
+                                pattern="[A-Za-z]{2}"
                                 aria-describedby="pais-ayuda pais-error">
-                            <div id="pais-ayuda" class="form-text">Opcional. Solo letras, espacios y guiones.</div>
+                            <div id="pais-ayuda" class="form-text">Código de país de 2 letras, ej: AR, BR.</div>
                             <div id="pais-error" class="invalid-feedback" role="alert"></div>
 
                         </div>
@@ -96,24 +107,28 @@ include("../../includes/header.php");
             id: 'nombre',
             requerido: true,
             minLength: 2,
-            maxLength: 150,
+            maxLength: 100,
             mensajeVacio: 'Ingresá el nombre de la aerolínea.',
             mensajeCorto: 'El nombre debe tener al menos 2 caracteres.',
-            mensajeLargo: 'El nombre no puede superar los 150 caracteres.'
+            mensajeLargo: 'El nombre no puede superar los 100 caracteres.'
         },
         {
             id: 'descripcion',
-            requerido: false,
+            requerido: true,
             maxLength: 500,
+            mensajeVacio: 'Ingresá una descripción para la aerolínea.',
             mensajeLargo: 'La descripción no puede superar los 500 caracteres.'
         },
         {
             id: 'pais',
-            requerido: false,
-            maxLength: 100,
-            patron: /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/,
-            mensajePatron: 'El país solo puede contener letras, espacios y guiones.',
-            mensajeLargo: 'El país no puede superar los 100 caracteres.'
+            requerido: true,
+            minLength: 2,
+            maxLength: 2,
+            patron: /^[A-Za-z]{2}$/,
+            mensajeVacio: 'Ingresá el código de país.',
+            mensajeCorto: 'El país debe tener exactamente 2 letras.',
+            mensajeLargo: 'El país debe tener exactamente 2 letras.',
+            mensajePatron: 'El país debe ser un código de 2 letras (ej: AR, BR).'
         }
     ];
 
@@ -186,7 +201,6 @@ include("../../includes/header.php");
         return esValido;
     }
 
-    // Valida cada campo apenas el usuario sale de él, para dar feedback temprano
     REGLAS_VALIDACION.forEach((regla) => {
         const campo = document.getElementById(regla.id);
         campo.addEventListener('blur', () => validarCampo(regla));
@@ -234,22 +248,17 @@ $alertasCrear = [
     'nombre_largo' => [
         'icon'  => 'error',
         'title' => 'Nombre muy largo',
-        'text'  => 'El nombre no puede superar los 150 caracteres.'
+        'text'  => 'El nombre no puede superar los 100 caracteres.'
     ],
     'descripcion_larga' => [
         'icon'  => 'error',
         'title' => 'Descripción muy larga',
         'text'  => 'La descripción no puede superar los 500 caracteres.'
     ],
-    'pais_largo' => [
-        'icon'  => 'error',
-        'title' => 'País muy largo',
-        'text'  => 'El país no puede superar los 100 caracteres.'
-    ],
     'pais_invalido' => [
         'icon'  => 'error',
         'title' => 'País inválido',
-        'text'  => 'El país solo puede contener letras, espacios y guiones.'
+        'text'  => 'El país debe ser un código de 2 letras (ej: AR, BR).'
     ],
     'error_servidor' => [
         'icon'  => 'error',

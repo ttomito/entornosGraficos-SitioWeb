@@ -1,8 +1,12 @@
 <?php
 
-session_start();
-
+include("../../includes/verificarSessionCEO.php");
 include("../../includes/conexion.php");
+
+if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+    header("Location: listar.php?alerta=error_servidor");
+    exit();
+}
 
 $idCEO = isset($_SESSION['id']) ? (int)$_SESSION['id'] : 0;
 $idVuelo = isset($_POST['id']) ? (int)$_POST['id'] : 0;
@@ -11,10 +15,6 @@ if ($idCEO <= 0 || $idVuelo <= 0) {
     header("Location: listar.php");
     exit();
 }
-
-/*
-| Validar que el vuelo exista y pertenezca a este CEO
-*/
 
 $sqlValidacion = "SELECT v.*
 FROM vuelos v
@@ -98,6 +98,12 @@ if (!ctype_digit((string)$asientos) || $asientos < 0 || $asientos > 500) {
 $precio = (float)$precio;
 $asientos = (int)$asientos;
 
+// Si el vuelo todavía no tiene imagen, es obligatorio subir una en esta edicion
+if (empty($imagenActual) && (!isset($_FILES['imagen']) || $_FILES['imagen']['error'] === UPLOAD_ERR_NO_FILE)) {
+    header("Location: editar.php?id=$idVuelo&alerta=imagen_requerida");
+    exit();
+}
+
 $nombreImagen = $imagenActual;
 
 if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] === UPLOAD_ERR_OK) {
@@ -108,7 +114,7 @@ if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] === UPLOAD_ERR_OK) {
         mkdir($carpeta, 0755, true);
     }
 
-    $maxTamanio = 3 * 1024 * 1024; // 3MB
+    $maxTamanio = 3 * 1024 * 1024;
     if ($_FILES['imagen']['size'] > $maxTamanio) {
         header("Location: editar.php?id=$idVuelo&alerta=imagen_muy_grande");
         exit();
@@ -141,8 +147,7 @@ if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] === UPLOAD_ERR_OK) {
     }
 }
 
-$sql = "UPDATE vuelos
-SET
+$sql = "UPDATE vuelos SET
 origenVuelo = ?,
 destinoVuelo = ?,
 fechaVuelo = ?,

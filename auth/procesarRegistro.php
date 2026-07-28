@@ -1,17 +1,19 @@
 <?php
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+require_once __DIR__ . '/../includes/conexion.php';
+require_once __DIR__ . '/../includes/mailer.php';
+include '../includes/rutas.php';
 
-require '../vendor/autoload.php';
-
-include("../includes/conexion.php");
-
+// Solo se accede por POST desde el formulario
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: registro.php');
+    exit();
+}
 
 $nombre         = trim($_POST['nombre'] ?? '');
 $apellido       = trim($_POST['apellido'] ?? '');
 $dni            = trim($_POST['dni'] ?? '');
-$email          = trim($_POST['email'] ?? '');
+$email          = mb_strtolower(trim($_POST['email'] ?? ''));
 $telefono       = trim($_POST['telefono'] ?? '');
 $clave          = $_POST['clave'] ?? '';
 $claveConfirmar = $_POST['claveConfirmar'] ?? '';
@@ -52,106 +54,78 @@ if (!in_array($tipoUsuario, ['CLIENTE', 'CEO'], true)) {
 }
 
 if (!empty($errores)) {
-    header("Location: registro.php?invalido=1");
+    header('Location: registro.php?invalido=1');
     exit();
 }
 
-$token = bin2hex(random_bytes(32));
+$stmt = mysqli_prepare($link, 'SELECT emailUsuario FROM usuarios WHERE emailUsuario = ? OR dniUsuario = ? LIMIT 1');
+mysqli_stmt_bind_param($stmt, 'ss', $email, $dni);
+mysqli_stmt_execute($stmt);
+mysqli_stmt_store_result($stmt);
+$yaExiste = mysqli_stmt_num_rows($stmt) > 0;
+mysqli_stmt_close($stmt);
 
-if ($tipoUsuario == "CEO") {
-    $estado = "PENDIENTE";
-    $aprobadoAdmin = "NO";
-} else {
-    $estado = "PENDIENTE";
-    $aprobadoAdmin = "SI";
-}
-
-// Hash contraseña 
-$claveHash = password_hash($clave, PASSWORD_DEFAULT);
-
-
-$nombreEsc   = mysqli_real_escape_string($link, $nombre);
-$apellidoEsc = mysqli_real_escape_string($link, $apellido);
-$dniEsc      = mysqli_real_escape_string($link, $dni);
-$emailEsc    = mysqli_real_escape_string($link, $email);
-$telefonoEsc = mysqli_real_escape_string($link, $telefono);
-
-
-$consulta = "SELECT * FROM usuarios WHERE emailUsuario='$emailEsc' OR dniUsuario='$dniEsc'";
-
-$resultado = mysqli_query($link, $consulta);
-
-if (mysqli_num_rows($resultado) > 0) {
-    header("Location: registro.php?existe=1");
+if ($yaExiste) {
+    header('Location: registro.php?existe=1');
     exit();
 }
 
+$token         = bin2hex(random_bytes(32));
+$claveHash     = password_hash($clave, PASSWORD_DEFAULT);
+$estado        = 'PENDIENTE';
+$aprobadoAdmin = ($tipoUsuario === 'CEO') ? 'NO' : 'SI';
 
-$vSql = "INSERT INTO usuarios
-(nombreUsuario, apellidoUsuario, dniUsuario, emailUsuario, claveUsuario, telefonoUsuario, tipoUsuario, estadoCuenta, tokenValidacion, aprobadoAdmin)
-VALUES
-('$nombreEsc','$apellidoEsc','$dniEsc','$emailEsc','$claveHash','$telefonoEsc','$tipoUsuario','$estado','$token','$aprobadoAdmin')";
+$sql = 'INSERT INTO usuarios
+        (nombreUsuario, apellidoUsuario, dniUsuario, emailUsuario, claveUsuario,
+         telefonoUsuario, tipoUsuario, estadoCuenta, tokenValidacion, aprobadoAdmin)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
 
-$vResultado = mysqli_query($link, $vSql);
+$stmt = mysqli_prepare($link, $sql);
+mysqli_stmt_bind_param(
+    $stmt,
+    'ssssssssss',
+    $nombre,
+    $apellido,
+    $dni,
+    $email,
+    $claveHash,
+    $telefono,
+    $tipoUsuario,
+    $estado,
+    $token,
+    $aprobadoAdmin
+);
 
+if (!mysqli_stmt_execute($stmt)) {
+    error_log('Error al insertar usuario: ' . mysqli_stmt_error($stmt));
+    mysqli_stmt_close($stmt);
+    header('Location: registro.php?error=1');
+    exit();
+}
 
-if ($vResultado) {
-    // header("Location: login.php");
-    // exit();
-    $mail = new PHPMailer(true);
-    try {
-        $mail->isSMTP();
+mysqli_stmt_close($stmt);
 
-        $mail->Host = 'smtp.gmail.com';
+$linkValidacion = ruta.'/auth/validar.php?token=' . urlencode($token);
 
-        $mail->SMTPAuth = true;
-
-        $mail->Username = 'sistemavuelos@gmail.com';
-
-        $mail->Password = 'wgfw hmjr hpge bjtm';
-
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-
-        $mail->Port = 587;
-
-        $mail->setFrom(
-            'sistemavuelos@gmail.com',
-            'Sistema de Vuelos'
-        );
-
-        $mail->addAddress($email);
-
-        $mail->isHTML(true);
-
-        $mail->Subject = 'Validacion de cuenta';
-
-        $linkValidacion =
-            "http://localhost/entornosGraficos-SitioWeb/auth/validar.php?token=$token";
-
-        $mail->Body = "
-    <h2>Bienvenido</h2>
-
-    <p>
-        Haga click para validar su cuenta:
+$cuerpo = '
+    <h2>Bienvenido, ' . htmlspecialchars($nombre, ENT_QUOTES, 'UTF-8') . '</h2>
+    <p>Para activar tu cuenta hacé clic en el siguiente enlace:</p>
+    <p><a href="' . $linkValidacion . '">Validar cuenta</a></p>
+    <p style="font-size:12px;color:#666">
+        Si no te registraste en el Sistema de Vuelos, ignorá este mensaje.
     </p>
+';
 
-    <a href='$linkValidacion'>
-        Validar Cuenta
-    </a>
-    ";
+if (!enviarMail($email, 'Validación de cuenta', $cuerpo)) {
+    $stmt = mysqli_prepare($link, 'DELETE FROM usuarios WHERE tokenValidacion = ? AND estadoCuenta = "PENDIENTE"');
+    mysqli_stmt_bind_param($stmt, 's', $token);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
 
-        $mail->send();
-
-        if ($tipoUsuario == "CEO") {
-            header("Location: registro.php?ceo=1");
-        } else {
-            header("Location: registro.php?exito=1");
-        }
-
-        exit();
-    } catch (Exception $e) {
-        echo $mail->ErrorInfo;
-    }
-} else {
-    echo mysqli_error($link);
+    error_log("No se pudo enviar el mail de validación a $email. Registro revertido.");
+    header('Location: registro.php?mailerror=1');
+    exit();
 }
+
+header('Location: registro.php?' . ($tipoUsuario === 'CEO' ? 'ceo=1' : 'exito=1'));
+exit();

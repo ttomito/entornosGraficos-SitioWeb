@@ -1,156 +1,111 @@
 <?php
 
-include("../../includes/verificarSession.php");
-include("../../includes/conexion.php");
+require_once("../../includes/verificarSession.php");
+require_once("../../includes/conexion.php");
 
-$codReserva = (int) ($_GET['codReserva'] ?? 0);
-$idUsuario = (int) $_SESSION['id'];
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-$destino = 'listar.php';
-$tipoAlerta = 'error';
-$mensaje = '';
+$codReserva = (int) ($_POST['codReserva'] ?? 0);
+$idUsuario  = (int) $_SESSION['id'];
 
-if ($codReserva <= 0) {
+function redirigirCon($tipo, $mensaje, $codReserva)
+{
+    $_SESSION['flash'] = [
+        'tipo'    => $tipo,
+        'mensaje' => $mensaje,
+    ];
 
-    $mensaje = 'La reserva indicada no es válida.';
+    $destino = $codReserva > 0
+        ? 'verReserva.php?codReserva=' . $codReserva
+        : 'listar.php';
 
-} else {
-
-    $sql = "SELECT * FROM reservas WHERE codReserva = $codReserva AND codUsuario = $idUsuario";
-
-    $resultado = mysqli_query($link, $sql);
-
-    if (!$resultado || mysqli_num_rows($resultado) == 0) {
-
-        $mensaje = 'No encontramos esa reserva.';
-
-    } else {
-
-        $reserva = mysqli_fetch_assoc($resultado);
-
-        if ($reserva['estadoReserva'] !== 'PENDIENTE') {
-
-            $mensaje = 'Esta reserva ya no se puede cancelar (su estado actual es "' . $reserva['estadoReserva'] . '").';
-
-        } else {
-
-            $codVuelo = (int) $reserva['codVuelo'];
-
-            $sqlVuelo = "
-
-            SELECT *
-
-            FROM vuelos
-
-            WHERE codVuelo = $codVuelo
-
-            ";
-
-            $resultadoVuelo = mysqli_query($link, $sqlVuelo);
-            $vuelo = $resultadoVuelo ? mysqli_fetch_assoc($resultadoVuelo) : null;
-
-            if (!$vuelo) {
-
-                $mensaje = 'No pudimos verificar el vuelo asociado a esta reserva.';
-
-            } else {
-
-                $fechaVuelo = strtotime($vuelo['fechaVuelo']);
-                $diferenciaHoras = ($fechaVuelo - time()) / 3600;
-
-                if ($diferenciaHoras < 72) {
-
-                    $mensaje = 'No podés cancelar una reserva con menos de 72 horas de anticipación al vuelo.';
-
-                } else {
-
-                    $cantAsientos = (int) $reserva['cantAsientos'];
-
-                    $okReserva = mysqli_query($link, "
-
-                        UPDATE reservas
-
-                        SET estadoReserva = 'CANCELADA'
-
-                        WHERE codReserva = $codReserva
-
-                    ");
-
-                    $okVuelo = mysqli_query($link, "
-
-                        UPDATE vuelos
-
-                        SET asientosDisponibles = asientosDisponibles + $cantAsientos
-
-                        WHERE codVuelo = $codVuelo
-
-                    ");
-
-                    if ($okReserva && $okVuelo) {
-                        $tipoAlerta = 'success';
-                        $mensaje = 'Tu reserva fue cancelada correctamente.';
-                    } else {
-                        $mensaje = 'Ocurrió un error al cancelar la reserva. Intentá nuevamente.';
-                    }
-                }
-            }
-        }
-    }
+    header('Location: ' . $destino);
+    exit();
 }
 
-$tituloAlerta = $tipoAlerta === 'success' ? 'Listo' : 'No se pudo cancelar';
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    redirigirCon('error', 'La cancelación debe realizarse desde el botón de la reserva.', $codReserva);
+}
 
-include("../../includes/header.php");
+$tokenRecibido = $_POST['csrf_token'] ?? '';
 
-?>
+$tokenValido = !empty($_SESSION['csrf_token'])
+    && is_string($tokenRecibido)
+    && hash_equals($_SESSION['csrf_token'], $tokenRecibido);
 
-<div class="container mt-5">
+if (!$tokenValido) {
+    redirigirCon('error', 'La sesión expiró o el formulario no es válido. Volvé a intentarlo.', $codReserva);
+}
 
-    <div class="row justify-content-center">
+if ($codReserva <= 0) {
+    redirigirCon('error', 'La reserva indicada no es válida.', 0);
+}
 
-        <div class="col-md-6">
+try {
 
-            <div class="card card-custom">
+    mysqli_begin_transaction($link);
 
-                <div class="card-body p-5 text-center">
+    // FOR UPDATE bloquea la fila hasta el commit
+    $sql = "SELECT codVuelo, cantAsientos
+            FROM reservas
+            WHERE codReserva = ? AND codUsuario = ?
+            FOR UPDATE";
 
-                    <div
-                        class="alert <?= $tipoAlerta === 'success' ? 'alert-success' : 'alert-danger' ?>"
-                        role="alert">
+    $stmt = mysqli_prepare($link, $sql);
+    mysqli_stmt_bind_param($stmt, "ii", $codReserva, $idUsuario);
+    mysqli_stmt_execute($stmt);
 
-                        <?= htmlspecialchars($mensaje, ENT_QUOTES, 'UTF-8') ?>
+    $resultado = mysqli_stmt_get_result($stmt);
+    $reserva   = mysqli_fetch_assoc($resultado);
 
-                    </div>
+    mysqli_stmt_close($stmt);
 
-                    <a href="<?= htmlspecialchars($destino, ENT_QUOTES, 'UTF-8') ?>" class="btn btn-primary" id="btnContinuar">
-
-                        Continuar
-
-                    </a>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<script>
-    if (typeof Swal !== 'undefined') {
-        Swal.fire({
-            icon: <?= json_encode($tipoAlerta) ?>,
-            title: <?= json_encode($tituloAlerta, JSON_UNESCAPED_UNICODE) ?>,
-            text: <?= json_encode($mensaje, JSON_UNESCAPED_UNICODE) ?>,
-            confirmButtonText: 'Aceptar'
-        }).then(function () {
-            window.location.href = <?= json_encode($destino) ?>;
-        });
+    if (!$reserva) {
+        mysqli_rollback($link);
+        redirigirCon('error', 'No encontramos esa reserva.', 0);
     }
-</script>
 
-<?php include("../../includes/footer.php"); ?>
+    $codVuelo     = (int) $reserva['codVuelo'];
+    $cantAsientos = (int) $reserva['cantAsientos'];
+
+    $sqlUpdate = "UPDATE reservas
+                  SET estadoReserva = 'CANCELADA'
+                  WHERE codReserva = ?
+                    AND codUsuario = ?
+                    AND estadoReserva = 'PENDIENTE'";
+
+    $stmtUpdate = mysqli_prepare($link, $sqlUpdate);
+    mysqli_stmt_bind_param($stmtUpdate, "ii", $codReserva, $idUsuario);
+    mysqli_stmt_execute($stmtUpdate);
+
+    $filasAfectadas = mysqli_stmt_affected_rows($stmtUpdate);
+
+    mysqli_stmt_close($stmtUpdate);
+
+    if ($filasAfectadas !== 1) {
+        mysqli_rollback($link);
+        redirigirCon('error', 'Esta reserva ya no se puede cancelar.', $codReserva);
+    }
+
+    if ($codVuelo > 0 && $cantAsientos > 0) {
+
+        $sqlAsientos = "UPDATE vuelos SET asientosDisponibles = asientosDisponibles + ? WHERE codVuelo = ?";
+
+        $stmtAsientos = mysqli_prepare($link, $sqlAsientos);
+        mysqli_stmt_bind_param($stmtAsientos, "ii", $cantAsientos, $codVuelo);
+        mysqli_stmt_execute($stmtAsientos);
+        mysqli_stmt_close($stmtAsientos);
+    }
+
+    mysqli_commit($link);
+
+    redirigirCon('success', 'Tu reserva fue cancelada correctamente.', $codReserva);
+} catch (mysqli_sql_exception $e) {
+
+    mysqli_rollback($link);
+
+    error_log('Error al cancelar reserva ' . $codReserva . ': ' . $e->getMessage());
+
+    redirigirCon('error', 'Ocurrió un error al cancelar la reserva. Intentá nuevamente.', $codReserva);
+}
+    

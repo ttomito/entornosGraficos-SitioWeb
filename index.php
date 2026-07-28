@@ -13,6 +13,7 @@ FROM reservas r
 INNER JOIN vuelos v
 ON r.codVuelo = v.codVuelo
 WHERE r.fechaReserva >= DATE_SUB(CURDATE(), INTERVAL 3 YEAR)
+AND r.activo = 1
 GROUP BY v.destinoVuelo
 ORDER BY cantidad DESC
 LIMIT 8"
@@ -20,7 +21,7 @@ LIMIT 8"
 
 $vuelosHome = mysqli_query(
     $link,
-    "SELECT * FROM vuelos WHERE fechaVuelo >= CURDATE() ORDER BY fechaVuelo ASC LIMIT 15"
+    "SELECT * FROM vuelos WHERE fechaVuelo >= CURDATE() AND activo = 1 ORDER BY fechaVuelo ASC LIMIT 15"
 );
 
 $totalAerolineas = mysqli_fetch_assoc(
@@ -231,6 +232,7 @@ include("includes/header.php");
                         <img
                             src="<?= htmlspecialchars($destino['imagenVuelo'], ENT_QUOTES, 'UTF-8') ?>"
                             alt="Vista del destino <?= $nombreDestino ?>"
+                            title="<?= $nombreDestino ?>"
                             class="card-img-top"
                             style="
                         height:180px;
@@ -375,6 +377,7 @@ include("includes/header.php");
                                 src="uploads/novedades/<?= htmlspecialchars($novedad['imagen'], ENT_QUOTES, 'UTF-8') ?>"
                                 class="card-img-top"
                                 alt="Imagen relacionada a la novedad: <?= mb_strimwidth($textoNovedad, 0, 80, '...') ?>"
+                                title="<?= mb_strimwidth($textoNovedad, 0, 80, '...') ?>"
                                 style="height: 200px; object-fit: cover;">
                         <?php } ?>
 
@@ -497,6 +500,7 @@ include("includes/header.php");
                         <img
                             src="uploads/vuelos/<?= htmlspecialchars($vuelo['imagenVuelo'], ENT_QUOTES, 'UTF-8') ?>"
                             alt="Vuelo de <?= $origen ?> a <?= $destinoV ?>"
+                            title="Vuelo de <?= $origen ?> a <?= $destinoV ?>"
                             class="card-img-top"
                             style="
                         height:200px;
