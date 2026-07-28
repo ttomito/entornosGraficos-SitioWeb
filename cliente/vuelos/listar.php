@@ -102,7 +102,7 @@ function sqlListado($whereBase, $condiciones)
 
 function contarVuelos($link, $whereBase, $condiciones)
 {
-    $sqlConteo = "SELECT COUNT(*) AS total FROM vuelos v"
+    $sqlConteo = "SELECT COUNT(*) AS total FROM vuelos v "
         . $whereBase
         . $condiciones;
 
