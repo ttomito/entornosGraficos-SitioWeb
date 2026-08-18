@@ -1,132 +1,93 @@
 <?php
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-
-require '../../vendor/autoload.php';
-
-include("../../includes/verificarSession.php");
+include("../../includes/verificarSessionAdmin.php");
 include("../../includes/conexion.php");
+include("../../includes/mailer.php");
 
-$id = $_GET['id'];
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: listar.php");
+    exit();
+}
 
-/*
-    Obtener CEO
-*/
+if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+    header("Location: listar.php?alerta=error_servidor");
+    exit();
+}
 
-$consulta = "
+$id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 
-SELECT
-p.*,
-u.nombreUsuario,
-u.emailUsuario
+if ($id <= 0) {
+    header("Location: listar.php");
+    exit();
+}
 
-FROM promociones p
+$consulta = "SELECT p.*, u.nombreUsuario, u.emailUsuario
+    FROM promociones p
+    INNER JOIN usuarios u ON p.codAerolinea = u.codAerolinea
+    WHERE p.codPromocion = ?
+    AND u.tipoUsuario = 'CEO' ";
 
-INNER JOIN usuarios u
-ON p.codAerolinea = u.codAerolinea
+$stmt = mysqli_prepare($link, $consulta);
 
-WHERE p.codPromocion = $id
+if (!$stmt) {
+    error_log("Error al preparar la consulta: " . mysqli_error($link));
+    header("Location: listar.php?alerta=error_servidor");
+    exit();
+}
 
-";
+mysqli_stmt_bind_param($stmt, "i", $id);
+mysqli_stmt_execute($stmt);
 
-$resultado = mysqli_query(
-    $link,
-    $consulta
-);
+$resultado = mysqli_stmt_get_result($stmt);
+$datos = $resultado ? mysqli_fetch_assoc($resultado) : null;
+mysqli_stmt_close($stmt);
 
-$datos = mysqli_fetch_assoc(
-    $resultado
-);
+if (!$datos) {
+    header("Location: listar.php?alerta=no_encontrada");
+    exit();
+}
 
 $nombre = $datos['nombreUsuario'];
-
 $email = $datos['emailUsuario'];
 
-/*
-    Rechazar promoción
-*/
+// Solo se rechaza si sigue pendiente
+$sql = "UPDATE promociones
+    SET estadoPromocion = 'DENEGADA'
+    WHERE codPromocion = ?
+    AND estadoPromocion = 'PENDIENTE' ";
 
-$sql = "
+$stmtRechazar = mysqli_prepare($link, $sql);
 
-UPDATE promociones
-
-SET estadoPromocion = 'DENEGADA'
-
-WHERE codPromocion = $id
-
-";
-
-mysqli_query(
-    $link,
-    $sql
-);
-
-/*
-    Mail
-*/
-
-$mail = new PHPMailer(true);
-
-try
-{
-    $mail->isSMTP();
-
-    $mail->Host = 'smtp.gmail.com';
-
-    $mail->SMTPAuth = true;
-
-    $mail->Username =
-    'sistemavuelos@gmail.com';
-
-    $mail->Password =
-    'wgfw hmjr hpge bjtm';
-
-    $mail->SMTPSecure =
-    PHPMailer::ENCRYPTION_STARTTLS;
-
-    $mail->Port = 587;
-
-    $mail->setFrom(
-        'sistemavuelos@gmail.com',
-        'Sistema de Vuelos'
-    );
-
-    $mail->addAddress($email);
-
-    $mail->isHTML(true);
-
-    $mail->Subject =
-    'Promoción rechazada';
-
-    $mail->Body = "
-
-    <h2>Hola $nombre</h2>
-
-    <p>
-
-    Tu promoción fue rechazada por el administrador.
-
-    </p>
-
-    <p>
-
-    Podés modificarla y volver a enviarla para revisión.
-
-    </p>
-
-    ";
-
-    $mail->send();
-}
-catch(Exception $e)
-{
+if (!$stmtRechazar) {
+    error_log("Error al preparar el rechazo: " . mysqli_error($link));
+    header("Location: listar.php?alerta=error_servidor");
+    exit();
 }
 
-header(
-    "Location: listar.php"
+mysqli_stmt_bind_param($stmtRechazar, "i", $id);
+$rechazoExitoso = mysqli_stmt_execute($stmtRechazar);
+$afectadas = $rechazoExitoso ? mysqli_stmt_affected_rows($stmtRechazar) : 0;
+mysqli_stmt_close($stmtRechazar);
+
+if (!$rechazoExitoso) {
+    error_log("Error al rechazar promoción: " . mysqli_error($link));
+    header("Location: listar.php?alerta=error_servidor");
+    exit();
+}
+
+if ($afectadas === 0) {
+    // Ya no estaba pendiente
+    header("Location: listar.php?alerta=no_encontrada");
+    exit();
+}
+
+enviarMail(
+    $email,
+    'Promoción rechazada',
+    "<h2>Hola " . htmlspecialchars($nombre, ENT_QUOTES, 'UTF-8') . "</h2>
+    <p>Tu promoción fue rechazada por el administrador.</p>
+    <p>Podés modificarla y volver a enviarla para revisión.</p>"
 );
 
+header("Location: listar.php?alerta=rechazada");
 exit();
-
-?>

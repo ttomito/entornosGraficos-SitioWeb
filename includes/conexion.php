@@ -12,6 +12,8 @@ $link = mysqli_connect(
     $baseDatos
 );
 
+mysqli_set_charset($link, "utf8mb4");
+
 
 if(!$link)
 {

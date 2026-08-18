@@ -1,66 +1,98 @@
 <?php
 
-include("../../includes/verificarSession.php");
+include("../../includes/verificarSessionAdmin.php");
 include("../../includes/conexion.php");
 
-$tituloNovedad = $_POST['tituloNovedad'];
-$texto = $_POST['texto'];
-$publicacion = $_POST['publicacion'];
-$expiracion = $_POST['expiracion'];
+if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+    header("Location: crear.php?alerta=error_servidor");
+    exit();
+}
 
-if (empty($texto) || empty($publicacion) || empty($expiracion) || empty($tituloNovedad)) {
+$tituloNovedad = isset($_POST['tituloNovedad']) ? trim($_POST['tituloNovedad']) : '';
+$texto = isset($_POST['texto']) ? trim($_POST['texto']) : '';
+$publicacion = isset($_POST['publicacion']) ? trim($_POST['publicacion']) : '';
+$expiracion = isset($_POST['expiracion']) ? trim($_POST['expiracion']) : '';
+
+if ($texto === '' || $publicacion === '' || $expiracion === '' || $tituloNovedad === '') {
     header("Location: crear.php?alerta=campos_vacios");
     exit();
 }
 
-// imagen
-$nombreImagen = null;
+if (mb_strlen($tituloNovedad) < 3) {
+    header("Location: crear.php?alerta=titulo_corto");
+    exit();
+}
 
-if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] === UPLOAD_ERR_OK) {
+if (mb_strlen($tituloNovedad) > 100) {
+    header("Location: crear.php?alerta=titulo_largo");
+    exit();
+}
 
-    $carpeta = "../../uploads/novedades/";
+if (mb_strlen($texto) > 500) {
+    header("Location: crear.php?alerta=texto_largo");
+    exit();
+}
 
-    // Crear la carpeta si no existe
-    if (!is_dir($carpeta)) {
-        mkdir($carpeta, 0755, true);
-    }
+// La imagen es obligatoria: si no llegó ningún archivo, no seguimos.
+if (!isset($_FILES['imagen']) || $_FILES['imagen']['error'] === UPLOAD_ERR_NO_FILE) {
+    header("Location: crear.php?alerta=imagen_requerida");
+    exit();
+}
 
-    //  tamaño (máx 3MB)
-    $maxTamanio = 3 * 1024 * 1024; // 3MB en bytes
-    if ($_FILES['imagen']['size'] > $maxTamanio) {
-        header("Location: listar.php?alerta=imagen_muy_grande");
-        exit();
-    }
+if ($_FILES['imagen']['error'] !== UPLOAD_ERR_OK) {
+    header("Location: crear.php?alerta=error_imagen");
+    exit();
+}
 
-    $extension = strtolower(pathinfo($_FILES['imagen']['name'], PATHINFO_EXTENSION));
-    $extensionesPermitidas = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+$carpeta = "../../uploads/novedades/";
 
-    if (!in_array($extension, $extensionesPermitidas)) {
-        header("Location: listar.php?alerta=imagen_invalida");
-        exit();
-    }
+if (!is_dir($carpeta)) {
+    mkdir($carpeta, 0755, true);
+}
 
-    // Nombre único para evitar colisiones
-    $nombreImagen = uniqid('novedad_', true) . '.' . $extension;
+$maxTamanio = 3 * 1024 * 1024; // 3MB
+if ($_FILES['imagen']['size'] > $maxTamanio) {
+    header("Location: crear.php?alerta=imagen_muy_grande");
+    exit();
+}
 
-    if (!move_uploaded_file($_FILES['imagen']['tmp_name'], $carpeta . $nombreImagen)) {
-        header("Location: listar.php?alerta=error_imagen");
-        exit();
-    }
+$extension = strtolower(pathinfo($_FILES['imagen']['name'], PATHINFO_EXTENSION));
+$extensionesPermitidas = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+if (!in_array($extension, $extensionesPermitidas)) {
+    header("Location: crear.php?alerta=imagen_invalida");
+    exit();
+}
+
+// Nombre único
+$nombreImagen = uniqid('novedad_', true) . '.' . $extension;
+
+if (!move_uploaded_file($_FILES['imagen']['tmp_name'], $carpeta . $nombreImagen)) {
+    header("Location: crear.php?alerta=error_imagen");
+    exit();
 }
 
 $sql = "INSERT INTO novedades (textoNovedad, fechaPublicacion, fechaExpiracion, tituloNovedad, imagen)
-        VALUES ('$texto', '$publicacion', '$expiracion', '$tituloNovedad', '$nombreImagen')";
+        VALUES (?, ?, ?, ?, ?)";
 
-$resultado = mysqli_query($link, $sql);
+$stmt = mysqli_prepare($link, $sql);
 
-if (!$resultado) {
-    header("Location: listar.php?alerta=error_servidor");
-    die("Error en la consulta: " . mysqli_error($link));
-    exit();
-} else {
-    header("Location: listar.php?alerta=creada");
+if (!$stmt) {
+    error_log("Error al preparar la consulta: " . mysqli_error($link));
+    header("Location: crear.php?alerta=error_servidor");
     exit();
 }
 
-?>
+mysqli_stmt_bind_param($stmt, "sssss", $texto, $publicacion, $expiracion, $tituloNovedad, $nombreImagen);
+
+$resultado = mysqli_stmt_execute($stmt);
+mysqli_stmt_close($stmt);
+
+if (!$resultado) {
+    error_log("Error al crear novedad: " . mysqli_error($link));
+    header("Location: crear.php?alerta=error_servidor");
+    exit();
+}
+
+header("Location: listar.php?alerta=creada");
+exit();

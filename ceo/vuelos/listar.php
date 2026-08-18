@@ -1,108 +1,117 @@
 <?php
 
-include("../../includes/verificarSession.php");
+include("../../includes/verificarSessionCeo.php");
 include("../../includes/conexion.php");
 include("../../includes/header.php");
 
 $registrosPorPagina = 10;
+$errorConsulta = false;
 
-$pagina = isset($_GET['pagina'])
-    ? (int)$_GET['pagina']
-    : 1;
+$pagina = isset($_GET['pagina']) ? (int)$_GET['pagina']: 1;
 
 if ($pagina < 1) {
     $pagina = 1;
 }
 
-$inicio = ($pagina - 1) * $registrosPorPagina;
+$idCEO = (int) ($_SESSION['id'] ?? 0);
+$codAerolinea = null;
 
-$idCEO = $_SESSION['id'];
+if ($idCEO > 0) {
+    $sqlCEO = "SELECT codAerolinea FROM usuarios WHERE codUsuario = ?";
+    $stmtCEO = mysqli_prepare($link, $sqlCEO);
 
-if ($idCEO <= 0) {
-    die("Acceso denegado");
+    if (!$stmtCEO) {
+        error_log("Error al preparar la consulta de CEO: " . mysqli_error($link));
+        $errorConsulta = true;
+    } else {
+        mysqli_stmt_bind_param($stmtCEO, "i", $idCEO);
+        mysqli_stmt_execute($stmtCEO);
+        $resultadoCEO = mysqli_stmt_get_result($stmtCEO);
+        $ceo = $resultadoCEO ? mysqli_fetch_assoc($resultadoCEO) : null;
+        mysqli_stmt_close($stmtCEO);
+
+        if ($ceo && $ceo['codAerolinea'] !== null) {
+            $codAerolinea = (int) $ceo['codAerolinea'];
+        }
+    }
+} else {
+    $errorConsulta = true;
 }
 
-$sqlCEO = "
-SELECT codAerolinea 
-FROM usuarios 
-WHERE codUsuario = $idCEO";
-$resultadoCEO = mysqli_query($link, $sqlCEO);
-
-if (!$resultadoCEO) {
-    die(mysqli_error($link));
-}
-
-$ceo = mysqli_fetch_assoc($resultadoCEO);
-$codAerolinea = $ceo['codAerolinea'];
-
-if (!$codAerolinea) { ?>
-
+if ($errorConsulta) {
+?>
     <div class="container mt-4">
-
-        <div class="alert alert-warning" role="alert">
-
-            <h4>Aerolínea no asignada</h4>
-            <p>Un administrador todavía no le asignó una aerolínea. No puede gestionar vuelos hasta que eso ocurra.</p>
-
+        <div class="alert alert-danger" role="alert">
+            Ocurrió un error al cargar tus datos. Intentá nuevamente más tarde.
         </div>
-
     </div>
-
 <?php
-
     include("../../includes/footer.php");
-
     exit();
 }
-$sqlConteo = " 
-SELECT COUNT(*) AS total 
-FROM vuelos
-WHERE codAerolinea =$codAerolinea
-";
 
-$resultadoConteo = mysqli_query($link, $sqlConteo);
-$filaConteo = mysqli_fetch_assoc($resultadoConteo);
-$totalRegistros = $filaConteo['total'];
-$totalPaginas = ceil($totalRegistros / $registrosPorPagina);
+if ($codAerolinea === null) {
+?>
+    <div class="container mt-4">
+        <div class="alert alert-warning" role="alert">
+            <h4>Aerolínea no asignada</h4>
+            <p>Un administrador todavía no le asignó una aerolínea. No puede gestionar vuelos hasta que eso ocurra.</p>
+        </div>
+    </div>
+<?php
+    include("../../includes/footer.php");
+    exit();
+}
 
-$sql = "
-SELECT * 
-FROM vuelos 
-WHERE codAerolinea = $codAerolinea 
-ORDER BY fechaVuelo 
-LIMIT $inicio, $registrosPorPagina";
+$sqlConteo = "SELECT COUNT(*) AS total FROM vuelos WHERE codAerolinea = ?";
+$stmtConteo = mysqli_prepare($link, $sqlConteo);
 
-$resultado = mysqli_query($link, $sql);
-if (!$resultado) {
-    die(mysqli_error($link));
+if (!$stmtConteo) {
+    error_log("Error al preparar el conteo: " . mysqli_error($link));
+    $errorConsulta = true;
+    $totalRegistros = 0;
+} else {
+    mysqli_stmt_bind_param($stmtConteo, "i", $codAerolinea);
+    mysqli_stmt_execute($stmtConteo);
+    $resultadoConteo = mysqli_stmt_get_result($stmtConteo);
+    $filaConteo = $resultadoConteo ? mysqli_fetch_assoc($resultadoConteo) : null;
+    $totalRegistros = $filaConteo ? (int)$filaConteo['total'] : 0;
+    mysqli_stmt_close($stmtConteo);
+}
+
+$totalPaginas = (int) ceil($totalRegistros / $registrosPorPagina);
+
+if ($totalPaginas > 0 && $pagina > $totalPaginas) {
+    $pagina = $totalPaginas;
+}
+
+$inicio = ($pagina - 1) * $registrosPorPagina;
+
+$resultado = null;
+
+if (!$errorConsulta) {
+    $sql = "SELECT * FROM vuelos WHERE codAerolinea = ? ORDER BY fechaVuelo LIMIT ?, ?";
+    $stmt = mysqli_prepare($link, $sql);
+
+    if (!$stmt) {
+        error_log("Error al preparar el listado de vuelos: " . mysqli_error($link));
+        $errorConsulta = true;
+    } else {
+        mysqli_stmt_bind_param($stmt, "iii", $codAerolinea, $inicio, $registrosPorPagina);
+        mysqli_stmt_execute($stmt);
+        $resultado = mysqli_stmt_get_result($stmt);
+
+        if (!$resultado) {
+            error_log("Error al listar vuelos: " . mysqli_error($link));
+            $errorConsulta = true;
+        }
+    }
 }
 ?>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<style>
-    .texto-secundario-accesible {
-        color: #495057;
-    }
 
-    .visually-hidden {
-        position: absolute !important;
-        width: 1px !important;
-        height: 1px !important;
-        padding: 0 !important;
-        margin: -1px !important;
-        overflow: hidden !important;
-        clip: rect(0, 0, 0, 0) !important;
-        white-space: nowrap !important;
-        border: 0 !important;
-    }
-
-    a.btn:focus-visible,
-    button:focus-visible {
-        outline: 3px solid #0d6efd;
-        outline-offset: 2px;
-    }
-</style>
 
 <div class="container mt-4">
 
@@ -117,7 +126,13 @@ if (!$resultado) {
 
         <div class="card-body">
 
-            <?php if (mysqli_num_rows($resultado) === 0) { ?>
+            <?php if ($errorConsulta) { ?>
+
+                <div class="alert alert-danger" role="alert">
+                    Ocurrió un error al cargar el listado. Intentá nuevamente más tarde.
+                </div>
+
+            <?php } elseif (mysqli_num_rows($resultado) === 0) { ?>
 
                 <p class="texto-secundario-accesible">No hay vuelos registrados para esta aerolínea.</p>
 
@@ -148,39 +163,43 @@ if (!$resultado) {
 
                             <?php while ($fila = mysqli_fetch_assoc($resultado)) {
 
+                                $codVueloInt = (int) $fila['codVuelo'];
+                                $origenOut = htmlspecialchars($fila['origenVuelo'], ENT_QUOTES, 'UTF-8');
+                                $destinoOut = htmlspecialchars($fila['destinoVuelo'], ENT_QUOTES, 'UTF-8');
+                                $fechaOut = htmlspecialchars($fila['fechaVuelo'], ENT_QUOTES, 'UTF-8');
+                                $horaOut = htmlspecialchars($fila['horaSalida'], ENT_QUOTES, 'UTF-8');
+
                             ?>
 
                                 <tr>
-                                    <td><?= $fila['codVuelo'] ?></td>
-                                    <td><?= $fila['origenVuelo'] ?></td>
-                                    <td><?= $fila['destinoVuelo'] ?></td>
-                                    <td><?= $fila['fechaVuelo'] ?></td>
-                                    <td><?= $fila['horaSalida'] ?></td>
-                                    <td>$<?= $fila['precioVuelo'] ?></td>
-                                    <td><?= $fila['asientosDisponibles'] ?></td>
+                                    <td><?= $codVueloInt ?></td>
+                                    <td><?= $origenOut ?></td>
+                                    <td><?= $destinoOut ?></td>
+                                    <td><time datetime="<?= $fechaOut ?>"><?= $fechaOut ?></time></td>
+                                    <td><?= $horaOut ?></td>
+                                    <td>$<?= number_format((float)$fila['precioVuelo'], 0, ',', '.') ?></td>
+                                    <td><?= (int) $fila['asientosDisponibles'] ?></td>
                                     <td>
-                                        <a href="editar.php?id=<?= $fila['codVuelo'] ?>"
+                                        <a href="editar.php?id=<?= $codVueloInt ?>"
                                             class="btn btn-warning btn-sm"
                                             role="button">
                                             Editar
                                         </a>
 
-                                        <?php if ($fila['activo'] == 1) { ?>
-                                            <a href="eliminar.php?id=<?= $fila['codVuelo'] ?>&activo=<?= $fila["activo"] ?>"
-                                                class="btn btn-danger btn-sm"
-                                                role="button"
-                                                onclick="ocultarVuelo(event, this)">
-                                                Ocultar
-                                            </a>
-                                        <?php } else { ?>
-                                            <a href="eliminar.php?id=<?= $fila['codVuelo'] ?>&activo=<?= $fila["activo"] ?>"
-                                                class="btn btn-success btn-sm"
-                                                role="button"
-                                                onclick="activarVuelo(event, this)">
-                                                Activar
-                                            </a>
-                                        <?php } ?>
+                                        <form action="eliminar.php" method="post" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
+                                            <input type="hidden" name="id" value="<?= $codVueloInt ?>">
 
+                                            <?php if ($fila['activo'] == 1) { ?>
+                                                <button type="submit" class="btn btn-danger btn-sm" onclick="return ocultarVuelo(event, this)">
+                                                    Ocultar
+                                                </button>
+                                            <?php } else { ?>
+                                                <button type="submit" class="btn btn-success btn-sm" onclick="return activarVuelo(event, this)">
+                                                    Activar
+                                                </button>
+                                            <?php } ?>
+                                        </form>
                                     </td>
                                 </tr>
 
@@ -253,6 +272,11 @@ $alertas = [
         'title' => 'Error',
         'text'  => 'Ocurrió un error inesperado. Intente nuevamente.'
     ],
+    'acceso_denegado' => [
+        'icon'  => 'error',
+        'title' => 'Error',
+        'text'  => 'No se encontró el vuelo solicitado.'
+    ],
     'creado' => [
         'icon'  => 'success',
         'title' => '¡Creado!',
@@ -262,6 +286,11 @@ $alertas = [
         'icon'  => 'success',
         'title' => '¡Oculto!',
         'text'  => 'Se ha ocultado el vuelo y sus reservas.'
+    ],
+    'activado' => [
+        'icon'  => 'success',
+        'title' => '¡Activado!',
+        'text'  => 'Se ha activado el vuelo y sus reservas.'
     ],
     'campos_vacios' => [
         'icon'  => 'error',
@@ -329,7 +358,7 @@ if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)) {
 <?php }; ?>
 
 <script>
-    function ocultarVuelo(event, elemento) {
+    function ocultarVuelo(event, boton) {
         event.preventDefault();
 
         Swal.fire({
@@ -344,12 +373,14 @@ if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)) {
             focusCancel: true
         }).then((result) => {
             if (result.isConfirmed) {
-                window.location.href = elemento.href;
+                boton.closest('form').submit();
             }
         });
+
+        return false;
     }
 
-    function activarVuelo(event, elemento) {
+    function activarVuelo(event, boton) {
         event.preventDefault();
 
         Swal.fire({
@@ -364,9 +395,11 @@ if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)) {
             focusCancel: true
         }).then((result) => {
             if (result.isConfirmed) {
-                window.location.href = elemento.href;
+                boton.closest('form').submit();
             }
         });
+
+        return false;
     }
 </script>
 

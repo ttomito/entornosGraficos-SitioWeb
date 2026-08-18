@@ -1,130 +1,97 @@
 <?php
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-
-require '../../vendor/autoload.php';
-
-include("../../includes/verificarSession.php");
+include("../../includes/verificarSessionAdmin.php");
 include("../../includes/conexion.php");
+include("../../includes/mailer.php");
 
-$id = $_GET['id'];
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: listar.php");
+    exit();
+}
 
-/*
-    Obtener datos del CEO
-*/
+if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+    header("Location: listar.php?alerta=error_servidor");
+    exit();
+}
+
+$id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+
+if ($id <= 0) {
+    header("Location: listar.php");
+    exit();
+}
 
 $consulta = "
-
-SELECT *
-
-FROM usuarios
-
-WHERE codUsuario = $id
-
+    SELECT *
+    FROM usuarios
+    WHERE codUsuario = ?
+    AND tipoUsuario = 'CEO'
+    AND estadoCuenta = 'ACTIVA'
 ";
 
-$resultado = mysqli_query(
-    $link,
-    $consulta
-);
+$stmt = mysqli_prepare($link, $consulta);
 
-$usuario = mysqli_fetch_assoc($resultado);
+if (!$stmt) {
+    error_log("Error al preparar la consulta: " . mysqli_error($link));
+    header("Location: listar.php?alerta=error_servidor");
+    exit();
+}
+
+mysqli_stmt_bind_param($stmt, "i", $id);
+mysqli_stmt_execute($stmt);
+
+$resultado = mysqli_stmt_get_result($stmt);
+$usuario = $resultado ? mysqli_fetch_assoc($resultado) : null;
+mysqli_stmt_close($stmt);
+
+if (!$usuario) {
+    header("Location: listar.php?alerta=no_encontrada");
+    exit();
+}
 
 $email = $usuario['emailUsuario'];
-
 $nombre = $usuario['nombreUsuario'];
 
-/*
-    Rechazar CEO
-*/
-
 $sql = "
-
-UPDATE usuarios
-
-SET
-estadoCuenta = 'RECHAZADA',
-aprobadoAdmin = 'NO'
-
-WHERE codUsuario = $id
-
+    UPDATE usuarios
+    SET estadoCuenta = 'RECHAZADA', aprobadoAdmin = 'NO'
+    WHERE codUsuario = ?
+    AND estadoCuenta = 'ACTIVA'
 ";
 
-mysqli_query(
-    $link,
-    $sql
-);
+$stmtRechazar = mysqli_prepare($link, $sql);
 
-/*
-    Enviar Mail
-*/
-
-$mail = new PHPMailer(true);
-
-try
-{
-    $mail->isSMTP();
-
-    $mail->Host = 'smtp.gmail.com';
-
-    $mail->SMTPAuth = true;
-
-    $mail->Username = 'sistemavuelos@gmail.com';
-
-    $mail->Password = 'wgfw hmjr hpge bjtm';
-
-    $mail->SMTPSecure =
-    PHPMailer::ENCRYPTION_STARTTLS;
-
-    $mail->Port = 587;
-
-    $mail->setFrom(
-        'sistemavuelos@gmail.com',
-        'Sistema de Vuelos'
-    );
-
-    $mail->addAddress($email);
-
-    $mail->isHTML(true);
-
-    $mail->Subject =
-    'Solicitud rechazada';
-
-    $mail->Body = "
-
-    <h2>Hola $nombre</h2>
-
-    <p>
-
-    Tu solicitud como CEO fue rechazada
-    por un administrador.
-
-    </p>
-
-    <p>
-
-    Si considerás que se trata de un error,
-    comunicate con el administrador.
-
-    </p>
-
-    ";
-
-    $mail->send();
-}
-catch(Exception $e)
-{
+if (!$stmtRechazar) {
+    error_log("Error al preparar el rechazo: " . mysqli_error($link));
+    header("Location: listar.php?alerta=error_servidor");
+    exit();
 }
 
-/*
-    Volver
-*/
+mysqli_stmt_bind_param($stmtRechazar, "i", $id);
+$exito = mysqli_stmt_execute($stmtRechazar);
+$afectadas = $exito ? mysqli_stmt_affected_rows($stmtRechazar) : 0;
+mysqli_stmt_close($stmtRechazar);
 
-header(
-    "Location: listar.php"
+if (!$exito) {
+    error_log("Error al rechazar CEO: " . mysqli_error($link));
+    header("Location: listar.php?alerta=error_servidor");
+    exit();
+}
+
+if ($afectadas === 0) {
+    header("Location: listar.php?alerta=no_encontrada");
+    exit();
+}
+
+$nombreEscapado = htmlspecialchars($nombre, ENT_QUOTES, 'UTF-8');
+
+enviarMail(
+    $email,
+    'Solicitud rechazada',
+    "<h2>Hola $nombreEscapado</h2>
+    <p>Tu solicitud como CEO fue rechazada por un administrador.</p>
+    <p>Si considerás que se trata de un error, comunicate con el administrador.</p>"
 );
 
+header("Location: listar.php?alerta=rechazada");
 exit();
-
-?>

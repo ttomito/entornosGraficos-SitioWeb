@@ -1,0 +1,7 @@
+# Git ignore
+
+includes/mailconfig.php
+includes/conexion.php
+/vendor/
+/uploads/*
+sistema_vuelos.zip

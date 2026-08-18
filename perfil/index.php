@@ -2,28 +2,35 @@
 
 include("../includes/verificarSession.php");
 include("../includes/conexion.php");
-include("../includes/header.php");
 
 $id = (int) ($_SESSION['id'] ?? 0);
 
 if ($id <= 0) {
-    header("Location: /entornosGraficos-SitioWeb/auth/login.php");
+    header("Location: ../auth/login.php");
     exit();
 }
 
-$sql = "SELECT * FROM usuarios WHERE codUsuario = $id";
-$resultado = mysqli_query($link, $sql);
+$sql = "SELECT * FROM usuarios WHERE codUsuario = ?";
+$stmt = mysqli_prepare($link, $sql);
 
-if (!$resultado) {
-    die("Error en la consulta: " . mysqli_error($link));
+if (!$stmt) {
+    error_log("Error al preparar la consulta de perfil: " . mysqli_error($link));
+    header("Location: ../auth/login.php");
+    exit();
 }
 
-$usuario = mysqli_fetch_assoc($resultado);
+mysqli_stmt_bind_param($stmt, "i", $id);
+mysqli_stmt_execute($stmt);
+$resultado = mysqli_stmt_get_result($stmt);
+$usuario = $resultado ? mysqli_fetch_assoc($resultado) : null;
+mysqli_stmt_close($stmt);
 
 if (!$usuario) {
-    header("Location: /entornosGraficos-SitioWeb/auth/login.php");
+    header("Location: ../auth/login.php");
     exit();
 }
+
+include("../includes/header.php");
 
 ?>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -49,7 +56,9 @@ if (!$usuario) {
 
                     <hr>
 
-                    <form action="actualizar.php" method="post" novalidate>
+                    <form action="actualizar.php" method="post">
+
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
 
                         <div class="mb-3">
 
@@ -307,10 +316,10 @@ $alertas = [
         'text'  => 'La nueva contraseña y su confirmación deben ser iguales.'
     ],
     'clave_invalida' => [
-    'icon'  => 'warning',
-    'title' => 'Contraseña inválida',
-    'text'  => 'La contraseña solo puede contener letras, números y caracteres especiales.'
-],
+        'icon'  => 'warning',
+        'title' => 'Contraseña inválida',
+        'text'  => 'La contraseña debe tener al menos una letra y un número, y solo puede contener letras, números y caracteres especiales.'
+    ],
 ];
 
 if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)) {
@@ -352,6 +361,10 @@ if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)) {
     function guardarCambios(event, elemento) {
         event.preventDefault();
         const formulario = elemento.closest('form');
+
+        if (!formulario.reportValidity()) {
+            return;
+        }
 
         Swal.fire({
             title: '¿Estás seguro?',

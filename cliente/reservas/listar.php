@@ -3,133 +3,133 @@
 include("../../includes/header.php");
 include("../../includes/conexion.php");
 
-$idCliente = $_SESSION['id'];
+if (!isset($_SESSION['id'])) {
+    header("Location: ../../login.php");
+    exit;
+}
+
+$idCliente = (int) $_SESSION['id'];
+
+function fallarBD($mensaje)
+{
+    echo '<div class="container mt-4">';
+    echo '<div class="alert alert-danger" role="alert">';
+    echo htmlspecialchars($mensaje, ENT_QUOTES, 'UTF-8');
+    echo '</div>';
+    echo '</div>';
+
+    include("../../includes/footer.php");
+    exit;
+}
 
 $registrosPorPagina = 10;
 
-$pagina = isset($_GET['pagina'])
-? (int)$_GET['pagina']
-: 1;
+$pagina = isset($_GET['pagina']) ? (int) $_GET['pagina'] : 1;
 
-if($pagina < 1)
-{
+if ($pagina < 1) {
     $pagina = 1;
 }
 
-$inicio =
-($pagina - 1)
-*
-$registrosPorPagina;
-/*
-| Conteo
-*/
+$sqlConteo = "SELECT COUNT(*) AS total FROM reservas WHERE codUsuario = ?";
 
-$sqlConteo = "
+$stmtConteo = mysqli_prepare($link, $sqlConteo);
 
-SELECT COUNT(*) AS total
+if (!$stmtConteo) {
+    fallarBD("No se pudo consultar el historial de reservas. Intentá de nuevo en unos minutos.");
+}
 
-FROM reservas
+mysqli_stmt_bind_param($stmtConteo, "i", $idCliente);
+mysqli_stmt_execute($stmtConteo);
 
-WHERE codUsuario = $idCliente
+$resultadoConteo = mysqli_stmt_get_result($stmtConteo);
+$filaConteo      = mysqli_fetch_assoc($resultadoConteo);
+$totalRegistros  = (int) $filaConteo['total'];
 
-";
+mysqli_stmt_close($stmtConteo);
 
-$resultadoConteo =
-mysqli_query($link,$sqlConteo);
+$totalPaginas = (int) ceil($totalRegistros / $registrosPorPagina);
 
-$filaConteo =
-mysqli_fetch_assoc($resultadoConteo);
+if ($totalPaginas > 0 && $pagina > $totalPaginas) {
+    $pagina = $totalPaginas;
+}
 
-$totalRegistros =
-$filaConteo['total'];
+$inicio = ($pagina - 1) * $registrosPorPagina;
 
-$totalPaginas =
-ceil(
-$totalRegistros
-/
-$registrosPorPagina
-);
+$sql = "SELECT r.codReserva,
+               r.cantAsientos,
+               r.precioFinal,
+               r.estadoReserva,
+               r.fechaReserva,
+               r.activo,
+               v.origenVuelo,
+               v.destinoVuelo,
+               v.fechaVuelo,
+               v.imagenVuelo
+        FROM reservas r
+        LEFT JOIN vuelos v ON v.codVuelo = r.codVuelo
+        WHERE r.codUsuario = ?
+        ORDER BY r.codReserva DESC
+        LIMIT ?, ?";
 
-$sql = "
+$stmt = mysqli_prepare($link, $sql);
 
-SELECT *
+if (!$stmt) {
+    fallarBD("No se pudo consultar el historial de reservas. Intentá de nuevo en unos minutos.");
+}
 
-FROM reservas
+mysqli_stmt_bind_param($stmt, "iii", $idCliente, $inicio, $registrosPorPagina);
+mysqli_stmt_execute($stmt);
 
-$sql = "SELECT * FROM reservas
-WHERE codUsuario = $idCliente
+$resultado = mysqli_stmt_get_result($stmt);
 
-ORDER BY codReserva DESC
+if (!$resultado) {
+    fallarBD("No se pudo consultar el historial de reservas. Intentá de nuevo en unos minutos.");
+}
 
-LIMIT $inicio,
-$registrosPorPagina
+$badgesEstado = [
+    'CONFIRMADA' => ['clase' => 'bg-success',            'texto' => 'Confirmada'],
+    'PENDIENTE'  => ['clase' => 'bg-warning text-dark',  'texto' => 'Pendiente'],
+    'CANCELADA'  => ['clase' => 'bg-danger',             'texto' => 'Cancelada'],
+];
 
-";
-
-$resultado =
-mysqli_query(
-    $link,
-    $sql
-);
+$hoy = strtotime(date('Y-m-d'));
 
 ?>
 
 <div class="container mt-4">
 
     <div class="d-flex justify-content-between mb-4">
-
-        <h2>
-
-            Historial de reservas
-
-        </h2>
-
+        <h2>Historial de reservas</h2>
     </div>
 
-    <?php if (mysqli_num_rows($resultado) === 0) { ?>
+    <?php if ($totalRegistros === 0) { ?>
 
         <div class="alert alert-info" role="status">
-            Todavía no tenés reservas.
+            Todavía no tenés reservas registradas.
         </div>
 
     <?php } else { ?>
 
         <div class="card card-custom">
-
             <div class="card-body">
 
-           <?php if(mysqli_num_rows($resultado) == 0){ ?>
-
-    <p class="text-muted">
-
-        No posee reservas registradas.
-
-    </p>
-
-<?php } else { ?>
-
-    <table class="table table-hover">
-
-                    <table class="table table-hover">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
 
                         <caption class="visually-hidden">Historial de reservas del usuario</caption>
 
                         <thead>
-
                             <tr>
-
                                 <th scope="col">Imagen</th>
                                 <th scope="col">Asientos</th>
                                 <th scope="col">Origen</th>
                                 <th scope="col">Destino</th>
                                 <th scope="col">Fecha vuelo</th>
                                 <th scope="col">Fecha reserva</th>
-                                <th scope="col">Precio Final</th>
+                                <th scope="col">Precio final</th>
                                 <th scope="col">Estado</th>
                                 <th scope="col">Acción</th>
-
                             </tr>
-
                         </thead>
 
                         <tbody>
@@ -138,141 +138,100 @@ mysqli_query(
 
                                 <?php
 
-                                $codVueloInt = (int) $fila['codVuelo'];
+                                $hayVuelo = !is_null($fila['origenVuelo']);
 
-                                $sqlVuelo = "
+                                $origenOut  = $hayVuelo
+                                    ? htmlspecialchars($fila['origenVuelo'], ENT_QUOTES, 'UTF-8')
+                                    : 'No disponible';
 
-                SELECT *
+                                $destinoOut = $hayVuelo
+                                    ? htmlspecialchars($fila['destinoVuelo'], ENT_QUOTES, 'UTF-8')
+                                    : 'No disponible';
 
-                FROM vuelos
+                                $tsVuelo = ($hayVuelo && !empty($fila['fechaVuelo']))
+                                    ? strtotime($fila['fechaVuelo'])
+                                    : false;
 
-                WHERE codVuelo = $codVueloInt
+                                $fechaVueloOut = $tsVuelo
+                                    ? date("d/m/Y", $tsVuelo)
+                                    : '—';
 
-                ";
+                                // Solo lo damos por pasado si conocemos la fecha
+                                $vueloPasado = ($tsVuelo !== false && $tsVuelo < $hoy);
 
-                                $resultadoVuelo = mysqli_query(
-                                    $link,
-                                    $sqlVuelo
-                                );
+                                $fechaReservaOut = !empty($fila['fechaReserva'])
+                                    ? date("d/m/Y", strtotime($fila['fechaReserva']))
+                                    : '—';
 
-                                $vuelo = mysqli_fetch_assoc(
-                                    $resultadoVuelo
-                                );
+                                $imagenOut = ($hayVuelo && !empty($fila['imagenVuelo']))
+                                    ? htmlspecialchars($fila['imagenVuelo'], ENT_QUOTES, 'UTF-8')
+                                    : '';
 
-                                // Por si el vuelo fue eliminado pero la reserva sigue existiendo
-                                $origenOut = $vuelo ? htmlspecialchars($vuelo['origenVuelo'], ENT_QUOTES, 'UTF-8') : 'No disponible';
-                                $destinoOut = $vuelo ? htmlspecialchars($vuelo['destinoVuelo'], ENT_QUOTES, 'UTF-8') : 'No disponible';
-                                $fechaVueloOut = $vuelo ? htmlspecialchars($vuelo['fechaVuelo'], ENT_QUOTES, 'UTF-8') : '';
-                                $imagenOut = $vuelo ? htmlspecialchars($vuelo['imagenVuelo'], ENT_QUOTES, 'UTF-8') : '';
-
-                                $fechaReservaOut = htmlspecialchars($fila['fechaReserva'], ENT_QUOTES, 'UTF-8');
                                 $codReservaInt = (int) $fila['codReserva'];
+
+                                $estado = strtoupper(trim((string) $fila['estadoReserva']));
+
+                                $badge = isset($badgesEstado[$estado])
+                                    ? $badgesEstado[$estado]
+                                    : ['clase' => 'bg-secondary', 'texto' => ucfirst(strtolower($estado))];
 
                                 ?>
 
                                 <tr>
 
                                     <td>
-
-                                        <?php if ($vuelo) { ?>
+                                        <?php if ($imagenOut !== '') { ?>
                                             <img
                                                 src="../../uploads/vuelos/<?= $imagenOut ?>"
                                                 alt="Vuelo de <?= $origenOut ?> a <?= $destinoOut ?>"
-                                                style="
-                            width:120px;
-                            height:80px;
-                            border-radius:7px;
-                            object-fit:cover;
-                            ">
+                                                title="<?= $origenOut ?> a <?= $destinoOut ?> (<?= $fechaVueloOut ?>)"
+                                                class="img-vuelo"
+                                                loading="lazy">
+                                        <?php } else { ?>
+                                            <div class="img-vuelo-placeholder" role="presentation"></div>
                                         <?php } ?>
+                                    </td>
 
+                                    <td><?= (int) $fila['cantAsientos'] ?></td>
+
+                                    <td><?= $origenOut ?></td>
+
+                                    <td><?= $destinoOut ?></td>
+
+                                    <td><?= $fechaVueloOut ?></td>
+
+                                    <td><?= $fechaReservaOut ?></td>
+
+                                    <td>
+                                        $<?= number_format((float) $fila['precioFinal'], 0, ',', '.') ?>
                                     </td>
 
                                     <td>
-
-                                        <?= (int) $fila['cantAsientos'] ?>
-
+                                        <span class="badge <?= $badge['clase'] ?>">
+                                            <?= htmlspecialchars($badge['texto'], ENT_QUOTES, 'UTF-8') ?>
+                                        </span>
                                     </td>
 
                                     <td>
+                                        <?php if ($vueloPasado) { ?>
+                                        
+                                            <span class="text-muted small">Vuelo finalizado</span>
 
-                                        <?= $origenOut ?>
+                                        <?php }elseif($fila['activo'] == 0) { ?>
 
-                                    </td>
+                                            <span class="text-muted small">Vuelo desactivado. Comuníquese a través de contacto.</span>
 
-                                    <td>
-
-                                        <?= $destinoOut ?>
-
-                   <td>
-
-<?= date(
-"d/m/Y",
-strtotime($vuelo['fechaVuelo'])
-) ?>
-
-</td>
-
-<td>
-
-<?= date(
-"d/m/Y",
-strtotime($fila['fechaReserva'])
-) ?>
-
-</td>
-
-                                    </td>
-
-                                    <td>
-
-                                        $<?= number_format(
-                                                $fila['precioFinal'],
-                                                0,
-                                                ',',
-                                                '.'
-                                            ) ?>
-
-                                    </td>
-
-                                    <td>
-
-                                        <?php
-
-                                        if (
-                                            $fila['estadoReserva']
-                                            ==
-                                            'CONFIRMADA'
-                                        ) {
-                                            echo
-                                            '<span class="badge bg-success">Confirmada</span>';
-                                        } elseif (
-                                            $fila['estadoReserva']
-                                            ==
-                                            'PENDIENTE'
-                                        ) {
-                                            echo
-                                            '<span class="badge bg-warning text-dark">Pendiente</span>';
-                                        } else {
-                                            echo
-                                            '<span class="badge bg-danger">Cancelada</span>';
-                                        }
-
-                                        ?>
-
-                                    </td>
-
-                                    <td>
-
-                                        <a
-                                            href="verReserva.php?codReserva=<?= $codReservaInt ?>"
-                                            class="btn btn-primary btn-sm">
-
-                                            Seguir solicitud
-                                            <span class="visually-hidden"> del vuelo <?= $origenOut ?> a <?= $destinoOut ?>, reservado el <?= $fechaReservaOut ?></span>
-
-                                        </a>
-
+                                        <?php } else { ?>
+                                            <a
+                                                href="verReserva.php?codReserva=<?= $codReservaInt ?>"
+                                                class="btn btn-primary btn-sm">
+                                                Seguir solicitud
+                                                <span class="visually-hidden">
+                                                    del vuelo <?= $origenOut ?> a <?= $destinoOut ?>,
+                                                    reservado el <?= $fechaReservaOut ?>
+                                                </span>
+                                            </a>
+                                        <?php } ?>
                                     </td>
 
                                 </tr>
@@ -282,87 +241,84 @@ strtotime($fila['fechaReserva'])
                         </tbody>
 
                     </table>
-
                 </div>
 
             </div>
+        </div>
+
+        <?php if ($totalPaginas > 1) { ?>
 
             <div class="d-flex justify-content-center mt-4">
 
-<nav>
+                <nav aria-label="Paginación del historial de reservas">
 
-<ul class="pagination">
+                    <ul class="pagination">
 
-<?php if($pagina > 1){ ?>
+                        <?php if ($pagina > 1) { ?>
+                            <li class="page-item">
+                                <a class="page-link" href="?pagina=<?= $pagina - 1 ?>">Anterior</a>
+                            </li>
+                        <?php } ?>
 
-<li class="page-item">
+                        <?php
 
-<a
-class="page-link"
-href="?pagina=<?= $pagina-1 ?>">
+                        // Ventana de páginas: actual ± 2, con puntos suspensivos
+                        $desde = max(1, $pagina - 2);
+                        $hasta = min($totalPaginas, $pagina + 2);
 
-Anterior
+                        if ($desde > 1) { ?>
+                            <li class="page-item">
+                                <a class="page-link" href="?pagina=1">1</a>
+                            </li>
+                            <?php if ($desde > 2) { ?>
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                            <?php }
+                        } ?>
 
-</a>
+                        <?php for ($i = $desde; $i <= $hasta; $i++) { ?>
+                            <li class="page-item <?= $i === $pagina ? 'active' : '' ?>">
+                                <a
+                                    class="page-link"
+                                    href="?pagina=<?= $i ?>"
+                                    <?= $i === $pagina ? 'aria-current="page"' : '' ?>>
+                                    <?= $i ?>
+                                </a>
+                            </li>
+                        <?php } ?>
 
-</li>
+                        <?php if ($hasta < $totalPaginas) {
+                            if ($hasta < $totalPaginas - 1) { ?>
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                            <?php } ?>
+                            <li class="page-item">
+                                <a class="page-link" href="?pagina=<?= $totalPaginas ?>"><?= $totalPaginas ?></a>
+                            </li>
+                        <?php } ?>
 
-<?php } ?>
+                        <?php if ($pagina < $totalPaginas) { ?>
+                            <li class="page-item">
+                                <a class="page-link" href="?pagina=<?= $pagina + 1 ?>">Siguiente</a>
+                            </li>
+                        <?php } ?>
 
-<?php
+                    </ul>
 
-for(
-$i=1;
-$i<=$totalPaginas;
-$i++
-)
-{
+                </nav>
 
-?>
+            </div>
 
-<li
-class="page-item
-<?= $i==$pagina ? 'active' : '' ?>">
-
-<a
-class="page-link"
-href="?pagina=<?= $i ?>">
-
-<?= $i ?>
-
-</a>
-
-</li>
-
-<?php } ?>
-
-<?php if($pagina < $totalPaginas){ ?>
-
-<li class="page-item">
-
-<a
-class="page-link"
-href="?pagina=<?= $pagina+1 ?>">
-
-Siguiente
-
-</a>
-
-</li>
-
-<?php } ?>
-
-</ul>
-
-</nav>
-
-</div>
-            <?php } ?>
-
-        </div>
+        <?php } ?>
 
     <?php } ?>
 
 </div>
 
-<?php include("../../includes/footer.php"); ?>
+<?php
+
+mysqli_stmt_close($stmt);
+
+include("../../includes/footer.php");

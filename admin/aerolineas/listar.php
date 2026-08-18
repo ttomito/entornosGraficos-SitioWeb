@@ -1,10 +1,11 @@
 <?php
 
-include("../../includes/verificarSession.php");
+include("../../includes/verificarSessionAdmin.php");
 include("../../includes/conexion.php");
 include("../../includes/header.php");
 
 $registrosPorPagina = 10;
+$errorConsulta = false;
 
 $pagina = isset($_GET['pagina'])
     ? (int)$_GET['pagina']
@@ -14,59 +15,46 @@ if ($pagina < 1) {
     $pagina = 1;
 }
 
-$inicio =
-    ($pagina - 1)
-    *
-    $registrosPorPagina;
+$sqlConteo = "SELECT COUNT(*) AS total FROM aerolineas";
+$resultadoConteo = mysqli_query($link, $sqlConteo);
 
+if (!$resultadoConteo) {
+    error_log("Error al contar aerolíneas: " . mysqli_error($link));
+    $errorConsulta = true;
+    $totalRegistros = 0;
+} else {
+    $filaConteo = mysqli_fetch_assoc($resultadoConteo);
+    $totalRegistros = (int)$filaConteo['total'];
+}
 
+$totalPaginas = (int)ceil($totalRegistros / $registrosPorPagina);
 
+// Evita pedir una página que no existe
+if ($totalPaginas > 0 && $pagina > $totalPaginas) {
+    $pagina = $totalPaginas;
+}
 
-$sqlConteo = "
+$inicio = ($pagina - 1) * $registrosPorPagina;
 
-SELECT COUNT(*) AS total
+$resultado = null;
 
-FROM aerolineas
+if (!$errorConsulta) {
+    $sql = "SELECT * FROM aerolineas ORDER BY codAerolinea LIMIT ?, ?";
+    $stmt = mysqli_prepare($link, $sql);
 
-";
+    if (!$stmt) {
+        error_log("Error al preparar el listado: " . mysqli_error($link));
+        $errorConsulta = true;
+    } else {
+        mysqli_stmt_bind_param($stmt, "ii", $inicio, $registrosPorPagina);
+        mysqli_stmt_execute($stmt);
+        $resultado = mysqli_stmt_get_result($stmt);
 
-$resultadoConteo =
-    mysqli_query($link, $sqlConteo);
-
-$filaConteo =
-    mysqli_fetch_assoc($resultadoConteo);
-
-$totalRegistros =
-    $filaConteo['total'];
-
-$totalPaginas =
-    ceil(
-        $totalRegistros
-            /
-            $registrosPorPagina
-    );
-
-
-
-
-$sql = "
-
-SELECT *
-
-FROM aerolineas
-
-ORDER BY codAerolinea
-
-LIMIT $inicio,
-$registrosPorPagina
-
-";
-
-$resultado =
-    mysqli_query($link, $sql);
-
-if (!$resultado) {
-    die("Error en la consulta: " . mysqli_error($link));
+        if (!$resultado) {
+            error_log("Error al listar aerolíneas: " . mysqli_error($link));
+            $errorConsulta = true;
+        }
+    }
 }
 ?>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -84,7 +72,11 @@ if (!$resultado) {
 
         <div class="card-body">
 
-            <?php if (mysqli_num_rows($resultado) === 0) { ?>
+            <?php if ($errorConsulta) { ?>
+
+                <p class="text-danger">Ocurrió un error al cargar el listado. Intentá nuevamente más tarde.</p>
+
+            <?php } elseif (mysqli_num_rows($resultado) === 0) { ?>
 
                 <p class="text-muted">No hay aerolíneas registradas.</p>
 
@@ -126,21 +118,25 @@ if (!$resultado) {
                                     </a>
 
                                     <?php if ($fila['activo'] == 1) { ?>
-                                        <a href="eliminar.php?id=<?= $fila['codAerolinea'] ?>&activo=<?= $fila['activo'] ?>"
-                                            class="btn btn-danger btn-sm"
-                                            aria-label="Desactivar aerolínea <?= $nombreEscapado ?>"
-                                            data-nombre="<?= $nombreEscapado ?>"
-                                            onclick="confirmarEliminacion(event, this)">
-                                            Desactivar
-                                        </a>
+                                        <form action="eliminar.php" method="post" class="d-inline" data-nombre="<?= $nombreEscapado ?>">
+                                            <input type="hidden" name="id" value="<?= (int)$fila['codAerolinea'] ?>">
+                                            <button type="submit"
+                                                class="btn btn-danger btn-sm"
+                                                aria-label="Desactivar aerolínea <?= $nombreEscapado ?>"
+                                                onclick="confirmarEliminacion(event, this)">
+                                                Desactivar
+                                            </button>
+                                        </form>
                                     <?php } else { ?>
-                                        <a href="eliminar.php?id=<?= $fila['codAerolinea'] ?>&activo=<?= $fila['activo'] ?>"
-                                            class="btn btn-success btn-sm"
-                                            aria-label="Activar aerolínea <?= $nombreEscapado ?>"
-                                            data-nombre="<?= $nombreEscapado ?>"
-                                            onclick="confirmarActivacion(event, this)">
-                                            Activar
-                                        </a>
+                                        <form action="eliminar.php" method="post" class="d-inline" data-nombre="<?= $nombreEscapado ?>">
+                                            <input type="hidden" name="id" value="<?= (int)$fila['codAerolinea'] ?>">
+                                            <button type="submit"
+                                                class="btn btn-success btn-sm"
+                                                aria-label="Activar aerolínea <?= $nombreEscapado ?>"
+                                                onclick="confirmarActivacion(event, this)">
+                                                Activar
+                                            </button>
+                                        </form>
                                     <?php } ?>
                                 </td>
                             </tr>
@@ -260,11 +256,6 @@ $alertas = [
         'title' => 'Error',
         'text'  => 'Aerolínea no encontrada.'
     ],
-    'error_servidor' => [
-        'icon'  => 'error',
-        'title' => 'Error',
-        'text'  => 'Error al buscar aerolínea.'
-    ],
     'campos_vacios' => [
         'icon'  => 'error',
         'title' => 'Error',
@@ -301,10 +292,11 @@ if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)) {
 <?php }; ?>
 
 <script>
-    function confirmarEliminacion(event, elemento) {
+    function confirmarEliminacion(event, boton) {
         event.preventDefault();
 
-        const nombre = elemento.dataset.nombre;
+        const formulario = boton.closest('form');
+        const nombre = formulario.dataset.nombre;
 
         Swal.fire({
             title: '¿Estás seguro?',
@@ -317,15 +309,16 @@ if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)) {
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
-                window.location.href = elemento.href;
+                formulario.submit();
             }
         });
     }
 
-    function confirmarActivacion(event, elemento) {
+    function confirmarActivacion(event, boton) {
         event.preventDefault();
 
-        const nombre = elemento.dataset.nombre;
+        const formulario = boton.closest('form');
+        const nombre = formulario.dataset.nombre;
 
         Swal.fire({
             title: '¿Estás seguro?',
@@ -338,7 +331,7 @@ if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)) {
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
-                window.location.href = elemento.href;
+                formulario.submit();
             }
         });
     }

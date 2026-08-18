@@ -1,8 +1,7 @@
 <?php
 
-include("../../includes/verificarSession.php");
+include("../../includes/verificarSessionAdmin.php");
 include("../../includes/conexion.php");
-include("../../includes/header.php");
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -11,7 +10,7 @@ if ($id <= 0) {
     exit();
 }
 
-$sqlCEO = "SELECT * FROM usuarios WHERE codUsuario = ?";
+$sqlCEO = "SELECT * FROM usuarios WHERE codUsuario = ? AND tipoUsuario = 'CEO'";
 $stmtCEO = mysqli_prepare($link, $sqlCEO);
 
 if (!$stmtCEO) {
@@ -34,20 +33,17 @@ if (!$ceo) {
 
 $nombreCeoEscapado = htmlspecialchars($ceo['nombreUsuario'], ENT_QUOTES, 'UTF-8');
 
-$sqlAerolineas = "
+$sqlAerolineas = "SELECT * FROM aerolineas WHERE activo = 1 ORDER BY nombreAerolinea";
 
-SELECT *
+$aerolineas = mysqli_query($link, $sqlAerolineas);
 
-FROM aerolineas
+if (!$aerolineas) {
+    error_log("Error al obtener aerolíneas: " . mysqli_error($link));
+    header("Location: listar.php?alerta=error_servidor");
+    exit();
+}
 
-ORDER BY nombreAerolinea
-
-";
-
-$aerolineas = mysqli_query(
-    $link,
-    $sqlAerolineas
-);
+include("../../includes/header.php");
 
 ?>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -86,6 +82,11 @@ $aerolineas = mysqli_query(
                         action="guardarAsignacion.php"
                         method="post"
                         aria-labelledby="titulo-asignar">
+
+                        <input
+                            type="hidden"
+                            name="csrf_token"
+                            value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
 
                         <input
                             type="hidden"

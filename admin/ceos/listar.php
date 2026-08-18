@@ -1,14 +1,11 @@
 <?php
 
+include("../../includes/verificarSessionAdmin.php");
 include("../../includes/conexion.php");
-include("../../includes/verificarSession.php");
 include("../../includes/header.php");
 
-?>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<?php
-
 $registrosPorPagina = 10;
+$errorConsulta = false;
 
 $pagina = isset($_GET['pagina'])
     ? (int)$_GET['pagina']
@@ -18,66 +15,56 @@ if ($pagina < 1) {
     $pagina = 1;
 }
 
-$inicio =
-    ($pagina - 1)
-    *
-    $registrosPorPagina;
+$sqlConteo = "SELECT COUNT(*) AS total FROM usuarios WHERE tipoUsuario = 'CEO'";
+$resultadoConteo = mysqli_query($link, $sqlConteo);
 
-
-
-$sqlConteo = "
-
-SELECT COUNT(*) AS total
-
-FROM usuarios
-
-WHERE tipoUsuario = 'CEO'
-
-";
-
-$resultadoConteo =
-    mysqli_query($link, $sqlConteo);
-
-$filaConteo =
-    mysqli_fetch_assoc($resultadoConteo);
-
-$totalRegistros =
-    $filaConteo['total'];
-
-$totalPaginas =
-    ceil(
-        $totalRegistros
-            /
-            $registrosPorPagina
-    );
-
-
-
-$sql = "
-
-SELECT *
-
-FROM usuarios
-
-WHERE tipoUsuario = 'CEO'
-
-ORDER BY
-estadoCuenta,
-nombreUsuario
-
-LIMIT $inicio,
-$registrosPorPagina
-
-";
-
-$resultado =
-    mysqli_query($link, $sql);
-
-if (!$resultado) {
-    die("Error en la consulta: " . mysqli_error($link));
+if (!$resultadoConteo) {
+    error_log("Error al contar CEOs: " . mysqli_error($link));
+    $errorConsulta = true;
+    $totalRegistros = 0;
+} else {
+    $filaConteo = mysqli_fetch_assoc($resultadoConteo);
+    $totalRegistros = (int)$filaConteo['total'];
 }
 
+$totalPaginas = (int)ceil($totalRegistros / $registrosPorPagina);
+
+// Evita pedir una página que no existe
+if ($totalPaginas > 0 && $pagina > $totalPaginas) {
+    $pagina = $totalPaginas;
+}
+
+$inicio = ($pagina - 1) * $registrosPorPagina;
+
+$resultado = null;
+
+if (!$errorConsulta) {
+    $sql = "
+        SELECT *
+        FROM usuarios
+        WHERE tipoUsuario = 'CEO'
+        ORDER BY estadoCuenta, nombreUsuario
+        LIMIT ?, ?
+    ";
+
+    $stmt = mysqli_prepare($link, $sql);
+
+    if (!$stmt) {
+        error_log("Error al preparar el listado de CEOs: " . mysqli_error($link));
+        $errorConsulta = true;
+    } else {
+        mysqli_stmt_bind_param($stmt, "ii", $inicio, $registrosPorPagina);
+        mysqli_stmt_execute($stmt);
+        $resultado = mysqli_stmt_get_result($stmt);
+
+        if (!$resultado) {
+            error_log("Error al listar CEOs: " . mysqli_error($link));
+            $errorConsulta = true;
+        }
+    }
+}
 ?>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between mb-4">
@@ -95,7 +82,11 @@ if (!$resultado) {
 
         <div class="card-body">
 
-            <?php if (mysqli_num_rows($resultado) == 0) { ?>
+            <?php if ($errorConsulta) { ?>
+
+                <p class="text-danger">Ocurrió un error al cargar el listado. Intentá nuevamente más tarde.</p>
+
+            <?php } elseif (mysqli_num_rows($resultado) === 0) { ?>
 
                 <p class="text-muted">
 
@@ -160,30 +151,30 @@ if (!$resultado) {
                                 <td>
                                     <?php
 
-                                    if ($fila['estadoCuenta'] == 'PENDIENTE') {
+                                    if ($fila['estadoCuenta'] == 'ACTIVA' && $fila['aprobadoAdmin'] == 'NO') {
                                     ?>
 
-                                        <a
-                                            href="aprobar.php?id=<?= $fila['codUsuario'] ?>"
-                                            class="btn btn-success btn-sm"
-                                            aria-label="Aprobar a <?= $nombreEscapado ?>"
-                                            data-nombre="<?= $nombreEscapado ?>"
-                                            onclick="confirmarAprobacion(event, this)">
+                                        <form action="aprobar.php" method="post" class="d-inline" data-nombre="<?= $nombreEscapado ?>">
+                                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
+                                            <input type="hidden" name="id" value="<?= (int)$fila['codUsuario'] ?>">
+                                            <button type="submit"
+                                                class="btn btn-success btn-sm"
+                                                aria-label="Aprobar a <?= $nombreEscapado ?>"
+                                                onclick="confirmarAprobacion(event, this)">
+                                                Aprobar
+                                            </button>
+                                        </form>
 
-                                            Aprobar
-
-                                        </a>
-
-                                        <a
-                                            href="rechazar.php?id=<?= $fila['codUsuario'] ?>"
-                                            class="btn btn-danger btn-sm"
-                                            aria-label="Rechazar a <?= $nombreEscapado ?>"
-                                            data-nombre="<?= $nombreEscapado ?>"
-                                            onclick="confirmarRechazo(event, this)">
-
-                                            Rechazar
-
-                                        </a>
+                                        <form action="rechazar.php" method="post" class="d-inline" data-nombre="<?= $nombreEscapado ?>">
+                                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
+                                            <input type="hidden" name="id" value="<?= (int)$fila['codUsuario'] ?>">
+                                            <button type="submit"
+                                                class="btn btn-danger btn-sm"
+                                                aria-label="Rechazar a <?= $nombreEscapado ?>"
+                                                onclick="confirmarRechazo(event, this)">
+                                                Rechazar
+                                            </button>
+                                        </form>
 
                                     <?php
                                     } else {
@@ -289,10 +280,11 @@ if (!$resultado) {
 </div>
 
 <script>
-    function confirmarAprobacion(event, elemento) {
+    function confirmarAprobacion(event, boton) {
         event.preventDefault();
 
-        const nombre = elemento.dataset.nombre;
+        const formulario = boton.closest('form');
+        const nombre = formulario.dataset.nombre;
 
         Swal.fire({
             title: '¿Estás seguro?',
@@ -305,15 +297,16 @@ if (!$resultado) {
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
-                window.location.href = elemento.href;
+                formulario.submit();
             }
         });
     }
 
-    function confirmarRechazo(event, elemento) {
+    function confirmarRechazo(event, boton) {
         event.preventDefault();
 
-        const nombre = elemento.dataset.nombre;
+        const formulario = boton.closest('form');
+        const nombre = formulario.dataset.nombre;
 
         Swal.fire({
             title: '¿Estás seguro?',
@@ -326,11 +319,49 @@ if (!$resultado) {
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
-                window.location.href = elemento.href;
+                formulario.submit();
             }
         });
     }
 </script>
+
+<?php
+$alertasCeos = [
+    'aprobada' => [
+        'icon'  => 'success',
+        'title' => '¡Aprobado!',
+        'text'  => 'El CEO fue aprobado y se le notificó por correo.'
+    ],
+    'rechazada' => [
+        'icon'  => 'success',
+        'title' => '¡Rechazado!',
+        'text'  => 'El CEO fue rechazado y se le notificó por correo.'
+    ],
+    'no_encontrada' => [
+        'icon'  => 'error',
+        'title' => 'Error',
+        'text'  => 'No se encontró el usuario, o ya no está pendiente de aprobación.'
+    ],
+    'error_servidor' => [
+        'icon'  => 'error',
+        'title' => 'Error',
+        'text'  => 'Ocurrió un error al procesar la solicitud. Intente nuevamente.'
+    ]
+];
+
+if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertasCeos)) {
+    $alertaCeo = $alertasCeos[$_GET['alerta']];
+?>
+
+    <script>
+        Swal.fire({
+            icon: '<?= $alertaCeo['icon'] ?>',
+            title: '<?= $alertaCeo['title'] ?>',
+            text: '<?= $alertaCeo['text'] ?>',
+            confirmButtonText: 'Aceptar'
+        });
+    </script>
+<?php } ?>
 
 <?php
 include("../../includes/footer.php");

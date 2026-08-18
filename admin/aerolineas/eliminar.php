@@ -1,81 +1,121 @@
 <?php
 
-include("../../includes/verificarSession.php");
+include("../../includes/verificarSessionAdmin.php");
 include("../../includes/conexion.php");
 
-if ($_SERVER['REQUEST_METHOD'] !== 'GET' || !isset($_GET['id']) || !isset($_GET['activo'])) {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: listar.php");
     exit();
 }
 
-// Validaciones
-$id = (int)$_GET['id'];
-$activo = (int)$_GET['activo'];
+$id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
 
-if ($id <= 0) {
+if ($id === false || $id === null || $id <= 0) {
     header("Location: listar.php");
     exit();
 }
 
-if ($activo !== 0 && $activo !== 1) {
-    header("Location: listar.php");
+$sqlActual = "SELECT activo FROM aerolineas WHERE codAerolinea = ?";
+$stmtActual = mysqli_prepare($link, $sqlActual);
+
+if (!$stmtActual) {
+    error_log("Error al preparar consulta de estado: " . mysqli_error($link));
+    header("Location: listar.php?alerta=error_servidor");
     exit();
 }
 
-// Determinar nuevo estado
-$modifActivo = ($activo == 1) ? 0 : 1;
+mysqli_stmt_bind_param($stmtActual, "i", $id);
+mysqli_stmt_execute($stmtActual);
+$resultadoActual = mysqli_stmt_get_result($stmtActual);
+$aerolinea = $resultadoActual ? mysqli_fetch_assoc($resultadoActual) : null;
+mysqli_stmt_close($stmtActual);
 
-// Buscar vuelos asociados
-$sqlVuelos = "SELECT codVuelo FROM vuelos WHERE codAerolinea = $id";
-$resultadoVuelos = mysqli_query($link, $sqlVuelos);
-
-$tieneVuelos = mysqli_num_rows($resultadoVuelos) > 0;
-
-if ($tieneVuelos) {
-
-    while ($vuelo = mysqli_fetch_assoc($resultadoVuelos)) {
-
-        $codVuelo = $vuelo['codVuelo'];
-
-        $sqlActualizarReservas = "
-            UPDATE reservas
-            SET activo = $modifActivo
-            WHERE codVuelo = $codVuelo
-        ";
-
-        mysqli_query($link, $sqlActualizarReservas);
-    }
-
-    $sqlActualizarVuelos = "
-        UPDATE vuelos
-        SET activo = $modifActivo
-        WHERE codAerolinea = $id
-    ";
-
-    mysqli_query($link, $sqlActualizarVuelos);
+if (!$aerolinea) {
+    header("Location: listar.php?alerta=no_encontrada");
+    exit();
 }
 
-// Actualizar la aerolínea SIEMPRE
-$sqlActualizarAerolinea = "UPDATE aerolineas SET activo = $modifActivo WHERE codAerolinea = $id";
+$modifActivo = ((int)$aerolinea['activo'] === 1) ? 0 : 1;
 
-mysqli_query($link, $sqlActualizarAerolinea);
+mysqli_begin_transaction($link);
+$exito = true;
+$tieneVuelos = false;
 
-if ($modifActivo == 1) {
+$sqlVuelos = "SELECT codVuelo FROM vuelos WHERE codAerolinea = ?";
+$stmtVuelos = mysqli_prepare($link, $sqlVuelos);
 
-    if ($tieneVuelos) {
-        header("Location: listar.php?alerta=vuelos_activados");
-    } else {
-        header("Location: listar.php?alerta=activada");
-    }
-
+if (!$stmtVuelos) {
+    $exito = false;
 } else {
-
-    if ($tieneVuelos) {
-        header("Location: listar.php?alerta=vuelos_desactivados");
+    mysqli_stmt_bind_param($stmtVuelos, "i", $id);
+    if (mysqli_stmt_execute($stmtVuelos)) {
+        $resultadoVuelos = mysqli_stmt_get_result($stmtVuelos);
+        $tieneVuelos = $resultadoVuelos && mysqli_num_rows($resultadoVuelos) > 0;
     } else {
-        header("Location: listar.php?alerta=eliminada");
+        $exito = false;
+    }
+    mysqli_stmt_close($stmtVuelos);
+}
+
+if ($exito && $tieneVuelos) {
+
+    $sqlReservas = "
+        UPDATE reservas r
+        INNER JOIN vuelos v
+        ON v.codVuelo = r.codVuelo
+        SET r.activo = ?
+        WHERE v.codAerolinea = ?
+    ";
+    $stmtReservas = mysqli_prepare($link, $sqlReservas);
+
+    if (!$stmtReservas) {
+        $exito = false;
+    } else {
+        mysqli_stmt_bind_param($stmtReservas, "ii", $modifActivo, $id);
+        $exito = mysqli_stmt_execute($stmtReservas);
+        mysqli_stmt_close($stmtReservas);
     }
 
+    if ($exito) {
+        $sqlActualizarVuelos = "UPDATE vuelos SET activo = ? WHERE codAerolinea = ?";
+        $stmtActualizarVuelos = mysqli_prepare($link, $sqlActualizarVuelos);
+
+        if (!$stmtActualizarVuelos) {
+            $exito = false;
+        } else {
+            mysqli_stmt_bind_param($stmtActualizarVuelos, "ii", $modifActivo, $id);
+            $exito = mysqli_stmt_execute($stmtActualizarVuelos);
+            mysqli_stmt_close($stmtActualizarVuelos);
+        }
+    }
+}
+
+if ($exito) {
+    $sqlActualizarAerolinea = "UPDATE aerolineas SET activo = ? WHERE codAerolinea = ?";
+    $stmtAerolinea = mysqli_prepare($link, $sqlActualizarAerolinea);
+
+    if (!$stmtAerolinea) {
+        $exito = false;
+    } else {
+        mysqli_stmt_bind_param($stmtAerolinea, "ii", $modifActivo, $id);
+        $exito = mysqli_stmt_execute($stmtAerolinea);
+        mysqli_stmt_close($stmtAerolinea);
+    }
+}
+
+if (!$exito) {
+    mysqli_rollback($link);
+    error_log("Error al cambiar estado de aerolínea (id=$id): " . mysqli_error($link));
+    header("Location: listar.php?alerta=error_servidor");
+    exit();
+}
+
+mysqli_commit($link);
+
+if ($modifActivo === 1) {
+    header("Location: listar.php?alerta=" . ($tieneVuelos ? 'vuelos_activados' : 'activada'));
+} else {
+    header("Location: listar.php?alerta=" . ($tieneVuelos ? 'vuelos_desactivados' : 'eliminada'));
 }
 
 exit();

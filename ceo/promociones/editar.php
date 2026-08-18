@@ -1,37 +1,63 @@
 <?php
 
-include("../../includes/verificarSession.php");
+include("../../includes/verificarSessionCeo.php");
 include("../../includes/conexion.php");
-include("../../includes/header.php");
 
 $id    = (int) ($_GET['id'] ?? 0);
 $idCEO = (int) ($_SESSION['id'] ?? 0);
 
+if ($id <= 0) {
+    header("Location: listar.php");
+    exit();
+}
+
 $sql = "SELECT p.* FROM promociones p
 INNER JOIN usuarios u
 ON p.codAerolinea = u.codAerolinea
-WHERE p.codPromocion = $id
-AND u.codUsuario = $idCEO";
+WHERE p.codPromocion = ?
+AND u.codUsuario = ?";
 
-$resultado = mysqli_query($link, $sql);
-$promocion = mysqli_fetch_assoc($resultado);
+$stmt = mysqli_prepare($link, $sql);
+
+if (!$stmt) {
+    error_log("Error al preparar la consulta: " . mysqli_error($link));
+    header("Location: listar.php?alerta=error_servidor");
+    exit();
+}
+
+mysqli_stmt_bind_param($stmt, "ii", $id, $idCEO);
+mysqli_stmt_execute($stmt);
+$resultado = mysqli_stmt_get_result($stmt);
+$promocion = $resultado ? mysqli_fetch_assoc($resultado) : null;
+mysqli_stmt_close($stmt);
 
 if (!$promocion) {
-    die("Acceso denegado");
+    header("Location: listar.php?alerta=no_encontrada");
+    exit();
 }
 
 $destinosExistentes = [];
-$sqlDestinos = "SELECT destinoVuelo FROM promocionesDestinos WHERE codPromocion = $id ORDER BY destinoVuelo";
-$resultadoDestinos = mysqli_query($link, $sqlDestinos);
+$sqlDestinos = "SELECT destinoVuelo FROM promociones_destinos WHERE codPromocion = ? ORDER BY destinoVuelo";
+$stmtDestinos = mysqli_prepare($link, $sqlDestinos);
 
-if ($resultadoDestinos) {
-    while ($filaDestino = mysqli_fetch_assoc($resultadoDestinos)) {
-        $destinosExistentes[] = $filaDestino['destinoVuelo'];
+if ($stmtDestinos) {
+    mysqli_stmt_bind_param($stmtDestinos, "i", $id);
+    mysqli_stmt_execute($stmtDestinos);
+    $resultadoDestinos = mysqli_stmt_get_result($stmtDestinos);
+
+    if ($resultadoDestinos) {
+        while ($filaDestino = mysqli_fetch_assoc($resultadoDestinos)) {
+            $destinosExistentes[] = $filaDestino['destinoVuelo'];
+        }
     }
+
+    mysqli_stmt_close($stmtDestinos);
 }
 
 $descripcionOut  = htmlspecialchars($promocion['descripcionPromocion'], ENT_QUOTES, 'UTF-8');
 $fechaLimiteOut  = htmlspecialchars($promocion['fechaLimitePromocion'], ENT_QUOTES, 'UTF-8');
+
+include("../../includes/header.php");
 
 ?>
 
@@ -60,6 +86,7 @@ $fechaLimiteOut  = htmlspecialchars($promocion['fechaLimitePromocion'], ENT_QUOT
 
                         <form action="actualizar.php" method="post">
 
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
                             <input type="hidden" name="id" value="<?= (int) $promocion['codPromocion'] ?>">
 
                             <div class="mb-3">
@@ -284,6 +311,10 @@ $fechaLimiteOut  = htmlspecialchars($promocion['fechaLimitePromocion'], ENT_QUOT
 
         const formulario = event.target.closest('form');
 
+        if (!formulario.reportValidity()) {
+            return;
+        }
+
         Swal.fire({
             title: '¿Estás seguro?',
             text: '¿Desea modificar esta promoción?',
@@ -300,6 +331,56 @@ $fechaLimiteOut  = htmlspecialchars($promocion['fechaLimitePromocion'], ENT_QUOT
         });
     }
 </script>
+
+<?php
+
+$alertas = [
+    'campos_vacios' => [
+        'icon'  => 'warning',
+        'title' => 'Faltan datos',
+        'text'  => 'Completá todos los campos antes de guardar.'
+    ],
+    'descripcion_invalida' => [
+        'icon'  => 'warning',
+        'title' => 'Descripción inválida',
+        'text'  => 'La descripción no puede superar los 200 caracteres ni contener símbolos no permitidos.'
+    ],
+    'destino_invalido' => [
+        'icon'  => 'warning',
+        'title' => 'Destino inválido',
+        'text'  => 'Debés indicar al menos un destino de vuelo válido para la promoción.'
+    ],
+    'descuento_invalido' => [
+        'icon'  => 'warning',
+        'title' => 'Descuento inválido',
+        'text'  => 'El descuento debe estar entre 1% y 100%.'
+    ],
+    'fecha_invalida' => [
+        'icon'  => 'warning',
+        'title' => 'Fecha inválida',
+        'text'  => 'La fecha límite debe ser posterior a hoy.'
+    ],
+    'error_servidor' => [
+        'icon'  => 'error',
+        'title' => 'Error',
+        'text'  => 'Ocurrió un error inesperado. Intente nuevamente.'
+    ],
+];
+
+if (isset($_GET['alerta']) && array_key_exists($_GET['alerta'], $alertas)) {
+    $alerta = $alertas[$_GET['alerta']];
+?>
+
+    <script>
+        Swal.fire({
+            icon: '<?= $alerta['icon'] ?>',
+            title: '<?= $alerta['title'] ?>',
+            text: '<?= $alerta['text'] ?>',
+            confirmButtonText: 'Aceptar'
+        });
+    </script>
+
+<?php } ?>
 
 <?php
 include("../../includes/footer.php");

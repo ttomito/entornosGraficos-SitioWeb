@@ -1,209 +1,192 @@
 <?php
 
-include("../../includes/verificarSession.php");
-include("../../includes/conexion.php");
+require_once("../../includes/verificarSession.php");
+require_once("../../includes/conexion.php");
 
-$asientos = (int) ($_POST['cantAsientos'] ?? 0);
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
 $codReserva = (int) ($_POST['codReserva'] ?? 0);
-$idUsuario = (int) $_SESSION['id'];
+$asientos   = (int) ($_POST['cantAsientos'] ?? 0);
+$idUsuario  = (int) $_SESSION['id'];
 
-$destino = 'listar.php';
-$tipoAlerta = 'error';
-$mensaje = '';
+//Guarda el mensaje en la sesión
 
-if ($codReserva <= 0) {
+function redirigirCon($tipo, $mensaje, $destino)
+{
+    $_SESSION['flash'] = [
+        'tipo'    => $tipo,
+        'mensaje' => $mensaje,
+    ];
 
-    $mensaje = 'La reserva indicada no es válida.';
-
-} elseif ($asientos < 1) {
-
-    $destino = "modificar.php?codReserva=$codReserva";
-    $mensaje = 'La cantidad de asientos debe ser al menos 1.';
-
-} else {
-
-    $sql = "
-
-    SELECT *
-
-    FROM reservas
-
-    WHERE codReserva = $codReserva
-
-    AND codUsuario = $idUsuario
-
-    ";
-
-    $resultado = mysqli_query($link, $sql);
-    $reserva = ($resultado) ? mysqli_fetch_assoc($resultado) : null;
-
-    if (!$reserva) {
-
-        $mensaje = 'No encontramos esa reserva.';
-
-    } elseif ($reserva['estadoReserva'] !== 'PENDIENTE') {
-
-        $mensaje = 'Esta reserva ya no se puede modificar (su estado actual es "' . $reserva['estadoReserva'] . '").';
-
-    } else {
-
-        $codVuelo = (int) $reserva['codVuelo'];
-        $cantAsientos = (int) $reserva['cantAsientos'];
-
-        $sqlVueloSelect = "
-
-        SELECT *
-
-        FROM vuelos
-
-        WHERE codVuelo = $codVuelo
-
-        ";
-
-        $resultadoVuelo = mysqli_query($link, $sqlVueloSelect);
-        $vuelo = ($resultadoVuelo) ? mysqli_fetch_assoc($resultadoVuelo) : null;
-
-        if (!$vuelo) {
-
-            $mensaje = 'No encontramos el vuelo asociado a esta reserva.';
-
-        } else {
-
-            $nuevosDisponibles =
-                $vuelo['asientosDisponibles']
-                + $cantAsientos
-                - $asientos;
-
-            if ($nuevosDisponibles < 0) {
-
-                $destino = "modificar.php?codReserva=$codReserva";
-                $mensaje = 'No hay suficientes asientos disponibles.';
-
-            } else {
-
-                $codAerolinea = (int) $vuelo['codAerolinea'];
-
-                $sqlProm = "
-
-                SELECT *
-
-                FROM promociones
-
-                WHERE codAerolinea = $codAerolinea
-
-                AND estadoPromocion = 'APROBADA'
-
-                ";
-
-                $resultado_prom = mysqli_query($link, $sqlProm);
-
-                $descuentoMaximo = 0;
-                $hoy = date("Y-m-d");
-
-                if ($resultado_prom) {
-                    while ($promocion = mysqli_fetch_assoc($resultado_prom)) {
-                        if (
-                            $promocion['descuentoPromocion'] > $descuentoMaximo
-                            &&
-                            $promocion['fechaLimitePromocion'] >= $hoy
-                        ) {
-                            $descuentoMaximo = $promocion['descuentoPromocion'];
-                        }
-                    }
-                }
-
-                $precioFinal = ($vuelo['precioVuelo'] - ($vuelo['precioVuelo'] * $descuentoMaximo / 100)) * $asientos;
-
-                $sqlVueloUpdate = "
-
-                UPDATE vuelos
-
-                SET asientosDisponibles = asientosDisponibles + $cantAsientos - $asientos
-
-                WHERE codVuelo = $codVuelo
-
-                ";
-
-                $okVuelo = mysqli_query($link, $sqlVueloUpdate);
-
-                $sqlact = "
-
-                UPDATE reservas
-
-                SET cantAsientos = $asientos,
-                precioFinal = $precioFinal
-
-                WHERE codReserva = $codReserva
-
-                ";
-
-                $okReserva = mysqli_query($link, $sqlact);
-
-                if ($okVuelo && $okReserva) {
-                    $tipoAlerta = 'success';
-                    $mensaje = 'Tu reserva fue modificada correctamente.';
-                } else {
-                    $destino = "modificar.php?codReserva=$codReserva";
-                    $mensaje = 'Ocurrió un error al guardar los cambios. Intentá nuevamente.';
-                }
-            }
-        }
-    }
+    header('Location: ' . $destino);
+    exit();
 }
 
-$tituloAlerta = $tipoAlerta === 'success' ? 'Listo' : 'No se pudo guardar';
+$volverAModificar = $codReserva > 0 ? 'modificar.php?codReserva=' . $codReserva : 'listar.php';
 
-include("../../includes/header.php");
+$volverAReserva = $codReserva > 0 ? 'verReserva.php?codReserva=' . $codReserva : 'listar.php';
 
-?>
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    redirigirCon('error', 'Los cambios deben enviarse desde el formulario.', $volverAModificar);
+}
 
-<div class="container mt-5">
+$tokenRecibido = $_POST['csrf_token'] ?? '';
 
-    <div class="row justify-content-center">
+$tokenValido = !empty($_SESSION['csrf_token'])
+    && is_string($tokenRecibido)
+    && hash_equals($_SESSION['csrf_token'], $tokenRecibido);
 
-        <div class="col-md-6">
+if (!$tokenValido) {
+    redirigirCon('error', 'La sesión expiró o el formulario no es válido. Volvé a intentarlo.', $volverAModificar);
+}
 
-            <div class="card card-custom">
+if ($codReserva <= 0) {
+    redirigirCon('error', 'La reserva indicada no es válida.', 'listar.php');
+}
 
-                <div class="card-body p-5 text-center">
+if ($asientos < 1) {
+    redirigirCon('error', 'La cantidad de asientos debe ser al menos 1.', $volverAModificar);
+}
 
-                    <div
-                        class="alert <?= $tipoAlerta === 'success' ? 'alert-success' : 'alert-danger' ?>"
-                        role="alert">
+try {
 
-                        <?= htmlspecialchars($mensaje, ENT_QUOTES, 'UTF-8') ?>
+    mysqli_begin_transaction($link);
 
-                    </div>
+    //Reserva
 
-                    <a href="<?= htmlspecialchars($destino, ENT_QUOTES, 'UTF-8') ?>" class="btn btn-primary" id="btnContinuar">
+    $sql = "SELECT codVuelo, cantAsientos, precioFinal, estadoReserva
+            FROM reservas
+            WHERE codReserva = ? AND codUsuario = ?
+            FOR UPDATE";
 
-                        Continuar
+    $stmt = mysqli_prepare($link, $sql);
+    mysqli_stmt_bind_param($stmt, "ii", $codReserva, $idUsuario);
+    mysqli_stmt_execute($stmt);
 
-                    </a>
+    $resultado = mysqli_stmt_get_result($stmt);
+    $reserva   = mysqli_fetch_assoc($resultado);
 
-                </div>
+    mysqli_stmt_close($stmt);
 
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<script>
-    if (typeof Swal !== 'undefined') {
-        Swal.fire({
-            icon: <?= json_encode($tipoAlerta) ?>,
-            title: <?= json_encode($tituloAlerta, JSON_UNESCAPED_UNICODE) ?>,
-            text: <?= json_encode($mensaje, JSON_UNESCAPED_UNICODE) ?>,
-            confirmButtonText: 'Aceptar'
-        }).then(function () {
-            window.location.href = <?= json_encode($destino) ?>;
-        });
+    if (!$reserva) {
+        mysqli_rollback($link);
+        redirigirCon('error', 'No encontramos esa reserva.', 'listar.php');
     }
-</script>
 
-<?php include("../../includes/footer.php"); ?>
+    if ($reserva['estadoReserva'] !== 'PENDIENTE') {
+        mysqli_rollback($link);
+        redirigirCon('error', 'Esta reserva ya no se puede modificar.', $volverAReserva);
+    }
+
+    $codVuelo           = (int) $reserva['codVuelo'];
+    $cantAsientosActual = (int) $reserva['cantAsientos'];
+    $precioFinalActual  = (float) $reserva['precioFinal'];
+
+    // Sin cambios
+    if ($asientos === $cantAsientosActual) {
+        mysqli_rollback($link);
+        redirigirCon('error', 'No modificaste la cantidad de asientos.', $volverAModificar);
+    }
+
+    //Vuelo
+
+    $sqlVuelo = "SELECT fechaVuelo, horaSalida
+                 FROM vuelos
+                 WHERE codVuelo = ?
+                 FOR UPDATE";
+
+    $stmtVuelo = mysqli_prepare($link, $sqlVuelo);
+    mysqli_stmt_bind_param($stmtVuelo, "i", $codVuelo);
+    mysqli_stmt_execute($stmtVuelo);
+
+    $resVuelo = mysqli_stmt_get_result($stmtVuelo);
+    $vuelo    = mysqli_fetch_assoc($resVuelo);
+
+    mysqli_stmt_close($stmtVuelo);
+
+    if (!$vuelo) {
+        mysqli_rollback($link);
+        redirigirCon('error', 'No encontramos el vuelo asociado a esta reserva.', $volverAReserva);
+    }
+
+    if (!empty($vuelo['fechaVuelo'])) {
+
+        $fechaBase = substr((string) $vuelo['fechaVuelo'], 0, 10);
+
+        $horaBase = !empty($vuelo['horaSalida'])
+            ? (string) $vuelo['horaSalida']
+            : '00:00:00';
+
+        $tsSalida = strtotime($fechaBase . ' ' . $horaBase);
+
+        if ($tsSalida !== false && $tsSalida < time()) {
+            mysqli_rollback($link);
+            redirigirCon('error', 'El vuelo ya salió, la reserva no se puede modificar.', $volverAReserva);
+        }
+    }
+
+    $precioUnitario = $cantAsientosActual > 0 ? ($precioFinalActual / $cantAsientosActual) : 0.0;
+    $nuevoPrecioFinal = round($precioUnitario * $asientos, 2);
+
+    $delta = $asientos - $cantAsientosActual;
+
+    $sqlAsientos = "UPDATE vuelos
+                    SET asientosDisponibles = asientosDisponibles - ?
+                    WHERE codVuelo = ?
+                      AND asientosDisponibles >= ?";
+
+    $stmtAsientos = mysqli_prepare($link, $sqlAsientos);
+    mysqli_stmt_bind_param($stmtAsientos, "iii", $delta, $codVuelo, $delta);
+    mysqli_stmt_execute($stmtAsientos);
+
+    $filasAsientos = mysqli_stmt_affected_rows($stmtAsientos);
+
+    mysqli_stmt_close($stmtAsientos);
+
+    if ($filasAsientos !== 1) {
+        mysqli_rollback($link);
+        redirigirCon('error', 'No hay suficientes asientos disponibles.', $volverAModificar);
+    }
+
+    // Actualizamos la reserva
+
+
+    $sqlUpdate = "UPDATE reservas
+                  SET cantAsientos = ?,
+                      precioFinal  = ?
+                  WHERE codReserva = ?
+                    AND codUsuario = ?
+                    AND estadoReserva = 'PENDIENTE'";
+
+    $stmtUpdate = mysqli_prepare($link, $sqlUpdate);
+    mysqli_stmt_bind_param(
+        $stmtUpdate,
+        "idii",
+        $asientos,
+        $nuevoPrecioFinal,
+        $codReserva,
+        $idUsuario
+    );
+    mysqli_stmt_execute($stmtUpdate);
+
+    $filasReserva = mysqli_stmt_affected_rows($stmtUpdate);
+
+    mysqli_stmt_close($stmtUpdate);
+
+    if ($filasReserva !== 1) {
+        mysqli_rollback($link);
+        redirigirCon('error', 'Esta reserva ya no se puede modificar.', $volverAReserva);
+    }
+
+    mysqli_commit($link);
+
+    redirigirCon('success', 'Tu reserva fue modificada correctamente.', $volverAReserva);
+
+} catch (mysqli_sql_exception $e) {
+
+    mysqli_rollback($link);
+
+    error_log('Error al modificar la reserva ' . $codReserva . ': ' . $e->getMessage());
+
+    redirigirCon('error', 'Ocurrió un error al guardar los cambios. Intentá nuevamente.', $volverAModificar);
+}

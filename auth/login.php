@@ -42,9 +42,6 @@ include("../includes/header.php");
 
                     <?php
                     }
-                    ?>
-
-                    <?php
 
                     if (isset($_GET['esperando'])) {
                     ?>
@@ -52,6 +49,19 @@ include("../includes/header.php");
                         <div class="alert alert-info text-center" role="alert">
 
                             Tu cuenta está pendiente de aprobación por un administrador.
+
+                        </div>
+
+                    <?php
+                    }
+
+                    if (isset($_GET['rechazada'])) {
+                    ?>
+
+                        <div class="alert alert-danger text-center" role="alert">
+
+                            Tu solicitud fue rechazada por un administrador.
+                            Si creés que se trata de un error, comunicate con nosotros.
 
                         </div>
 
@@ -107,13 +117,13 @@ include("../includes/header.php");
 
                             <div class="input-group">
 
+                                <!-- Sin minlength ni pattern: acá se ingresa una contraseña
+                                     ya existente, no se define una nueva -->
                                 <input
                                     type="password"
                                     id="clave"
                                     name="clave"
                                     class="form-control"
-                                    minlength="8"
-                                    pattern="(?=.*[A-Za-z])(?=.*\d).{8,}"
                                     required
                                     aria-required="true"
                                     autocomplete="current-password"

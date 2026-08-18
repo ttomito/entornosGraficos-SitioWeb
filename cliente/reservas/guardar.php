@@ -1,200 +1,205 @@
 <?php
 
-include("../../includes/verificarSession.php");
-include("../../includes/conexion.php");
+require_once("../../includes/verificarSession.php");
+require_once("../../includes/conexion.php");
 
-$idUsuario = (int) $_SESSION['id'];
-$codVuelo = (int) ($_POST['codVuelo'] ?? 0);
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
+$idUsuario    = (int) $_SESSION['id'];
+$codVuelo     = (int) ($_POST['codVuelo'] ?? 0);
 $cantAsientos = (int) ($_POST['cantAsientos'] ?? 0);
-$fecha = date("Y-m-d");
 
-$destino = '../vuelos/listar.php';
-$tipoAlerta = 'error';
-$mensaje = '';
+function redirigirCon($tipo, $mensaje, $destino){
+    $_SESSION['flash'] = [
+        'tipo'    => $tipo,
+        'mensaje' => $mensaje,
+    ];
 
-if ($codVuelo <= 0) {
-
-    $mensaje = 'El vuelo indicado no es válido.';
-
-} elseif ($cantAsientos <= 0) {
-
-    $destino = "reservar.php?codVuelo=$codVuelo";
-    $mensaje = 'La cantidad de asientos debe ser mayor a cero.';
-
-} else {
-
-    $sqlVuelo = "SELECT * FROM vuelos WHERE codVuelo = $codVuelo";
-    $resultadoVuelo = mysqli_query($link, $sqlVuelo);
-    $vuelo = $resultadoVuelo ? mysqli_fetch_assoc($resultadoVuelo) : null;
-
-    if (!$vuelo) {
-
-        $mensaje = 'No encontramos ese vuelo.';
-
-    } else {
-
-
-        $codAerolinea = (int) $vuelo['codAerolinea'];
-
-        $sqlProm = "
-
-        SELECT *
-
-        FROM promociones
-
-        WHERE codAerolinea = $codAerolinea
-
-        AND estadoPromocion = 'APROBADA'
-
-        ";
-
-        $resultado_prom = mysqli_query($link, $sqlProm);
-
-        $descuentoMaximo = 0;
-        $hoy = date("Y-m-d");
-
-        if ($resultado_prom) {
-            while ($promocion = mysqli_fetch_assoc($resultado_prom)) {
-                if (
-                    $promocion['descuentoPromocion'] > $descuentoMaximo
-                    &&
-                    $promocion['fechaLimitePromocion'] >= $hoy
-                ) {
-                    $descuentoMaximo = $promocion['descuentoPromocion'];
-                }
-            }
-        }
-
-        $precioPorAsiento = $vuelo['precioVuelo'] - ($vuelo['precioVuelo'] * $descuentoMaximo / 100);
-        $precioFinal = $precioPorAsiento * $cantAsientos;
-
-        $sql = "
-
-        SELECT *
-
-        FROM reservas
-
-        WHERE codUsuario = $idUsuario
-
-        AND codVuelo = $codVuelo
-
-        AND estadoReserva != 'CANCELADA'
-
-        ";
-
-        $resultado = mysqli_query($link, $sql);
-
-        if ($resultado && mysqli_num_rows($resultado) > 0) {
-
-            $destino = "reservar.php?codVuelo=$codVuelo";
-            $mensaje = 'Ya tenés una reserva activa para este vuelo.';
-
-        } else {
-
-            mysqli_begin_transaction($link);
-
-            $sqlUpdateAsientos = "
-
-            UPDATE vuelos
-
-            SET asientosDisponibles = asientosDisponibles - $cantAsientos
-
-            WHERE codVuelo = $codVuelo
-
-            AND asientosDisponibles >= $cantAsientos
-
-            ";
-
-            $okAsientos = mysqli_query($link, $sqlUpdateAsientos);
-
-            if (!$okAsientos || mysqli_affected_rows($link) === 0) {
-
-                mysqli_rollback($link);
-                $destino = "reservar.php?codVuelo=$codVuelo";
-                $mensaje = 'No hay suficientes asientos disponibles.';
-
-            } else {
-
-                $sqlInsert = "
-
-                INSERT INTO reservas (codUsuario, codVuelo, fechaReserva, estadoReserva, precioFinal, cantAsientos)
-
-                VALUES ($idUsuario, $codVuelo, '$fecha', 'PENDIENTE', $precioFinal, $cantAsientos)
-
-                ";
-
-                $okInsert = mysqli_query($link, $sqlInsert);
-
-                if (!$okInsert) {
-
-                    mysqli_rollback($link);
-                    $destino = "reservar.php?codVuelo=$codVuelo";
-                    $mensaje = 'Ocurrió un error al crear la reserva. Intentá nuevamente.';
-
-                } else {
-
-                    mysqli_commit($link);
-                    $tipoAlerta = 'success';
-                    $mensaje = 'Tu reserva fue creada correctamente. Quedó pendiente de pago.';
-                }
-            }
-        }
-    }
+    header('Location: ' . $destino);
+    exit();
 }
 
-$tituloAlerta = $tipoAlerta === 'success' ? 'Listo' : 'No se pudo reservar';
+$volverAReservar = $codVuelo > 0 ? 'reservar.php?codVuelo=' . $codVuelo : '../vuelos/listar.php';
 
-include("../../includes/header.php");
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    redirigirCon('error', 'La reserva debe realizarse desde el formulario.', $volverAReservar);
+}
 
-?>
+$tokenRecibido = $_POST['csrf_token'] ?? '';
 
-<div class="container mt-5">
+$tokenValido = !empty($_SESSION['csrf_token'])
+    && is_string($tokenRecibido)
+    && hash_equals($_SESSION['csrf_token'], $tokenRecibido);
 
-    <div class="row justify-content-center">
+if (!$tokenValido) {
+    redirigirCon('error', 'La sesión expiró o el formulario no es válido. Volvé a intentarlo.', $volverAReservar);
+}
 
-        <div class="col-md-6">
+if ($codVuelo <= 0) {
+    redirigirCon('error', 'El vuelo indicado no es válido.', '../vuelos/listar.php');
+}
 
-            <div class="card card-custom">
+if ($cantAsientos <= 0) {
+    redirigirCon('error', 'La cantidad de asientos debe ser mayor a cero.', $volverAReservar);
+}
 
-                <div class="card-body p-5 text-center">
+try {
 
-                    <div
-                        class="alert <?= $tipoAlerta === 'success' ? 'alert-success' : 'alert-danger' ?>"
-                        role="alert">
+    mysqli_begin_transaction($link);
 
-                        <?= htmlspecialchars($mensaje, ENT_QUOTES, 'UTF-8') ?>
+    $sqlVuelo = "SELECT codAerolinea,
+                        destinoVuelo,
+                        precioVuelo,
+                        fechaVuelo,
+                        horaSalida
+                 FROM vuelos
+                 WHERE codVuelo = ?
+                   AND activo = 1
+                 FOR UPDATE";
 
-                    </div>
+    $stmtVuelo = mysqli_prepare($link, $sqlVuelo);
+    mysqli_stmt_bind_param($stmtVuelo, "i", $codVuelo);
+    mysqli_stmt_execute($stmtVuelo);
 
-                    <a href="<?= htmlspecialchars($destino, ENT_QUOTES, 'UTF-8') ?>" class="btn btn-primary" id="btnContinuar">
+    $resVuelo = mysqli_stmt_get_result($stmtVuelo);
+    $vuelo    = mysqli_fetch_assoc($resVuelo);
 
-                        Continuar
+    mysqli_stmt_close($stmtVuelo);
 
-                    </a>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<script>
-    if (typeof Swal !== 'undefined') {
-        Swal.fire({
-            icon: <?= json_encode($tipoAlerta) ?>,
-            title: <?= json_encode($tituloAlerta, JSON_UNESCAPED_UNICODE) ?>,
-            text: <?= json_encode($mensaje, JSON_UNESCAPED_UNICODE) ?>,
-            confirmButtonText: 'Aceptar'
-        }).then(function () {
-            window.location.href = <?= json_encode($destino) ?>;
-        });
+    if (!$vuelo) {
+        mysqli_rollback($link);
+        redirigirCon('error', 'No encontramos ese vuelo.', '../vuelos/listar.php');
     }
-</script>
 
-<?php include("../../includes/footer.php"); ?>
+    // No se puede reservar un vuelo que ya salió
+    if (!empty($vuelo['fechaVuelo'])) {
+
+        $fechaBase = substr((string) $vuelo['fechaVuelo'], 0, 10);
+
+        $horaBase = !empty($vuelo['horaSalida'])
+            ? (string) $vuelo['horaSalida']
+            : '00:00:00';
+
+        $tsSalida = strtotime($fechaBase . ' ' . $horaBase);
+
+        if ($tsSalida !== false && $tsSalida < time()) {
+            mysqli_rollback($link);
+            redirigirCon('error', 'Este vuelo ya salió, no se puede reservar.', '../vuelos/listar.php');
+        }
+    }
+
+    //Una promoción aplica a un vuelo solo si el destino de ese vuelo está cargado en promociones_destinos
+    
+    $codAerolinea = (int) $vuelo['codAerolinea'];
+    $destinoVuelo = (string) $vuelo['destinoVuelo'];
+
+    $sqlProm = "SELECT COALESCE(MAX(p.descuentoPromocion), 0) AS descuento
+                FROM promociones p
+                INNER JOIN promociones_destinos pd
+                        ON pd.codPromocion = p.codPromocion
+                WHERE p.codAerolinea = ?
+                  AND p.estadoPromocion = 'APROBADA'
+                  AND p.fechaLimitePromocion >= CURDATE()
+                  AND LOWER(TRIM(pd.destinoVuelo)) = LOWER(TRIM(?))";
+
+    $stmtProm = mysqli_prepare($link, $sqlProm);
+    mysqli_stmt_bind_param($stmtProm, "is", $codAerolinea, $destinoVuelo);
+    mysqli_stmt_execute($stmtProm);
+
+    $resProm  = mysqli_stmt_get_result($stmtProm);
+    $filaProm = mysqli_fetch_assoc($resProm);
+
+    mysqli_stmt_close($stmtProm);
+
+    $descuento = (float) ($filaProm['descuento'] ?? 0);
+
+    if ($descuento < 0)   { $descuento = 0.0; }
+    if ($descuento > 100) { $descuento = 100.0; }
+
+    $precioPorAsiento = (float) $vuelo['precioVuelo'] * (1 - $descuento / 100);
+    $precioFinal      = round($precioPorAsiento * $cantAsientos, 2);
+
+    // ya tiene una reserva activa para este vuelo?
+  
+    $sqlExiste = "SELECT codReserva
+                  FROM reservas
+                  WHERE codUsuario = ?
+                    AND codVuelo = ?
+                    AND estadoReserva <> 'CANCELADA'
+                  LIMIT 1
+                  FOR UPDATE";
+
+    $stmtExiste = mysqli_prepare($link, $sqlExiste);
+    mysqli_stmt_bind_param($stmtExiste, "ii", $idUsuario, $codVuelo);
+    mysqli_stmt_execute($stmtExiste);
+
+    $resExiste = mysqli_stmt_get_result($stmtExiste);
+    $yaExiste  = mysqli_fetch_assoc($resExiste);
+
+    mysqli_stmt_close($stmtExiste);
+
+    if ($yaExiste) {
+        mysqli_rollback($link);
+        redirigirCon('error', 'Ya tenés una reserva activa para este vuelo.', $volverAReservar);
+    }
+
+    // Descuento de asientos
+
+    $sqlAsientos = "UPDATE vuelos
+                    SET asientosDisponibles = asientosDisponibles - ?
+                    WHERE codVuelo = ?
+                      AND asientosDisponibles >= ?";
+
+    $stmtAsientos = mysqli_prepare($link, $sqlAsientos);
+    mysqli_stmt_bind_param($stmtAsientos, "iii", $cantAsientos, $codVuelo, $cantAsientos);
+    mysqli_stmt_execute($stmtAsientos);
+
+    $filasAsientos = mysqli_stmt_affected_rows($stmtAsientos);
+
+    mysqli_stmt_close($stmtAsientos);
+
+    if ($filasAsientos !== 1) {
+        mysqli_rollback($link);
+        redirigirCon('error', 'No hay suficientes asientos disponibles.', $volverAReservar);
+    }
+
+    // Alta de la reserva
+
+
+    $fechaReserva = date("Y-m-d");
+
+    $sqlInsert = "INSERT INTO reservas (codUsuario, codVuelo, fechaReserva, estadoReserva, precioFinal, cantAsientos)
+    VALUES (?, ?, ?, 'PENDIENTE', ?, ?)";
+
+    $stmtInsert = mysqli_prepare($link, $sqlInsert);
+    mysqli_stmt_bind_param(
+        $stmtInsert,
+        "iisdi",
+        $idUsuario,
+        $codVuelo,
+        $fechaReserva,
+        $precioFinal,
+        $cantAsientos
+    );
+    mysqli_stmt_execute($stmtInsert);
+
+    $codReservaNueva = mysqli_insert_id($link);
+
+    mysqli_stmt_close($stmtInsert);
+
+    mysqli_commit($link);
+
+    redirigirCon(
+        'success',
+        'Tu reserva fue creada correctamente. Quedó pendiente de pago.',
+        'verReserva.php?codReserva=' . (int) $codReservaNueva
+    );
+
+} catch (mysqli_sql_exception $e) {
+
+    mysqli_rollback($link);
+
+    error_log('Error al crear reserva del vuelo ' . $codVuelo . ': ' . $e->getMessage());
+
+    redirigirCon('error', 'Ocurrió un error al crear la reserva. Intentá nuevamente.', $volverAReservar);
+}
